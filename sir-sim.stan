@@ -75,6 +75,41 @@ transformed data {
 model {
 }
 generated quantities {
+  // real mean_delay;
+  // real incoming[T];
+  // real dx;
   real y_hat[T,12];
   y_hat = integrate_ode_rk45(sir, y0, t0, ts, theta, x_r, x_i);
+
+  // mean_delay = 10.685;
+  // dx = ts[2] - ts[1]; // assumes equal time intervals
+
+  // relevant times to identify new cases
+  // ii = which(out$time > day - 2 * meanDelay & out$time <= day)
+
+  // for (t in 1:T) {
+  //   for (t_inner in 1:T) {
+  //     incoming[t2] = 0;
+  //   }
+  //   for (t_inner in 1:t) {
+  //     // all new cases arising at each of those times
+  //     // incoming = with(pars, k2 * (out$E2[ii] + out$E2d[ii]))
+  //     incoming[t2] = x_r[4] * (y_hat[t,2] + y_hat[t,3]);
+  //   }
+  //
+  // }
+
+  // what is this?
+  // march15_modelform = data$day[ which(data$Date == as.Date("2020-03-14"))]
+  // thisSamp = ifelse(day < march15_modelform,
+  //                   sampFrac,
+  //                   sampFrac * pars$ratio)
+  //
+  //    # each of the past times' contribution to this day's case count
+  // ft = thisSamp * incoming * dweibull(x = max(out$time[ii]) - out$time[ii],
+  //                                     shape = delayShape,
+  //                                     scale = delayScale)
+
+  // return numerical integral of ft
+  // return(0.5 * (dx) * (ft[1] + 2*sum(ft[2:(length(ft)-1)]) + ft[length(ft)]))
 }

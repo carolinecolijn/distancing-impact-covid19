@@ -2,6 +2,9 @@ library(rstan)
 rstan_options(auto_write = TRUE)
 library(ggplot2)
 
+wd <- getwd()
+setwd(here::here("selfIsolationModel", "stan"))
+
 x_r <- c(
   N = 4.4e6 / 1e3, # population of BC in thousands
   D = 5,
@@ -65,3 +68,5 @@ states <- reshape2::melt(post$y_hat) %>%
 ggplot(states, aes(day, value)) +
   geom_line() +
   facet_wrap(~variable, scales = "free_y")
+
+setwd(wd)

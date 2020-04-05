@@ -31,7 +31,7 @@ functions{
     real f2    = x_r[9];
     real ratio = x_r[10];
 
-    real dydt[8];
+    real dydt[12];
 
     real f;
     real start_decline = 15;

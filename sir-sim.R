@@ -39,7 +39,7 @@ state_0 <- c(
 ts <- seq(-30, 30)
 
 sim <- stan(
-  "sir.stan",
+  "sir-sim.stan",
   data = list(
     T = length(ts),
     y0 = state_0,

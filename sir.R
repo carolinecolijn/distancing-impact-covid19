@@ -22,8 +22,6 @@ x_r <- c(
   end_decline = 22
 )
 
-theta <- c(R0 = 2.65)
-
 fsi <- x_r[["r"]] / (x_r[["r"]] + x_r[["ur"]])
 nsi <- 1 - fsi
 i0 <- 8
@@ -77,7 +75,6 @@ stan_data <- list(
   y0 = state_0,
   t0 = min(time) - 1,
   time = time,
-  theta = array(theta),
   x_r = x_r,
   delayShape = 1.972,
   delayScale = 12.053,
@@ -104,7 +101,8 @@ post <- rstan::extract(fit)
 R0 <- post$theta[,1]
 .x <- seq(1.3, 3.8, length.out = 200)
 ggplot(tibble(R0 = R0)) +
-  geom_ribbon(data = tibble(R0 = .x, density = dlnorm(.x, R0_prior[1], R0_prior[2])),
+  geom_ribbon(
+    data = tibble(R0 = .x, density = dlnorm(.x, R0_prior[1], R0_prior[2])),
     aes(x = R0, ymin = 0, ymax = density), alpha = 0.5, colour = "black") +
   geom_density(aes(R0), fill = RColorBrewer::brewer.pal(3, "Dark2")[1], alpha = 0.5) +
   coord_cartesian(xlim = range(.x))

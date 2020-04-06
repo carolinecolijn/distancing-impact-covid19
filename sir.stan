@@ -82,8 +82,8 @@ transformed data {
   int  x_i[0]; // fake; needed for ODE function
 }
 parameters {
- real theta[1];
- real phi; // NB2 dispersion
+ real<lower=0> theta[1];
+ real<lower=0> phi; // NB2 (inverse) dispersion
 }
 transformed parameters {
   real meanDelay = delayScale * tgamma(1 + 1 / delayShape);
@@ -91,7 +91,6 @@ transformed parameters {
   real ft[T];
   real lambda_d[N];
   real sum_ft_inner;
-  real<lower=0> inv_phi;
 
   real y_hat[T,12];
   y_hat = integrate_ode_rk45(sir, y0, t0, time, theta, x_r, x_i);
@@ -110,8 +109,6 @@ transformed parameters {
     }
     lambda_d[n] = 0.5 * dx * (ft[1] + 2 * sum_ft_inner + ft[time_day_id[n]]);
   }
-
-  inv_phi = 1 / sqrt(phi); // for prior
 }
 model {
   // https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations
@@ -121,7 +118,6 @@ model {
   // target += log(0.5 * phi^-0.5/sqrt(phi)^2); // Jacobian adjustment
 
   phi ~ lognormal(phi_prior[1], phi_prior[2]);
-
   theta[1] ~ lognormal(R0_prior[1], R0_prior[2]);
 
   if (include_likelihood) {

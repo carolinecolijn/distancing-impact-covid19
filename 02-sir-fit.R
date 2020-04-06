@@ -19,6 +19,11 @@ x_r <- c(
   end_decline = 22
 )
 
+bcdata <- read.csv(here::here("bc_casecounts1803.csv"), stringsAsFactors = FALSE)
+bcdata$Date <- lubridate::dmy(bcdata$Date)
+bcdata$daily_diffs <- c(bcdata$Cases[2] - bcdata$Cases[1], diff(bcdata$Cases))
+bcdata$day <- seq_len(nrow(bcdata))
+
 fsi <- x_r[["r"]] / (x_r[["r"]] + x_r[["ur"]])
 nsi <- 1 - fsi
 i0 <- 8
@@ -46,14 +51,8 @@ stopifnot(
   names(state_0) == c("S", "E1", "E2", "I", "Q", "R", "Sd", "E1d", "E2d", "Id", "Qd", "Rd")
 )
 
-daily_diffs <- c(
-  0L, 0L, 1L, 3L, 1L, 8L, 0L, 6L, 5L, 0L, 7L, 7L, 18L, 9L, 22L,
-  38L, 53L, 45L, 40L, 77L, 76L, 48L, 67L, 78L, 42L, 66L, 67L, 92L,
-  16L, 70L, 43L, 53L
-)
-
 forecast_days <- 25
-time_increment <- 0.25
+time_increment <- 0.5
 days <- seq(1, length(daily_diffs) + forecast_days)
 last_day_obs <- length(daily_diffs)
 time <- seq(-30, max(days) + forecast_days, time_increment)
@@ -71,7 +70,8 @@ get_time_day_id0 <- function(day, time, days_back) {
   }
 }
 time_day_id0 <- vapply(days, get_time_day_id0, numeric(1),
-  time = time, days_back = 50L) # needs to be at least 40 or it starts affecting the results
+  time = time, days_back = 45L)
+# needs to be at least 40 or it starts affecting the results
 
 sampFrac <- ifelse(seq_along(time) < time_day_id[14], 0.35, 0.35 * 2)
 

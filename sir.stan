@@ -80,19 +80,19 @@ data {
   int<lower=0, upper=1> priors_only; // logical: include likelihood or just priors?
 }
 transformed data {
-  int  x_i[0]; // fake; needed for ODE function
+  int  x_i[0];      // fake; needed for ODE function
 }
 parameters {
- real theta[1]; // R0 only for now
- real<lower=0> phi;      // NB2 (inverse) dispersion
+ real theta[1];     // R0 only for now
+ real<lower=0> phi; // NB2 (inverse) dispersion
 }
 transformed parameters {
   real meanDelay = delayScale * tgamma(1 + 1 / delayShape);
-  real dx = time[2] - time[1];
+  real dx = time[2] - time[1]; // time increment
   real ft[T];
   real lambda_d[N];
   real sum_ft_inner;
-  real mu[N];
+  real eta[N]; // expected value on link scale (log)
 
   real y_hat[T,12];
   y_hat = integrate_ode_rk45(sir, y0, t0, time, theta, x_r, x_i);
@@ -112,23 +112,25 @@ transformed parameters {
     }
     lambda_d[n] = 0.5 * dx *
                  (time_day_id_dx_start[n] + 2 * sum_ft_inner + ft[time_day_id[n]]);
-    mu[n] = exp(log(lambda_d[n]) + offset[n]);
+    eta[n] = log(lambda_d[n]) + offset[n]; // offset is likely `log(tests)`
   }
 
 }
 model {
-  // https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations
-  // https://statmodeling.stat.columbia.edu/2018/04/03/justify-my-love/
-  // inv_phi ~ normal(inv_phi_prior[1], inv_phi_prior[2]);
-  // target += -2 * log(phi); // Jacobian adjustment
-  // target += log(0.5 * phi^-0.5/sqrt(phi)^2); // Jacobian adjustment
-
+  // priors:
   phi ~ lognormal(phi_prior[1], phi_prior[2]);
   theta[1] ~ lognormal(R0_prior[1], R0_prior[2]);
 
+  // data likelihood:
   if (!priors_only) {
-    daily_diffs ~ neg_binomial_2(mu, phi);
+    daily_diffs ~ neg_binomial_2_log(eta, phi);
   }
 }
-generated quantities {
+generated quantities{
+  int y_rep[N];
+
+  // posterior predictive draws:
+  for (n in 1:N) {
+    y_rep[n] = neg_binomial_2_log_rng(eta[n], phi);
+  }
 }

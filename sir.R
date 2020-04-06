@@ -49,9 +49,11 @@ stopifnot(
   names(state_0) == c("S", "E1", "E2", "I", "Q", "R", "Sd", "E1d", "E2d", "Id", "Qd", "Rd")
 )
 
-daily_diffs <- c(0L, 0L, 1L, 3L, 1L, 8L, 0L, 6L, 5L, 0L, 7L, 7L, 18L, 9L, 22L,
+daily_diffs <- c(
+  0L, 0L, 1L, 3L, 1L, 8L, 0L, 6L, 5L, 0L, 7L, 7L, 18L, 9L, 22L,
   38L, 53L, 45L, 40L, 77L, 76L, 48L, 67L, 78L, 42L, 66L, 67L, 92L,
-  16L, 70L, 43L, 53L)
+  16L, 70L, 43L, 53L
+)
 days <- seq_along(daily_diffs)
 time <- seq(-30, max(days), 0.2)
 get_time_id <- function(day, time) max(which(time < day))
@@ -98,14 +100,15 @@ fit <- sampling(
 print(fit, pars = c("theta", "phi", "lambda_d"))
 post <- rstan::extract(fit)
 
-R0 <- post$theta[,1]
+R0 <- post$theta[, 1]
 .x <- seq(1.3, 3.8, length.out = 200)
 breaks <- seq(min(.x), max(.x), 0.05)
 ggplot(tibble(R0 = R0)) +
   geom_ribbon(
     data = tibble(R0 = .x, density = dlnorm(.x, R0_prior[1], R0_prior[2])),
-    aes(x = R0, ymin = 0, ymax = density), alpha = 0.5, colour = "grey50", fill = "grey50") +
-  geom_histogram(breaks = breaks, aes(x=R0,y=..density..), fill = "blue", alpha = 0.5) +
+    aes(x = R0, ymin = 0, ymax = density), alpha = 0.5, colour = "grey50", fill = "grey50"
+  ) +
+  geom_histogram(breaks = breaks, aes(x = R0, y = ..density..), fill = "blue", alpha = 0.5) +
   coord_cartesian(xlim = range(.x), expand = FALSE)
 ggsave("R0.pdf", width = 6, height = 4)
 
@@ -115,12 +118,13 @@ breaks <- seq(min(.x), max(.x), 0.08)
 ggplot(tibble(phi = phi_hat)) +
   geom_ribbon(
     data = tibble(phi = .x, density = dlnorm(.x, log(1), 0.5)),
-    aes(x = phi, ymin = 0, ymax = density), alpha = 0.5, colour = "grey50", fill = "grey50") +
-  geom_histogram(breaks = breaks, aes(x=phi,y=..density..), fill = "blue", alpha = 0.5) +
+    aes(x = phi, ymin = 0, ymax = density), alpha = 0.5, colour = "grey50", fill = "grey50"
+  ) +
+  geom_histogram(breaks = breaks, aes(x = phi, y = ..density..), fill = "blue", alpha = 0.5) +
   coord_cartesian(xlim = range(.x), expand = FALSE)
 ggsave("phi.pdf", width = 6, height = 4)
 
-draws <- sample(seq_along(post$lambda_d[,1]), 100L)
+draws <- sample(seq_along(post$lambda_d[, 1]), 100L)
 variables_df <- dplyr::tibble(variable = names(state_0), variable_num = seq_along(state_0))
 ts_df <- dplyr::tibble(time = time, time_num = seq_along(time))
 states <- reshape2::melt(post$y_hat) %>%
@@ -134,14 +138,16 @@ ggplot(states, aes(time, value, group = iterations)) +
   facet_wrap(~variable, scales = "free_y")
 ggsave("states.pdf", width = 12, height = 7.5)
 
-draws <- sample(seq_along(post$lambda_d[,1]), 500L)
+draws <- sample(seq_along(post$lambda_d[, 1]), 500L)
 reshape2::melt(post$lambda_d) %>%
   dplyr::rename(day = Var2) %>%
   dplyr::filter(iterations %in% draws) %>%
   ggplot(aes(day, value, group = iterations)) +
   geom_line(alpha = 0.05) +
-  geom_point(data = tibble(day = seq_along(daily_diffs), value = daily_diffs),
-    inherit.aes = FALSE, aes(x = day, y = value))
+  geom_point(
+    data = tibble(day = seq_along(daily_diffs), value = daily_diffs),
+    inherit.aes = FALSE, aes(x = day, y = value)
+  )
 ggsave("expected-case-diffs.pdf", width = 6, height = 4)
 
 setwd(wd)

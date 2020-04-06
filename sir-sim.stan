@@ -30,12 +30,12 @@ functions{
     real f1    = x_r[8];
     real f2    = x_r[9];
     real ratio = x_r[10];
+    real start_decline = x_r[11];
+    real end_decline = x_r[12];
 
     real dydt[12];
 
     real f;
-    real start_decline = 15;
-    real end_decline = 22;
     if (t < start_decline) {
       f = f1;
     } else if (t >= start_decline && t < end_decline) {
@@ -63,11 +63,17 @@ functions{
 }
 data {
   int<lower=0> T;
+  int<lower=0> N;
   real y0[12];
   real t0;
-  real ts[T];
+  real time[T];
+  int days[N];
   real theta[1];
-  real x_r[10];
+  real x_r[12];
+  real sampFrac[T];
+  real delayScale;
+  real delayShape;
+  int time_day_id[N];
 }
 transformed data {
   int  x_i[0]; // fake; needed for ODE function
@@ -75,41 +81,27 @@ transformed data {
 model {
 }
 generated quantities {
-  // real mean_delay;
-  // real incoming[T];
-  // real dx;
+  real meanDelay = delayScale * tgamma(1 + 1 / delayShape);
+  real dx = time[2] - time[1];
+  real ft[T];
+  real lambda_d[N];
+  real sum_ft_inner;
+
   real y_hat[T,12];
-  y_hat = integrate_ode_rk45(sir, y0, t0, ts, theta, x_r, x_i);
+  y_hat = integrate_ode_rk45(sir, y0, t0, time, theta, x_r, x_i);
 
-  // mean_delay = 10.685;
-  // dx = ts[2] - ts[1]; // assumes equal time intervals
-
-  // relevant times to identify new cases
-  // ii = which(out$time > day - 2 * meanDelay & out$time <= day)
-
-  // for (t in 1:T) {
-  //   for (t_inner in 1:T) {
-  //     incoming[t2] = 0;
-  //   }
-  //   for (t_inner in 1:t) {
-  //     // all new cases arising at each of those times
-  //     // incoming = with(pars, k2 * (out$E2[ii] + out$E2d[ii]))
-  //     incoming[t2] = x_r[4] * (y_hat[t,2] + y_hat[t,3]);
-  //   }
-  //
-  // }
-
-  // what is this?
-  // march15_modelform = data$day[ which(data$Date == as.Date("2020-03-14"))]
-  // thisSamp = ifelse(day < march15_modelform,
-  //                   sampFrac,
-  //                   sampFrac * pars$ratio)
-  //
-  //    # each of the past times' contribution to this day's case count
-  // ft = thisSamp * incoming * dweibull(x = max(out$time[ii]) - out$time[ii],
-  //                                     shape = delayShape,
-  //                                     scale = delayScale)
-
-  // return numerical integral of ft
-  // return(0.5 * (dx) * (ft[1] + 2*sum(ft[2:(length(ft)-1)]) + ft[length(ft)]))
+  for (n in 1:N) {
+    for (t in 1:T) {
+      ft[t] = 0;
+      if (t <= time_day_id[n]) { // FIXME: < or <=?
+        ft[t] = sampFrac[t] * x_r[4] * (y_hat[t,2] + y_hat[t,3]) *
+                exp(weibull_lpdf(days[n] - time[t] | delayShape, delayScale));
+      }
+    }
+    sum_ft_inner = 0;
+    for (t in 2:(time_day_id[n] - 1)) {
+      sum_ft_inner += ft[t];
+    }
+    lambda_d[n] = 0.5 * dx * (ft[1] + 2 * sum_ft_inner + ft[time_day_id[n]]);
+  }
 }

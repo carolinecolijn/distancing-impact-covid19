@@ -80,13 +80,13 @@ sim <- stan(
 post <- rstan::extract(sim)
 
 variables_df <- dplyr::tibble(variable = names(state_0), variable_num = seq_along(state_0))
-ts_df <- dplyr::tibble(day = time, day_num = seq_along(time))
+ts_df <- dplyr::tibble(time = time, time_num = seq_along(time))
 states <- reshape2::melt(post$y_hat) %>%
-  dplyr::rename(day_num = Var2, variable_num = Var3) %>%
+  dplyr::rename(time_num = Var2, variable_num = Var3) %>%
   dplyr::left_join(variables_df, by = "variable_num") %>%
-  dplyr::left_join(ts_df, by = "day_num")
+  dplyr::left_join(ts_df, by = "time_num")
 
-ggplot(states, aes(day, value)) +
+ggplot(states, aes(time, value)) +
   geom_line() +
   facet_wrap(~variable, scales = "free_y")
 

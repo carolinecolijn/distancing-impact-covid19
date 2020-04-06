@@ -71,6 +71,7 @@ stan_data <- list(
   T = length(time),
   days = days,
   daily_diffs = daily_diffs,
+  offset = rep(log(1), length(days)),
   N = length(days),
   y0 = state_0,
   t0 = min(time) - 1,
@@ -80,9 +81,9 @@ stan_data <- list(
   delayScale = 12.053,
   sampFrac = rep(0.3, length(time)),
   time_day_id = time_day_id,
-  include_likelihood = 1L,
   R0_prior = R0_prior,
-  phi_prior = c(log(1), 0.5)
+  phi_prior = c(log(1), 0.5),
+  priors_only = 0L
 )
 
 sir_model <- stan_model("sir.stan")
@@ -94,7 +95,7 @@ fit <- sampling(
   pars = c("theta", "phi", "y_hat", "lambda_d")
 )
 
-# print(fit) # quite big with `y_hat` shown
+print(fit, pars = c("theta", "phi", "lambda_d"))
 post <- rstan::extract(fit)
 
 R0 <- post$theta[,1]

@@ -61,21 +61,22 @@ functions{
   }
 }
 data {
-  int<lower=0> T;
-  int<lower=0> N;
-  real y0[12];
-  real t0;
-  real time[T];
-  int days[N];
-  int daily_diffs[N];
-  real x_r[11];
-  real sampFrac[T];
-  real delayScale;
-  real delayShape;
-  int time_day_id[N];
-  int<lower=0, upper=1> include_likelihood;
-  real R0_prior[2];
-  real phi_prior[2];
+  int<lower=0> T;     // number of time steps
+  int<lower=0> N;     // number of days
+  real y0[12];        // initial state
+  real t0;            // first time step
+  real time[T];       // time increments
+  int days[N];        // day increments
+  int daily_diffs[N]; // daily new case counts
+  int offset[N];      // offset in case counts (log(tests))
+  real x_r[11];       // data for ODEs (real numbers)
+  real sampFrac[T];   // fraction of cases sampled per time step
+  real delayScale;    // Weibull parameter for delay in becoming a case count
+  real delayShape;    // Weibull parameter for delay in becoming a case count
+  int time_day_id[N]; // last time increment associated with each day
+  real R0_prior[2];   // lognormal log mean and SD for R0 prior
+  real phi_prior[2];  // lognormal log mean and SD for phi prior [NB2(mu, phi)]
+  int<lower=0, upper=1> priors_only; // logical: include likelihood or just priors?
 }
 transformed data {
   int  x_i[0]; // fake; needed for ODE function
@@ -90,10 +91,12 @@ transformed parameters {
   real ft[T];
   real lambda_d[N];
   real sum_ft_inner;
+  real mu[N];
 
   real y_hat[T,12];
   y_hat = integrate_ode_rk45(sir, y0, t0, time, theta, x_r, x_i);
 
+  // FIXME: switch to Stan 1D integration function:
   for (n in 1:N) {
     for (t in 1:T) {
       ft[t] = 0;
@@ -107,7 +110,9 @@ transformed parameters {
       sum_ft_inner += ft[t];
     }
     lambda_d[n] = 0.5 * dx * (ft[1] + 2 * sum_ft_inner + ft[time_day_id[n]]);
+    mu[n] = exp(log(lambda_d[n]) + offset[n]);
   }
+
 }
 model {
   // https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations
@@ -119,8 +124,8 @@ model {
   phi ~ lognormal(phi_prior[1], phi_prior[2]);
   theta[1] ~ lognormal(R0_prior[1], R0_prior[2]);
 
-  if (include_likelihood) {
-    daily_diffs ~ neg_binomial_2(lambda_d, phi);
+  if (!priors_only) {
+    daily_diffs ~ neg_binomial_2(mu, phi);
   }
 }
 generated quantities {

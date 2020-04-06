@@ -3,6 +3,7 @@ rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 library(ggplot2)
 library(dplyr)
+theme_set(theme_light())
 
 wd <- getwd()
 setwd(here::here("selfIsolationModel", "stan"))
@@ -104,8 +105,19 @@ ggplot(tibble(R0 = R0)) +
     data = tibble(R0 = .x, density = dlnorm(.x, R0_prior[1], R0_prior[2])),
     aes(x = R0, ymin = 0, ymax = density), alpha = 0.5, colour = "grey50", fill = "grey50") +
   geom_histogram(breaks = breaks, aes(x=R0,y=..density..), fill = "blue", alpha = 0.5) +
-  coord_cartesian(xlim = range(.x))
+  coord_cartesian(xlim = range(.x), expand = FALSE)
 ggsave("R0.pdf", width = 6, height = 4)
+
+phi_hat <- post$phi
+.x <- seq(0.1, 4, length.out = 200)
+breaks <- seq(min(.x), max(.x), 0.08)
+ggplot(tibble(phi = phi_hat)) +
+  geom_ribbon(
+    data = tibble(phi = .x, density = dlnorm(.x, log(1), 0.5)),
+    aes(x = phi, ymin = 0, ymax = density), alpha = 0.5, colour = "grey50", fill = "grey50") +
+  geom_histogram(breaks = breaks, aes(x=phi,y=..density..), fill = "blue", alpha = 0.5) +
+  coord_cartesian(xlim = range(.x), expand = FALSE)
+ggsave("phi.pdf", width = 6, height = 4)
 
 draws <- sample(seq_along(post$lambda_d[,1]), 100L)
 variables_df <- dplyr::tibble(variable = names(state_0), variable_num = seq_along(state_0))

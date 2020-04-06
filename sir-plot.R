@@ -68,7 +68,8 @@ post$y_rep %>% reshape2::melt() %>%
   geom_line(data = tibble(day = seq_along(days), value = daily_diffs), col = "red", inherit.aes = FALSE, aes(x = day, y = value))
 ggsave("posterior-predictive-case-diffs.pdf", width = 6, height = 4)
 
-draws <- sample(seq_along(post$y_rep[, 1]), 19L)
+set.seed(1929)
+draws <- sample(seq_along(post$y_rep[, 1]), 24L)
 post$y_rep %>% reshape2::melt() %>%
   dplyr::filter(iterations %in% draws) %>%
   dplyr::rename(day = Var2) %>%
@@ -76,11 +77,11 @@ post$y_rep %>% reshape2::melt() %>%
   bind_rows(tibble(iterations = 0, day = seq_along(days),
     value = daily_diffs, Type = "Observed")) %>%
   ggplot(aes(day, value, colour = Type)) +
-  geom_line(alpha = 1) +
+  geom_line(lwd = 0.7) +
   facet_wrap(vars(iterations)) +
   ylab("New cases") + xlab("Day") +
-  scale_color_manual(values = c("blue", "grey40"))
-ggsave("posterior-predictive-case-diffs-facet.pdf", width = 9, height = 6)
+  scale_color_manual(values = c("red", "grey40"))
+ggsave("posterior-predictive-case-diffs-facet.pdf", width = 9, height = 6.25)
 
 post$y_rep %>% reshape2::melt() %>%
   dplyr::rename(day = Var2) %>%
@@ -98,6 +99,6 @@ post$y_rep %>% reshape2::melt() %>%
   geom_line(data = tibble(day = seq_along(days), value = daily_diffs),
     col = "red", inherit.aes = FALSE, aes(x = day, y = value), lwd = 0.5) +
   ylab("New cases") + xlab("Day")
-ggsave("posterior-predictive-case-diffs.pdf", width = 6, height = 4)
+ggsave("posterior-predictive-quantiles-case-diffs.pdf", width = 6, height = 4)
 
 setwd(wd)

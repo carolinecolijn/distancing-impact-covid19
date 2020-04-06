@@ -29,9 +29,8 @@ functions{
     real ur    = x_r[7];
     real f1    = x_r[8];
     real f2    = x_r[9];
-    real ratio = x_r[10];
-    real start_decline = x_r[11];
-    real end_decline = x_r[12];
+    real start_decline = x_r[10];
+    real end_decline = x_r[11];
 
     real dydt[12];
 
@@ -69,7 +68,7 @@ data {
   real time[T];
   int days[N];
   int daily_diffs[N];
-  real x_r[12];
+  real x_r[11];
   real sampFrac[T];
   real delayScale;
   real delayShape;
@@ -82,7 +81,7 @@ transformed data {
   int  x_i[0]; // fake; needed for ODE function
 }
 parameters {
- real<lower=0> theta[1];
+ real theta[1];
  real<lower=0> phi; // NB2 (inverse) dispersion
 }
 transformed parameters {

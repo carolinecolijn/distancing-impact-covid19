@@ -17,7 +17,6 @@ x_r <- c(
   ur = 0.4,
   f1 = 1.0,
   f2 = 0.4,
-  ratio = 2,
   start_decline = 12,
   end_decline = 22
 )
@@ -43,7 +42,7 @@ state_0 <- c(
 
 stopifnot(
   names(x_r) ==
-    c("N", "D", "k1", "k2", "q", "r", "ur", "f1", "f2", "ratio", "start_decline", "end_decline")
+    c("N", "D", "k1", "k2", "q", "r", "ur", "f1", "f2", "start_decline", "end_decline")
 )
 stopifnot(
   names(state_0) == c("S", "E1", "E2", "I", "Q", "R", "Sd", "E1d", "E2d", "Id", "Qd", "Rd")
@@ -59,12 +58,12 @@ time_day_id <- vapply(days, get_time_id, numeric(1), time = time)
 
 sampFrac <- ifelse(seq_along(time) < time_day_id[14], 0.35, 0.35 * 2)
 
-# Informative R0 prior:
+# Informative R0 prior example:
 # https://www.imperial.ac.uk/mrc-global-infectious-disease-analysis/covid-19/report-3-transmissibility-of-covid-19/
 # 2.6 (uncertainty range: 1.5-3.5)
-x <- rlnorm(1e5, meanlog = log(2.55), sdlog = 0.2)
-mean(x)
-quantile(x, probs = c(0.025, 0.5, 0.975))
+# x <- rlnorm(1e5, meanlog = log(2.55), sdlog = 0.2)
+# mean(x)
+# quantile(x, probs = c(0.025, 0.5, 0.975))
 R0_prior <- c(log(2.6), 0.2)
 
 stan_data <- list(
@@ -89,9 +88,8 @@ sir_model <- stan_model("sir.stan")
 fit <- sampling(
   sir_model,
   data = stan_data,
-  iter = 500L,
+  iter = 600L,
   chains = 4L,
-  control = list(adapt_delta = 0.8),
   pars = c("theta", "phi", "y_hat", "lambda_d")
 )
 
@@ -100,12 +98,14 @@ post <- rstan::extract(fit)
 
 R0 <- post$theta[,1]
 .x <- seq(1.3, 3.8, length.out = 200)
+breaks <- seq(min(.x), max(.x), 0.05)
 ggplot(tibble(R0 = R0)) +
   geom_ribbon(
     data = tibble(R0 = .x, density = dlnorm(.x, R0_prior[1], R0_prior[2])),
-    aes(x = R0, ymin = 0, ymax = density), alpha = 0.5, colour = "black") +
-  geom_density(aes(R0), fill = RColorBrewer::brewer.pal(3, "Dark2")[1], alpha = 0.5) +
+    aes(x = R0, ymin = 0, ymax = density), alpha = 0.5, colour = "grey50", fill = "grey50") +
+  geom_histogram(breaks = breaks, aes(x=R0,y=..density..), fill = "blue", alpha = 0.5) +
   coord_cartesian(xlim = range(.x))
+ggsave("R0.pdf", width = 6, height = 4)
 
 draws <- sample(seq_along(post$lambda_d[,1]), 100L)
 variables_df <- dplyr::tibble(variable = names(state_0), variable_num = seq_along(state_0))
@@ -119,12 +119,16 @@ states <- reshape2::melt(post$y_hat) %>%
 ggplot(states, aes(time, value, group = iterations)) +
   geom_line(alpha = 0.1) +
   facet_wrap(~variable, scales = "free_y")
+ggsave("states.pdf", width = 12, height = 7.5)
 
 draws <- sample(seq_along(post$lambda_d[,1]), 500L)
 reshape2::melt(post$lambda_d) %>%
   dplyr::rename(day = Var2) %>%
   dplyr::filter(iterations %in% draws) %>%
   ggplot(aes(day, value, group = iterations)) +
-  geom_line(alpha = 0.05)
+  geom_line(alpha = 0.05) +
+  geom_point(data = tibble(day = seq_along(daily_diffs), value = daily_diffs),
+    inherit.aes = FALSE, aes(x = day, y = value))
+ggsave("expected-case-diffs.pdf", width = 6, height = 4)
 
 setwd(wd)

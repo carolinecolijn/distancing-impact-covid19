@@ -1,7 +1,7 @@
 ---
 title: |
    Bayesian SEEIQR Notes
-author: Sean C. Anderson
+author: Sean C. Anderson (Stan implementation) + everyone else (model + data)
 date: 2020-04-06
 output:
   bookdown::pdf_document2:
@@ -63,7 +63,7 @@ incl_fig("traceplot")
 incl_fig("expected-case-diffs")
 ```
 
-```{r ppd-facets, fig.cap="Posterior protective checks of the case counts. First panel (red) represents the observed cases. Other panels represent individual draws from the posterior protective distribution (i.e., these include the observation component).", out.width="\\textwidth"}
+```{r ppd-facets, fig.cap="Posterior predictive checks of the case counts. First panel (red) represents the observed cases. Other panels represent individual draws from the posterior predictive distribution (i.e., these include the observation component).", out.width="\\textwidth"}
 incl_fig("posterior-predictive-case-diffs-facet")
 ```
 

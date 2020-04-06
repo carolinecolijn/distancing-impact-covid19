@@ -59,17 +59,17 @@ time_day_id <- vapply(days, get_time_id, numeric(1), time = time)
 sim <- stan(
   "sir-sim.stan",
   data = list(
-    T = length(ts),
+    T = length(time),
     days = days,
     N = length(days),
     y0 = state_0,
-    t0 = min(ts) - 1,
-    time = ts,
+    t0 = min(time) - 1,
+    time = time,
     theta = array(theta),
     x_r = x_r,
     delayShape = 1.972,
     delayScale = 12.053,
-    sampFrac = rep(0.3, length(ts)),
+    sampFrac = rep(0.3, length(time)),
     time_day_id = time_day_id
   ),
   algorithm = "Fixed_param",
@@ -80,7 +80,7 @@ sim <- stan(
 post <- rstan::extract(sim)
 
 variables_df <- dplyr::tibble(variable = names(state_0), variable_num = seq_along(state_0))
-ts_df <- dplyr::tibble(day = ts, day_num = seq_along(ts))
+ts_df <- dplyr::tibble(day = time, day_num = seq_along(time))
 states <- reshape2::melt(post$y_hat) %>%
   dplyr::rename(day_num = Var2, variable_num = Var3) %>%
   dplyr::left_join(variables_df, by = "variable_num") %>%
@@ -89,7 +89,6 @@ states <- reshape2::melt(post$y_hat) %>%
 ggplot(states, aes(day, value)) +
   geom_line() +
   facet_wrap(~variable, scales = "free_y")
-
 
 dplyr::tibble(day = days, lambda_d = post$lambda_d[1,]) %>%
   ggplot(aes(days, lambda_d)) +

@@ -95,7 +95,7 @@ stan_data <- list(
   x_r = x_r,
   delayShape = 1.972,
   delayScale = 12.053,
-  sampFrac = rep(0.3, length(time)),
+  sampFrac = sampFrac,
   time_day_id = time_day_id,
   time_day_id0 = time_day_id0,
   R0_prior = R0_prior,

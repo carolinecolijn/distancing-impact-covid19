@@ -1,9 +1,9 @@
 functions{
-  real[] sir(real t,        // time
-             real[] state,  // state
-             real[] theta,  // parameters
-             real[] x_r,    // data (real)
-             int[]  x_i) {  // data (integer)
+  real[] seeiqr(real t,        // time
+                real[] state,  // state
+                real[] theta,  // parameters
+                real[] x_r,    // data (real)
+                int[]  x_i) {  // data (integer)
 
     real S     = state[1];
     real E1    = state[2];
@@ -96,7 +96,7 @@ transformed parameters {
   real eta[N]; // expected value on link scale (log)
 
   real y_hat[T,12];
-  y_hat = integrate_ode_rk45(sir, y0, t0, time, theta, x_r, x_i);
+  y_hat = integrate_ode_rk45(seeiqr, y0, t0, time, theta, x_r, x_i);
 
   // FIXME: switch to Stan 1D integration function:
   for (t in 1:T) {

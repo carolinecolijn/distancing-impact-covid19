@@ -1,4 +1,4 @@
-# start by sourcing `02-sir-fit.R`
+# start by sourcing `02-seeiqr-fit.R`
 
 library(ggplot2)
 library(dplyr)

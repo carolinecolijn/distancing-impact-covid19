@@ -104,9 +104,9 @@ stan_data <- list(
   last_day_obs = last_day_obs
 )
 
-sir_model <- stan_model("sir.stan")
+seeiqr_model <- stan_model("seeiqr.stan")
 map_estimate <- optimizing(
-  sir_model,
+  seeiqr_model,
   data = stan_data
 )
 map_estimate$par['theta[1]']
@@ -119,7 +119,7 @@ initf <- function() {
   )
 }
 fit <- sampling(
-  sir_model,
+  seeiqr_model,
   data = stan_data,
   iter = 1000L,
   chains = 4L,

@@ -57,7 +57,7 @@ get_time_id <- function(day, time) max(which(time < day))
 time_day_id <- vapply(days, get_time_id, numeric(1), time = time)
 
 sim <- stan(
-  "sir-sim.stan",
+  "seeiqr-sim.stan",
   data = list(
     T = length(time),
     days = days,

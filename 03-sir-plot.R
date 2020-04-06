@@ -1,4 +1,5 @@
-# start by sourcing `sir.R`
+# start by sourcing `02-sir-fit.R`
+
 library(ggplot2)
 library(dplyr)
 theme_set(theme_light())
@@ -9,7 +10,7 @@ dir.create("figs", showWarnings = FALSE)
 
 fit_array <- as.array(fit)
 bayesplot::mcmc_trace(fit_array, pars = c("theta[1]", "phi"))
-ggsave("traceplot.png", width = 6, height = 3)
+ggsave("figs/traceplot.png", width = 6, height = 3)
 
 R0 <- post$theta[, 1]
 .x <- seq(1.3, 3.8, length.out = 200)
@@ -59,7 +60,7 @@ ggplot(states, aes(time, value, group = iterations)) +
   geom_line(alpha = 0.1) +
   facet_wrap(~variable, scales = "free_y") +
   geom_vline(xintercept = last_day_obs, lty = 2, alpha = 0.6)
-ggsave("states.png", width = 12, height = 7.5)
+ggsave("figs/states.png", width = 12, height = 7.5)
 
 draws <- sample(seq_along(post$lambda_d[, 1]), 400L)
 reshape2::melt(post$lambda_d) %>%

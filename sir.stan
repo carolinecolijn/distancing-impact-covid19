@@ -74,6 +74,7 @@ data {
   real delayScale;    // Weibull parameter for delay in becoming a case count
   real delayShape;    // Weibull parameter for delay in becoming a case count
   int time_day_id[N]; // last time increment associated with each day
+  int time_day_id_dx_start[N]; // first time increment for Weibull integration of case counts
   real R0_prior[2];   // lognormal log mean and SD for R0 prior
   real phi_prior[2];  // lognormal log mean and SD for phi prior [NB2(mu, phi)]
   int<lower=0, upper=1> priors_only; // logical: include likelihood or just priors?
@@ -82,8 +83,8 @@ transformed data {
   int  x_i[0]; // fake; needed for ODE function
 }
 parameters {
- real theta[1];
- real<lower=0> phi; // NB2 (inverse) dispersion
+ real theta[1]; // R0 only for now
+ real<lower=0> phi;      // NB2 (inverse) dispersion
 }
 transformed parameters {
   real meanDelay = delayScale * tgamma(1 + 1 / delayShape);
@@ -97,19 +98,20 @@ transformed parameters {
   y_hat = integrate_ode_rk45(sir, y0, t0, time, theta, x_r, x_i);
 
   // FIXME: switch to Stan 1D integration function:
+  for (t in 1:T) {
+    ft[t] = 0; // initialize at 0, not technically needed
+  }
   for (n in 1:N) {
-    for (t in 1:T) {
-      ft[t] = 0;
-      if (t <= time_day_id[n]) { // FIXME: < or <=?
+    for (t in time_day_id_dx_start[n]:time_day_id[n]) {
         ft[t] = sampFrac[t] * x_r[4] * (y_hat[t,2] + y_hat[t,3]) *
                 exp(weibull_lpdf(days[n] - time[t] | delayShape, delayScale));
-      }
     }
     sum_ft_inner = 0;
-    for (t in 2:(time_day_id[n] - 1)) {
+    for (t in (time_day_id_dx_start[n] + 1):(time_day_id[n] - 1)) {
       sum_ft_inner += ft[t];
     }
-    lambda_d[n] = 0.5 * dx * (ft[1] + 2 * sum_ft_inner + ft[time_day_id[n]]);
+    lambda_d[n] = 0.5 * dx *
+                 (time_day_id_dx_start[n] + 2 * sum_ft_inner + ft[time_day_id[n]]);
     mu[n] = exp(log(lambda_d[n]) + offset[n]);
   }
 

@@ -55,9 +55,20 @@ daily_diffs <- c(
   16L, 70L, 43L, 53L
 )
 days <- seq_along(daily_diffs)
-time <- seq(-30, max(days), 0.2)
+time <- seq(-30, max(days), 0.25)
 get_time_id <- function(day, time) max(which(time < day))
 time_day_id <- vapply(days, get_time_id, numeric(1), time = time)
+
+get_time_id_dx_start <- function(day, time, days_back) {
+  check <- time < (day - days_back)
+  if (sum(check) == 0L) {
+    1L
+  } else {
+    max(which(check))
+  }
+}
+time_day_id_dx_start <- vapply(days, get_time_id_dx_start, numeric(1),
+  time = time, days_back = 50L)
 
 sampFrac <- ifelse(seq_along(time) < time_day_id[14], 0.35, 0.35 * 2)
 
@@ -83,21 +94,38 @@ stan_data <- list(
   delayScale = 12.053,
   sampFrac = rep(0.3, length(time)),
   time_day_id = time_day_id,
+  time_day_id_dx_start = time_day_id_dx_start,
   R0_prior = R0_prior,
   phi_prior = c(log(1), 0.5),
   priors_only = 0L
 )
 
 sir_model <- stan_model("sir.stan")
+map_estimate <- optimizing(
+  sir_model,
+  data = stan_data
+)
+map_estimate$par['theta[1]']
+map_estimate$par['phi']
+# map_estimate$par['lambda_d[1]']
+
+initf <- function() {
+  list(
+    theta = array(rlnorm(1, log(map_estimate$par[['theta[1]']]), 0.1)),
+    phi = rlnorm(1, log(map_estimate$par[['phi']]), 0.1)
+  )
+}
 fit <- sampling(
   sir_model,
   data = stan_data,
-  iter = 600L,
+  iter = 800L,
   chains = 4L,
-  pars = c("theta", "phi", "y_hat", "lambda_d")
+  init = initf,
+  seed = 29482,
+  pars = c("theta", "phi", "lambda_d", "y_hat")
 )
 
-print(fit, pars = c("theta", "phi", "lambda_d"))
+print(fit, pars = c("theta", "phi"))
 post <- rstan::extract(fit)
 
 R0 <- post$theta[, 1]
@@ -106,7 +134,8 @@ breaks <- seq(min(.x), max(.x), 0.05)
 ggplot(tibble(R0 = R0)) +
   geom_ribbon(
     data = tibble(R0 = .x, density = dlnorm(.x, R0_prior[1], R0_prior[2])),
-    aes(x = R0, ymin = 0, ymax = density), alpha = 0.5, colour = "grey50", fill = "grey50"
+    aes(x = R0, ymin = 0, ymax = density), alpha = 0.5, colour = "grey50",
+    fill = "grey50"
   ) +
   geom_histogram(breaks = breaks, aes(x = R0, y = ..density..), fill = "blue", alpha = 0.5) +
   coord_cartesian(xlim = range(.x), expand = FALSE)

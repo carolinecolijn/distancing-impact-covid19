@@ -1,0 +1,76 @@
+---
+title: |
+   Bayesian SEEIQR Notes
+author: Sean C. Anderson
+date: 2020-04-06
+output:
+  bookdown::pdf_document2:
+    number_sections: yes
+    toc: no
+    keep_tex: true
+fontsize: 12pt
+geometry: "left=2.64cm, right=2.64cm, top=2.54cm, bottom=2.54cm"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  fig.width = 4,
+  fig.asp = 0.618,
+  fig.align = "center",
+  fig.pos = "htb"
+)
+library(here)
+incl_fig <- function(f, ext = ".pdf") { 
+  knitr::include_graphics(here("selfIsolationModel/stan/figs/", paste0(f, ext)))
+}
+```
+
+The model is available here:
+
+<https://github.com/carolinecolijn/CoronaModelsBC/blob/master/selfIsolationModel/stan/seeiqr.stan>
+
+And is called by:
+
+<https://github.com/carolinecolijn/CoronaModelsBC/blob/master/selfIsolationModel/stan/02-seeiqr-fit.R>
+
+This file:
+
+<https://github.com/carolinecolijn/CoronaModelsBC/blob/master/selfIsolationModel/stan/03-seeiqr-plot.R>
+
+makes the plots shown here.
+
+\clearpage
+
+```{r R0, fig.cap="R0. Histogram represents the posterior and the density plot represents the prior.", out.width="4in"}
+incl_fig("R0")
+```
+
+```{r phi, fig.cap="The (inverse) dispersion parameter from the negative binomial distribution. NB2($\\mu$, $\\phi$). Histogram represents the posterior and the density plot represents the prior. Var(Y) = mu + mu$^2$ / phi.", out.width="4in"}
+incl_fig("phi")
+```
+
+```{r states, fig.cap="Draws from the state joint posterior distribution.", out.width="\\textwidth"}
+incl_fig("states")
+```
+
+```{r traceplot, fig.cap="Traceplots.", out.width="5.5in"}
+incl_fig("traceplot")
+```
+
+```{r mu, fig.cap="Case counts (dots) and posterior draws from the expected cases (lines). I.e., this is the mean expectation.", out.width="5in"}
+incl_fig("expected-case-diffs")
+```
+
+```{r ppd-facets, fig.cap="Posterior protective checks of the case counts. First panel (red) represents the observed cases. Other panels represent individual draws from the posterior protective distribution (i.e., these include the observation component).", out.width="\\textwidth"}
+incl_fig("posterior-predictive-case-diffs-facet")
+```
+
+```{r ppd-lines, fig.cap="Same as last figure but all on the same panel.", out.width="5in"}
+incl_fig("posterior-predictive-case-diffs")
+```
+
+```{r ppd-quant, fig.cap="Same as last figure but with 80\\% and 50\\% quantiles. Black line represents the median. Red lines represents the data.", out.width="5in"}
+incl_fig("posterior-predictive-quantiles-case-diffs")
+```

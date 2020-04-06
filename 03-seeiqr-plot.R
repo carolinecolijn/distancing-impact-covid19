@@ -10,7 +10,7 @@ dir.create("figs", showWarnings = FALSE)
 
 fit_array <- as.array(fit)
 bayesplot::mcmc_trace(fit_array, pars = c("theta[1]", "phi"))
-ggsave("figs/traceplot.png", width = 6, height = 3)
+ggsave("figs/traceplot.pdf", width = 6, height = 3)
 
 R0 <- post$theta[, 1]
 .x <- seq(1.3, 3.8, length.out = 200)
@@ -26,7 +26,7 @@ ggplot(tibble(R0 = R0)) +
     fill = "blue", alpha = 0.5
   ) +
   coord_cartesian(xlim = range(.x), expand = FALSE)
-ggsave("figs/R0.png", width = 6, height = 4)
+ggsave("figs/R0.pdf", width = 6, height = 4)
 
 phi_hat <- post$phi
 .x <- seq(0.1, 4, length.out = 200)
@@ -42,7 +42,7 @@ ggplot(tibble(phi = phi_hat)) +
     fill = "blue", alpha = 0.5
   ) +
   coord_cartesian(xlim = range(.x), expand = FALSE)
-ggsave("figs/phi.png", width = 6, height = 4)
+ggsave("figs/phi.pdf", width = 6, height = 4)
 
 draws <- sample(seq_along(post$lambda_d[, 1]), 100L)
 variables_df <- dplyr::tibble(
@@ -60,7 +60,7 @@ ggplot(states, aes(time, value, group = iterations)) +
   geom_line(alpha = 0.1) +
   facet_wrap(~variable, scales = "free_y") +
   geom_vline(xintercept = last_day_obs, lty = 2, alpha = 0.6)
-ggsave("figs/states.png", width = 12, height = 7.5)
+ggsave("figs/states.pdf", width = 12, height = 7.5)
 
 draws <- sample(seq_along(post$lambda_d[, 1]), 400L)
 reshape2::melt(post$lambda_d) %>%
@@ -72,7 +72,7 @@ reshape2::melt(post$lambda_d) %>%
     data = tibble(day = seq_along(daily_diffs), value = daily_diffs),
     inherit.aes = FALSE, aes(x = day, y = value)
   )
-ggsave("figs/expected-case-diffs.png", width = 6, height = 4)
+ggsave("figs/expected-case-diffs.pdf", width = 6, height = 4)
 
 # Posterior predictive checks:
 
@@ -87,7 +87,7 @@ post$y_rep %>%
     data = tibble(day = seq_len(last_day_obs), value = daily_diffs),
     col = "red", inherit.aes = FALSE, aes(x = day, y = value)
   )
-ggsave("figs/posterior-predictive-case-diffs.png", width = 6, height = 4)
+ggsave("figs/posterior-predictive-case-diffs.pdf", width = 6, height = 4)
 
 set.seed(1929)
 draws <- sample(seq_along(post$y_rep[, 1]), 24L)
@@ -107,7 +107,7 @@ post$y_rep %>%
   xlab("Day") +
   scale_color_manual(values = c("red", "grey40")) +
   geom_vline(xintercept = last_day_obs, lty = 2, alpha = 0.6)
-ggsave("figs/posterior-predictive-case-diffs-facet.png", width = 9, height = 6.25)
+ggsave("figs/posterior-predictive-case-diffs-facet.pdf", width = 9, height = 6.25)
 
 post$y_rep %>%
   reshape2::melt() %>%
@@ -131,6 +131,6 @@ post$y_rep %>%
   ylab("New cases") +
   xlab("Day") +
   geom_vline(xintercept = last_day_obs, lty = 2, alpha = 0.6)
-ggsave("figs/posterior-predictive-quantiles-case-diffs.png", width = 6, height = 4)
+ggsave("figs/posterior-predictive-quantiles-case-diffs.pdf", width = 6, height = 4)
 
 setwd(wd)

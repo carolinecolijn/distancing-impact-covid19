@@ -67,14 +67,15 @@ data {
   real t0;            // first time step
   real time[T];       // time increments
   int days[N];        // day increments
-  int daily_diffs[N]; // daily new case counts
+  int last_day_obs;   // last day of observed data; days after this are projections
+  int daily_diffs[last_day_obs]; // daily new case counts
   int offset[N];      // offset in case counts (log(tests))
   real x_r[11];       // data for ODEs (real numbers)
   real sampFrac[T];   // fraction of cases sampled per time step
   real delayScale;    // Weibull parameter for delay in becoming a case count
   real delayShape;    // Weibull parameter for delay in becoming a case count
   int time_day_id[N]; // last time increment associated with each day
-  int time_day_id_dx_start[N]; // first time increment for Weibull integration of case counts
+  int time_day_id0[N];// first time increment for Weibull integration of case counts
   real R0_prior[2];   // lognormal log mean and SD for R0 prior
   real phi_prior[2];  // lognormal log mean and SD for phi prior [NB2(mu, phi)]
   int<lower=0, upper=1> priors_only; // logical: include likelihood or just priors?
@@ -102,16 +103,16 @@ transformed parameters {
     ft[t] = 0; // initialize at 0, not technically needed
   }
   for (n in 1:N) {
-    for (t in time_day_id_dx_start[n]:time_day_id[n]) {
+    for (t in time_day_id0[n]:time_day_id[n]) {
         ft[t] = sampFrac[t] * x_r[4] * (y_hat[t,2] + y_hat[t,3]) *
                 exp(weibull_lpdf(days[n] - time[t] | delayShape, delayScale));
     }
     sum_ft_inner = 0;
-    for (t in (time_day_id_dx_start[n] + 1):(time_day_id[n] - 1)) {
+    for (t in (time_day_id0[n] + 1):(time_day_id[n] - 1)) {
       sum_ft_inner += ft[t];
     }
     lambda_d[n] = 0.5 * dx *
-                 (time_day_id_dx_start[n] + 2 * sum_ft_inner + ft[time_day_id[n]]);
+                 (time_day_id0[n] + 2 * sum_ft_inner + ft[time_day_id[n]]);
     eta[n] = log(lambda_d[n]) + offset[n]; // offset is likely `log(tests)`
   }
 
@@ -123,7 +124,8 @@ model {
 
   // data likelihood:
   if (!priors_only) {
-    daily_diffs ~ neg_binomial_2_log(eta, phi);
+    for (n in 1:last_day_obs)
+        daily_diffs[n] ~ neg_binomial_2_log(eta[n], phi);
   }
 }
 generated quantities{

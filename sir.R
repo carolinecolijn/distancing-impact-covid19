@@ -51,12 +51,18 @@ daily_diffs <- c(
   38L, 53L, 45L, 40L, 77L, 76L, 48L, 67L, 78L, 42L, 66L, 67L, 92L,
   16L, 70L, 43L, 53L
 )
-days <- seq_along(daily_diffs)
-time <- seq(-30, max(days), 0.25)
+
+forecast_days <- 25
+time_increment <- 0.25
+days <- seq(1, length(daily_diffs) + forecast_days)
+last_day_obs <- length(daily_diffs)
+time <- seq(-30, max(days) + forecast_days, time_increment)
+last_time_obs <- max(which(time < last_day_obs)) # FIXME: + 1?
+
 get_time_id <- function(day, time) max(which(time < day))
 time_day_id <- vapply(days, get_time_id, numeric(1), time = time)
 
-get_time_id_dx_start <- function(day, time, days_back) {
+get_time_day_id0 <- function(day, time, days_back) {
   check <- time < (day - days_back)
   if (sum(check) == 0L) {
     1L
@@ -64,8 +70,8 @@ get_time_id_dx_start <- function(day, time, days_back) {
     max(which(check))
   }
 }
-time_day_id_dx_start <- vapply(days, get_time_id_dx_start, numeric(1),
-  time = time, days_back = 50L)
+time_day_id0 <- vapply(days, get_time_day_id0, numeric(1),
+  time = time, days_back = 50L) # needs to be at least 40 or it starts affecting the results
 
 sampFrac <- ifelse(seq_along(time) < time_day_id[14], 0.35, 0.35 * 2)
 
@@ -91,10 +97,11 @@ stan_data <- list(
   delayScale = 12.053,
   sampFrac = rep(0.3, length(time)),
   time_day_id = time_day_id,
-  time_day_id_dx_start = time_day_id_dx_start,
+  time_day_id0 = time_day_id0,
   R0_prior = R0_prior,
   phi_prior = c(log(1), 0.5),
-  priors_only = 0L
+  priors_only = 0L,
+  last_day_obs = last_day_obs
 )
 
 sir_model <- stan_model("sir.stan")
@@ -104,23 +111,23 @@ map_estimate <- optimizing(
 )
 map_estimate$par['theta[1]']
 map_estimate$par['phi']
-# map_estimate$par['lambda_d[1]']
 
 initf <- function() {
   list(
-    theta = array(rlnorm(1, log(map_estimate$par[['theta[1]']]), 0.1)),
+    theta = array(rlnorm(1, log(map_estimate$par[['theta[1]']]), 0.2)),
     phi = rlnorm(1, log(map_estimate$par[['phi']]), 0.1)
   )
 }
 fit <- sampling(
   sir_model,
   data = stan_data,
-  iter = 600L,
+  iter = 1000L,
   chains = 4L,
   init = initf,
   seed = 4, # https://xkcd.com/221/
   pars = c("theta", "phi", "lambda_d", "y_hat", "y_rep")
 )
+# saveRDS(fit, file = "sir-fit.rds")
 
 print(fit, pars = c("theta", "phi"))
 post <- rstan::extract(fit)

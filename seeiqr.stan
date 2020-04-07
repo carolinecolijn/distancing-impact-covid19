@@ -147,7 +147,7 @@ model {
 }
 generated quantities{
   int y_rep[N]; // posterior predictive replicates
-  vector[N] log_lik; // log_lik is for use with the loo package for LOOIC
+  vector[last_day_obs] log_lik; // log_lik is for use with the loo package for LOOIC
   for (n in 1:N) {
     if (obs_model == 0) {
       y_rep[n] = poisson_log_rng(eta[n]);

@@ -69,7 +69,7 @@ data {
   int days[N];        // day increments
   int last_day_obs;   // last day of observed data; days after this are projections
   int daily_diffs[last_day_obs]; // daily new case counts
-  int offset[N];      // offset in case counts (log(tests))
+  real offset[N];      // offset in case counts (log(tests))
   real x_r[10];       // data for ODEs (real numbers)
   real sampFrac[T];   // fraction of cases sampled per time step
   real delayScale;    // Weibull parameter for delay in becoming a case count

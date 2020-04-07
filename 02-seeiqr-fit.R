@@ -19,10 +19,32 @@ x_r <- c(
   end_decline = 22
 )
 
+# Original data loading:
 bcdata <- read.csv(here::here("bc_casecounts1803.csv"), stringsAsFactors = FALSE)
 bcdata$Date <- lubridate::dmy(bcdata$Date)
 bcdata$daily_diffs <- c(bcdata$Cases[2] - bcdata$Cases[1], diff(bcdata$Cases))
 bcdata$day <- seq_len(nrow(bcdata))
+
+# New data loading (from file being updated every day)
+new_data = read.csv(here::here("nCoVDailyData/CaseCounts/BC Case counts.csv"),
+                    header = TRUE) %>%
+  dplyr::as_tibble()
+names(new_data)[names(new_data) == "BC"] = "Cases"
+new_data$Date = lubridate::dmy(new_data$Date)
+
+new_data$day <- seq_len(nrow(new_data))
+new_data$daily_diffs <- c(new_data$Cases[2] - new_data$Cases[1],
+                          diff(new_data$Cases))
+# numbers match bcdata, plus the extra updated days (early and late)
+
+# See SIR-explore.Rmd regarding including number of tests
+
+
+# daily_diffs <- bcdata$daily_diffs
+# TODO: fudge this for now to give same start date as bcdata (which the initial conditions
+# have been tuned to somewhat), need to include 'start_fit_data' etc. settings
+# setup in SIR-expolore.Rmd
+daily_diffs <- dplyr::filter(new_data, Date >= "2020-03-01")$daily_diffs
 
 fsi <- x_r[["r"]] / (x_r[["r"]] + x_r[["ur"]])
 nsi <- 1 - fsi
@@ -130,6 +152,32 @@ fit <- sampling(
 # saveRDS(fit, file = "sir-fit.rds")
 
 print(fit, pars = c("theta", "phi"))
+# Using bcdata:
+#> source("02-seeiqr-fit.R")
+# Inference for Stan model: seeiqr.
+# 4 chains, each with iter=1000; warmup=500; thin=1;
+# post-warmup draws per chain=500, total post-warmup draws=2000.
+
+#         mean se_mean   sd 2.5%  25%  50%  75% 97.5% n_eff Rhat
+# theta[1] 2.57    0.00 0.09 2.41 2.51 2.57 2.62  2.76  1427    1
+# phi      1.47    0.01 0.42 0.83 1.18 1.41 1.69  2.44  1503    1
+
+# Using new_data:
+# > source("02-seeiqr-fit.R")
+# recompiling to avoid crashing R session
+# Inference for Stan model: seeiqr.
+# 4 chains, each with iter=1000; warmup=500; thin=1;
+# post-warmup draws per chain=500, total post-warmup draws=2000.
+#
+#          mean se_mean   sd 2.5% 25%  50%  75% 97.5% n_eff Rhat
+# theta[1] 2.55    0.00 0.08 2.40 2.5 2.55 2.60  2.73  1030    1
+# phi      1.61    0.01 0.44 0.91 1.3 1.55 1.85  2.65  1153    1
+#
+# new_data has extra data so expect small change in results, looks okay though
+# n_eff reduced. BUT new_data has those new low values that I think weren't bcdata.
+
+
+
 post <- rstan::extract(fit)
 
 setwd(wd)

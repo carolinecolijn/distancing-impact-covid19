@@ -1,6 +1,7 @@
 #' Fit the Stan SEEIQR model
 #'
-#' @param daily_diffs A vector of daily new cases
+#' @param daily_cases A vector of daily new cases
+#' @param daily_cases An optional vector of daily test numbers
 #' @param obs_model Type of observation model
 #' @param forecast_days Number of days into the future to forecast
 #' @param time_increment Time increment for Weibull delay-model integration
@@ -20,7 +21,8 @@
 #' @param nsi FIXME
 #' @param state_0 Initial state: a named numeric vector
 
-fit_seeiqr <- function(daily_diffs,
+fit_seeiqr <- function(daily_cases,
+                       daily_tests = NULL,
                        obs_model = c("NB2", "Poisson"),
                        forecast_days = 25,
                        time_increment = 0.2, # for Weibull integration
@@ -61,6 +63,13 @@ fit_seeiqr <- function(daily_diffs,
   obs_model <- if (obs_model == "NB2") 1L else 0L
   x_r <- pars
 
+  if (!is.null(daily_tests)) {
+    stopifnot(length(daily_tests) == length(daily_cases))
+    if (min(daily_tests) == 0) {
+      warning("Replacing 0 daily tests with 1.")
+      daily_tests[daily_tests == 0] <- 1
+    }
+  }
   stopifnot(
     names(x_r) ==
       c("N", "D", "k1", "k2", "q", "r", "ur", "f1", "start_decline", "end_decline")
@@ -107,7 +116,7 @@ fit_seeiqr <- function(daily_diffs,
     T = length(time),
     days = days,
     daily_diffs = daily_diffs,
-    offset = rep(log(1), length(days)),
+    offset = if (is.null(daily_tests)) rep(log(1), length(days)) else log(daily_tests),
     N = length(days),
     y0 = state_0,
     t0 = min(time) - 1,

@@ -1,54 +1,41 @@
 library(rstan)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
-
 wd <- getwd()
 setwd(here::here("selfIsolationModel", "stan"))
+source("fit_seeiqr.R")
 
-x_r <- c(
-  N = 4.4e6, # population of BC
-  D = 5,
-  k1 = 1 / 5,
-  k2 = 1,
-  q = 0.05,
-  r = 1,
-  ur = 0.4,
-  f1 = 1.0,
-  # f2 = 0.4,
-  start_decline = 12,
-  end_decline = 22
-)
-
-new_data = read.csv(here::here("nCoVDailyData/CaseCounts/BC Case counts.csv"),
-  header = TRUE) %>%
+new_data <- read.csv(here::here("nCoVDailyData/CaseCounts/BC Case counts.csv")) %>%
   dplyr::as_tibble()
-names(new_data)[names(new_data) == "BC"] = "Cases"
-new_data$Date = lubridate::dmy(new_data$Date)
+names(new_data)[names(new_data) == "BC"] <- "Cases"
+new_data$Date <- lubridate::dmy(new_data$Date)
 
 new_data$day <- seq_len(nrow(new_data))
-new_data$daily_diffs <- c(new_data$Cases[2] - new_data$Cases[1],
-  diff(new_data$Cases))
-
-# Load in number of tests each day:
-# Crude for now - want to check how the numbers of cases (positive tests)
-# compare with the ones in new_data. Could scale them up perhaps.
-load(paste0(here::here(),
-  "/nCoVDailyData/Labdata/testsanonym.RData"))
-# Only contains dataframe 'testsanonymized'
-
-tests_anon <- dplyr::as_tibble(testsanonymized) %>%
-  type.convert() %>%
-  dplyr::mutate(results_date = date(results_date))
-
-tests_by_day <- tests_anon %>%
-  dplyr::group_by(results_date) %>%
-  dplyr::count(name = "total_tests")
-# gives dateframe of date and total_tests
-
+new_data$daily_diffs <- c(
+  new_data$Cases[2] - new_data$Cases[1],
+  diff(new_data$Cases)
+)
 # TODO: fudge this for now to give same start date as bcdata
 # (which the initial conditions have been tuned to somewhat).
 daily_diffs <- dplyr::filter(new_data, Date >= "2020-03-01")$daily_diffs
 
+## Andy's code, to be integrated...
+# Load in number of tests each day:
+# Crude for now - want to check how the numbers of cases (positive tests)
+# compare with the ones in new_data. Could scale them up perhaps.
+# load(paste0(here::here(),
+#   "/nCoVDailyData/Labdata/testsanonym.RData"))
+# # Only contains dataframe 'testsanonymized'
+#
+# tests_anon <- dplyr::as_tibble(testsanonymized) %>%
+#   type.convert() %>%
+#   dplyr::mutate(results_date = date(results_date))
+#
+# tests_by_day <- tests_anon %>%
+#   dplyr::group_by(results_date) %>%
+#   dplyr::count(name = "total_tests")
+# # gives dateframe of date and total_tests
+#
 # TODO: setup-dates.R explains how Andy is setting up the dates (it's mostly
 # explanations that I didn't want to clutter up here).
 # Load in the detailed case data of estimated times between people's onset of
@@ -59,143 +46,4 @@ daily_diffs <- dplyr::filter(new_data, Date >= "2020-03-01")$daily_diffs
 # # Just need the one function:
 # delay_data <- load_tidy_delay_data()[["delay_data"]]
 
-fsi <- x_r[["r"]] / (x_r[["r"]] + x_r[["ur"]])
-nsi <- 1 - fsi
-i0 <- 8
-
-state_0 <- c(
-  S = nsi * (x_r[["N"]] - i0),
-  E1 = 0.4 * nsi * i0,
-  E2 = 0.1 * nsi * i0,
-  I = 0.5 * nsi * i0,
-  Q = 0,
-  R = 0,
-  Sd = fsi * (x_r[["N"]] - i0),
-  E1d = 0.4 * fsi * i0,
-  E2d = 0.1 * fsi * i0,
-  Id = 0.5 * fsi * i0,
-  Qd = 0,
-  Rd = 0
-)
-
-stopifnot(
-  names(x_r) ==
-    c("N", "D", "k1", "k2", "q", "r", "ur", "f1", "start_decline", "end_decline")
-)
-stopifnot(
-  names(state_0) == c("S", "E1", "E2", "I", "Q", "R", "Sd", "E1d", "E2d", "Id", "Qd", "Rd")
-)
-
-forecast_days <- 25
-time_increment <- 0.2
-days <- seq(1, length(daily_diffs) + forecast_days)
-last_day_obs <- length(daily_diffs)
-time <- seq(-30, max(days) + forecast_days, time_increment)
-last_time_obs <- max(which(time < last_day_obs)) # FIXME: + 1?
-
-get_time_id <- function(day, time) max(which(time < day))
-time_day_id <- vapply(days, get_time_id, numeric(1), time = time)
-
-get_time_day_id0 <- function(day, time, days_back) {
-  check <- time < (day - days_back)
-  if (sum(check) == 0L) {
-    1L
-  } else {
-    max(which(check))
-  }
-}
-time_day_id0 <- vapply(days, get_time_day_id0, numeric(1),
-  time = time, days_back = 45L
-)
-# needs to be at least 40 or it starts affecting the results
-
-sampFrac <- ifelse(seq_along(time) < time_day_id[14], 0.35, 0.35 * 2)
-
-# Informative R0 prior example:
-# https://www.imperial.ac.uk/mrc-global-infectious-disease-analysis/covid-19/report-3-transmissibility-of-covid-19/
-# 2.6 (uncertainty range: 1.5-3.5)
-# x <- rlnorm(1e5, meanlog = log(2.55), sdlog = 0.2)
-# mean(x)
-# quantile(x, probs = c(0.025, 0.5, 0.975))
-R0_prior <- c(log(2.6), 0.2)
-
-get_beta_params <- function(mu, sd) {
-  var <- sd^2
-  alpha <- ((1 - mu) / var - 1 / mu) * mu^2
-  beta <- alpha * (1 / mu - 1)
-  list(alpha = alpha, beta = beta)
-}
-
-beta_sd <- 0.1
-beta_mean <- 0.4
-beta_shape1 <- get_beta_params(beta_mean, beta_sd)$alpha
-beta_shape2 <- get_beta_params(beta_mean, beta_sd)$beta
-# x <- rbeta(1e5, beta_shape1, beta_shape2)
-# mean(x)
-# sd(x)
-# hist(x)
-
-obs_model <- 1L # 1L = NB2, 0L = Poisson
-
-stan_data <- list(
-  T = length(time),
-  days = days,
-  daily_diffs = daily_diffs,
-  offset = rep(log(1), length(days)),
-  N = length(days),
-  y0 = state_0,
-  t0 = min(time) - 1,
-  time = time,
-  x_r = x_r,
-  delayShape = 1.9720199,
-  delayScale = 12.0529283,
-  sampFrac = sampFrac,
-  time_day_id = time_day_id,
-  time_day_id0 = time_day_id0,
-  R0_prior = R0_prior,
-  phi_prior = c(log(1), 0.5),
-  f2_prior = c(beta_shape1, beta_shape2),
-  priors_only = 0L,
-  last_day_obs = last_day_obs,
-  obs_model = obs_model,
-  est_phi = if (obs_model == 1L) 1L else 0L
-)
-
-seeiqr_model <- stan_model("seeiqr.stan")
-map_estimate <- optimizing(
-  seeiqr_model,
-  data = stan_data
-)
-map_estimate$par["R0"]
-map_estimate$par["f2"]
-map_estimate$par["phi[1]"]
-
-initf <- function(stan_data) {
-  R0 <- rlnorm(1, log(map_estimate$par[["R0"]]), 0.3)
-  f2 <- rbeta(
-    1,
-    get_beta_params(map_estimate$par[["f2"]], 0.1)$alpha,
-    get_beta_params(map_estimate$par[["f2"]], 0.1)$beta
-  )
-  init <- list(R0 = R0, f2 = f2)
-  if (stan_data$est_phi) {
-    init <- c(init, list(
-      phi =
-        array(rlnorm(1, log(map_estimate$par[["phi[1]"]]), 0.1))
-    ))
-  }
-  init
-}
-
-fit <- sampling(
-  seeiqr_model,
-  data = stan_data,
-  iter = 500L,
-  chains = 4L,
-  init = function() initf(stan_data),
-  seed = 4, # https://xkcd.com/221/
-  pars = c("R0", "f2", "phi", "lambda_d", "y_hat", "y_rep")
-)
-# saveRDS(fit, file = "sir-fit.rds")
-print(fit, pars = c("R0", "f2", "phi"))
-post <- rstan::extract(fit)
+m <- fit_seeiqr(daily_diffs)

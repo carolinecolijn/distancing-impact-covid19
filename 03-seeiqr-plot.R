@@ -9,7 +9,11 @@ setwd(here::here("selfIsolationModel", "stan"))
 dir.create("figs", showWarnings = FALSE)
 
 fit_array <- as.array(fit)
-bayesplot::mcmc_trace(fit_array, pars = c("theta[1]", "theta[2]", "phi[1]"))
+if ("phi" %in% names(post)) {
+  bayesplot::mcmc_trace(fit_array, pars = c("R0", "f2", "phi[1]"))
+} else {
+  bayesplot::mcmc_trace(fit_array, pars = c("R0", "f2"))
+}
 ggsave("figs/traceplot.pdf", width = 6, height = 3)
 
 R0 <- post$R0

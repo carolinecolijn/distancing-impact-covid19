@@ -7,7 +7,7 @@ wd <- getwd()
 setwd(here::here("selfIsolationModel", "stan"))
 
 x_r <- c(
-  N = 4.4e6 / 1e3, # population of BC in thousands
+  N = 4.4e6, # population of BC in thousands
   D = 5,
   k1 = 1 / 5,
   k2 = 1,

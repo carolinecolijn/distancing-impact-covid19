@@ -6,7 +6,7 @@ wd <- getwd()
 setwd(here::here("selfIsolationModel", "stan"))
 
 x_r <- c(
-  N = 4.4e6 / 1e3, # population of BC in thousands
+  N = 4.4e6, # population of BC
   D = 5,
   k1 = 1 / 5,
   k2 = 1,
@@ -19,16 +19,6 @@ x_r <- c(
   end_decline = 22
 )
 
-# Original data loading:
-bcdata <- read.csv(here::here("bc_casecounts1803.csv"), stringsAsFactors = FALSE)
-bcdata$Date <- lubridate::dmy(bcdata$Date)
-bcdata$daily_diffs <- c(bcdata$Cases[2] - bcdata$Cases[1], diff(bcdata$Cases))
-bcdata$day <- seq_len(nrow(bcdata))
-
-# New data loading (from file being updated every day), should have data from
-# 1st April but I just realised the 1st and 2nd April dates are incorrectly
-# written in the .csv file (which will mess up the case counts as they're
-# differences). Code will still work once that's fixed.
 new_data = read.csv(here::here("nCoVDailyData/CaseCounts/BC Case counts.csv"),
   header = TRUE) %>%
   dplyr::as_tibble()
@@ -38,7 +28,6 @@ new_data$Date = lubridate::dmy(new_data$Date)
 new_data$day <- seq_len(nrow(new_data))
 new_data$daily_diffs <- c(new_data$Cases[2] - new_data$Cases[1],
   diff(new_data$Cases))
-# numbers match bcdata, plus the extra updated days (early and late)
 
 # Load in number of tests each day:
 # Crude for now - want to check how the numbers of cases (positive tests)
@@ -62,14 +51,13 @@ daily_diffs <- dplyr::filter(new_data, Date >= "2020-03-01")$daily_diffs
 
 # TODO: setup-dates.R explains how Andy is setting up the dates (it's mostly
 # explanations that I didn't want to clutter up here).
-
 # Load in the detailed case data of estimated times between people's onset of
 # symptoms and their test becoming a 'reported case'. Ceate delay_data tibble(),
 # where for the negative binomial model you want the time_to_report column (may
 # need as.numeric() as they are in days).
-source(here::here("/selfIsolationModel/SIR-functionalised/funcs.R"))
-# Just need the one function:
-delay_data <- load_tidy_delay_data()[["delay_data"]]
+# source(here::here("/selfIsolationModel/SIR-functionalised/funcs.R"))
+# # Just need the one function:
+# delay_data <- load_tidy_delay_data()[["delay_data"]]
 
 fsi <- x_r[["r"]] / (x_r[["r"]] + x_r[["ur"]])
 nsi <- 1 - fsi
@@ -206,11 +194,8 @@ fit <- sampling(
   chains = 4L,
   init = function() initf(stan_data),
   seed = 4, # https://xkcd.com/221/
-  pars = c("R0", "f2", "phi", "lambda_d", "y_hat", "y_rep", "log_lik")
+  pars = c("R0", "f2", "phi", "lambda_d", "y_hat", "y_rep")
 )
 # saveRDS(fit, file = "sir-fit.rds")
 print(fit, pars = c("R0", "f2", "phi"))
-
 post <- rstan::extract(fit)
-
-setwd(wd)

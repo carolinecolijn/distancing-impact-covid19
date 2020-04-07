@@ -14,7 +14,7 @@ x_r <- c(
   r = 1,
   ur = 0.4,
   f1 = 1.0,
-  f2 = 0.4,
+  # f2 = 0.4,
   start_decline = 12,
   end_decline = 22
 )
@@ -82,14 +82,14 @@ state_0 <- c(
 
 stopifnot(
   names(x_r) ==
-    c("N", "D", "k1", "k2", "q", "r", "ur", "f1", "f2", "start_decline", "end_decline")
+    c("N", "D", "k1", "k2", "q", "r", "ur", "f1", "start_decline", "end_decline")
 )
 stopifnot(
   names(state_0) == c("S", "E1", "E2", "I", "Q", "R", "Sd", "E1d", "E2d", "Id", "Qd", "Rd")
 )
 
 forecast_days <- 25
-time_increment <- 0.5
+time_increment <- 0.2
 days <- seq(1, length(daily_diffs) + forecast_days)
 last_day_obs <- length(daily_diffs)
 time <- seq(-30, max(days) + forecast_days, time_increment)
@@ -120,6 +120,22 @@ sampFrac <- ifelse(seq_along(time) < time_day_id[14], 0.35, 0.35 * 2)
 # quantile(x, probs = c(0.025, 0.5, 0.975))
 R0_prior <- c(log(2.6), 0.2)
 
+get_beta_params <- function(mu, sd) {
+  var <- sd ^ 2
+  alpha <- ((1 - mu) / var - 1 / mu) * mu ^ 2
+  beta <- alpha * (1 / mu - 1)
+  list(alpha = alpha, beta = beta)
+}
+
+beta_sd <- 0.05
+beta_mean <- 0.4
+beta_shape1 <- get_beta_params(beta_mean, beta_sd)$alpha
+beta_shape2 <- get_beta_params(beta_mean, beta_sd)$beta
+# x <- rbeta(1e5, beta_shape1, beta_shape2)
+# mean(x)
+# sd(x)
+# hist(x)
+
 obs_model <- 1L # 1L = NB2, 0L = Poisson
 
 stan_data <- list(
@@ -139,6 +155,7 @@ stan_data <- list(
   time_day_id0 = time_day_id0,
   R0_prior = R0_prior,
   phi_prior = c(log(1), 0.5),
+  f2_prior = c(beta_shape1, beta_shape2),
   priors_only = 0L,
   last_day_obs = last_day_obs,
   obs_model = obs_model,
@@ -150,27 +167,34 @@ map_estimate <- optimizing(
   seeiqr_model,
   data = stan_data
 )
-map_estimate$par['theta[1]']
+map_estimate$par['R0']
+map_estimate$par['f2']
 map_estimate$par['phi[1]']
 
 initf <- function(stan_data) {
-  init <- list(theta = array(rlnorm(1, log(map_estimate$par[['theta[1]']]), 0.2)))
+  R0 <- rlnorm(1, log(map_estimate$par[['R0']]), 0.3)
+  f2 <- rbeta(1,
+    get_beta_params(map_estimate$par[['f2']], 0.1)$alpha,
+    get_beta_params(map_estimate$par[['f2']], 0.1)$beta)
+  init <- list(R0 = R0, f2 = f2)
   if (stan_data$est_phi) {
-    init <- c(init, list(phi = array(rlnorm(1, log(map_estimate$par[['phi[1]']]), 0.1))))
+    init <- c(init, list(phi =
+        array(rlnorm(1, log(map_estimate$par[['phi[1]']]), 0.1))))
   }
   init
 }
+
 fit <- sampling(
   seeiqr_model,
   data = stan_data,
-  iter = 600L,
+  iter = 500L,
   chains = 4L,
   init = function() initf(stan_data),
   seed = 4, # https://xkcd.com/221/
-  pars = c("theta", "phi", "lambda_d", "y_hat", "y_rep")
+  pars = c("R0", "f2", "phi", "lambda_d", "y_hat", "y_rep", "log_lik")
 )
 # saveRDS(fit, file = "sir-fit.rds")
-print(fit, pars = c("theta", "phi"))
+print(fit, pars = c("R0", "f2", "phi"))
 
 post <- rstan::extract(fit)
 

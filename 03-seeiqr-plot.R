@@ -9,10 +9,10 @@ setwd(here::here("selfIsolationModel", "stan"))
 dir.create("figs", showWarnings = FALSE)
 
 fit_array <- as.array(fit)
-bayesplot::mcmc_trace(fit_array, pars = c("theta[1]", "phi[1]"))
+bayesplot::mcmc_trace(fit_array, pars = c("theta[1]", "theta[2]", "phi[1]"))
 ggsave("figs/traceplot.pdf", width = 6, height = 3)
 
-R0 <- post$theta[, 1]
+R0 <- post$R0
 .x <- seq(1.3, 3.8, length.out = 200)
 breaks <- seq(min(.x), max(.x), 0.05)
 ggplot(tibble(R0 = R0)) +
@@ -28,21 +28,39 @@ ggplot(tibble(R0 = R0)) +
   coord_cartesian(xlim = range(.x), expand = FALSE)
 ggsave("figs/R0.pdf", width = 6, height = 4)
 
-phi_hat <- post$phi[, 1]
-.x <- seq(0.1, 4, length.out = 200)
-breaks <- seq(min(.x), max(.x), 0.08)
-ggplot(tibble(phi = phi_hat)) +
+f2 <- post$f2
+.x <- seq(0, 1, length.out = 200)
+breaks <- seq(min(.x), max(.x), 0.015)
+ggplot(tibble(f2 = f2)) +
   geom_ribbon(
-    data = tibble(phi = .x, density = dlnorm(.x, log(1), 0.5)),
-    aes(x = phi, ymin = 0, ymax = density),
-    alpha = 0.5, colour = "grey50", fill = "grey50"
+    data = tibble(f2 = .x, density = dlnorm(.x, log(0.4), 0.2)),
+    aes(x = f2, ymin = 0, ymax = density), alpha = 0.5, colour = "grey50",
+    fill = "grey50"
   ) +
   geom_histogram(
-    breaks = breaks, aes(x = phi, y = ..density..),
+    breaks = breaks, aes(x = f2, y = ..density..),
     fill = "blue", alpha = 0.5
   ) +
   coord_cartesian(xlim = range(.x), expand = FALSE)
-ggsave("figs/phi.pdf", width = 6, height = 4)
+ggsave("figs/f2.pdf", width = 6, height = 4)
+
+if ("phi" %in% names(post)) {
+  phi_hat <- post$phi[, 1]
+  .x <- seq(0.1, 4, length.out = 200)
+  breaks <- seq(min(.x), max(.x), 0.08)
+  ggplot(tibble(phi = phi_hat)) +
+    geom_ribbon(
+      data = tibble(phi = .x, density = dlnorm(.x, log(1), 0.5)),
+      aes(x = phi, ymin = 0, ymax = density),
+      alpha = 0.5, colour = "grey50", fill = "grey50"
+    ) +
+    geom_histogram(
+      breaks = breaks, aes(x = phi, y = ..density..),
+      fill = "blue", alpha = 0.5
+    ) +
+    coord_cartesian(xlim = range(.x), expand = FALSE)
+  ggsave("figs/phi.pdf", width = 6, height = 4)
+}
 
 draws <- sample(seq_along(post$lambda_d[, 1]), 100L)
 variables_df <- dplyr::tibble(

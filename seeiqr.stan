@@ -19,6 +19,7 @@ functions{
     real Rd    = state[12];
 
     real R0    = theta[1];
+    real f2    = theta[2];
 
     real N     = x_r[1];
     real D     = x_r[2];
@@ -28,9 +29,8 @@ functions{
     real r     = x_r[6];
     real ur    = x_r[7];
     real f1    = x_r[8];
-    real f2    = x_r[9];
-    real start_decline = x_r[10];
-    real end_decline = x_r[11];
+    real start_decline = x_r[9];
+    real end_decline = x_r[10];
 
     real dydt[12];
 
@@ -70,7 +70,7 @@ data {
   int last_day_obs;   // last day of observed data; days after this are projections
   int daily_diffs[last_day_obs]; // daily new case counts
   int offset[N];      // offset in case counts (log(tests))
-  real x_r[11];       // data for ODEs (real numbers)
+  real x_r[10];       // data for ODEs (real numbers)
   real sampFrac[T];   // fraction of cases sampled per time step
   real delayScale;    // Weibull parameter for delay in becoming a case count
   real delayShape;    // Weibull parameter for delay in becoming a case count
@@ -78,6 +78,7 @@ data {
   int time_day_id0[N];// first time increment for Weibull integration of case counts
   real R0_prior[2];   // lognormal log mean and SD for R0 prior
   real phi_prior[2];  // lognormal log mean and SD for phi prior [NB2(mu, phi)]
+  real f2_prior[2];   // lognormal log mean and SD for f2 prior
   int<lower=0, upper=1> priors_only; // logical: include likelihood or just priors?
   int<lower=0, upper=1> est_phi;
   int<lower=0, upper=1> obs_model;
@@ -86,8 +87,9 @@ transformed data {
   int  x_i[0];      // fake; needed for ODE function
 }
 parameters {
- real theta[1];     // R0 only for now
- real<lower=0> phi[est_phi]; // NB(2) (inverse) dispersion
+ real R0;
+ real<lower=0, upper=1> f2;
+ real<lower=0> phi[est_phi]; // NB(2) (inverse) dispersion; est_phi turns it on or off
 }
 transformed parameters {
   real meanDelay = delayScale * tgamma(1 + 1 / delayShape);
@@ -97,7 +99,12 @@ transformed parameters {
   real sum_ft_inner;
   real eta[N]; // expected value on link scale (log)
 
+  real theta[2];
   real y_hat[T,12];
+
+  theta[1] = R0;
+  theta[2] = f2;
+
   y_hat = integrate_ode_rk45(seeiqr, y0, t0, time, theta, x_r, x_i);
 
   // FIXME: switch to Stan 1D integration function:
@@ -124,7 +131,8 @@ model {
   if (est_phi) {
     phi[1] ~ lognormal(phi_prior[1], phi_prior[2]);
   }
-  theta[1] ~ lognormal(R0_prior[1], R0_prior[2]);
+  R0 ~ lognormal(R0_prior[1], R0_prior[2]);
+  f2 ~ beta(f2_prior[1], f2_prior[2]);
 
   // data likelihood:
   if (!priors_only) {
@@ -138,14 +146,20 @@ model {
   }
 }
 generated quantities{
-  int y_rep[N];
-
-  // posterior predictive draws:
+  int y_rep[N]; // posterior predictive replicates
+  vector[N] log_lik; // log_lik is for use with the loo package for LOOIC
   for (n in 1:N) {
     if (obs_model == 0) {
       y_rep[n] = poisson_log_rng(eta[n]);
     } else {
       y_rep[n] = neg_binomial_2_log_rng(eta[n], phi[1]);
+    }
+  }
+  for (n in 1:last_day_obs) {
+    if (obs_model == 0) {
+      log_lik[n] = poisson_log_lpmf(daily_diffs[n] | eta[n]);
+    } else {
+      log_lik[n] = neg_binomial_2_log_lpmf(daily_diffs[n] | eta[n], phi[1]);
     }
   }
 }

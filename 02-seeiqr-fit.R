@@ -25,7 +25,10 @@ bcdata$Date <- lubridate::dmy(bcdata$Date)
 bcdata$daily_diffs <- c(bcdata$Cases[2] - bcdata$Cases[1], diff(bcdata$Cases))
 bcdata$day <- seq_len(nrow(bcdata))
 
-# New data loading (from file being updated every day)
+# New data loading (from file being updated every day), should have data from
+# 1st April but I just realised the 1st and 2nd April dates are incorrectly
+# written in the .csv file (which will mess up the case counts as they're
+# differences). Code will still work once that's fixed.
 new_data = read.csv(here::here("nCoVDailyData/CaseCounts/BC Case counts.csv"),
                     header = TRUE) %>%
   dplyr::as_tibble()
@@ -42,9 +45,21 @@ new_data$daily_diffs <- c(new_data$Cases[2] - new_data$Cases[1],
 
 # daily_diffs <- bcdata$daily_diffs
 # TODO: fudge this for now to give same start date as bcdata (which the initial conditions
-# have been tuned to somewhat), need to include 'start_fit_data' etc. settings
-# setup in SIR-expolore.Rmd
+# have been tuned to somewhat).
 daily_diffs <- dplyr::filter(new_data, Date >= "2020-03-01")$daily_diffs
+
+# TODO: setup-dates.R explains how Andy is setting up the dates (it's mostly
+# explanations that I didn't want to clutter up here).
+
+
+# Load in the detailed case data of estimated times between people's onset of
+# symptoms and their test becoming a 'reported case'. Ceate delay_data tibble(),
+# where for the negative binomial model you want the time_to_report column (may
+# need as.numeric() as they are in days).
+source(here::here("/selfIsolationModel/SIR-functionalised/funcs.R"))  # libraries to load plus function
+                 # definitions and ggplot theme - ugh, Sean will hate me! Just need the one function:
+delay_data <- load_tidy_delay_data()[["delay_data"]]
+
 
 fsi <- x_r[["r"]] / (x_r[["r"]] + x_r[["ur"]])
 nsi <- 1 - fsi

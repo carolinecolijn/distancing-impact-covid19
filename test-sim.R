@@ -1,92 +1,38 @@
-pars_default <- list(
-  N = 4.4e6,
-  D = 5, #
-  R0 = 2.65, #
-  k1 = 1 / 5, #
-  k2 = 1, #
-  q = 0.05, #
-  r = 1, #
-  ur = 0.4, #
-  f1 = 1.0, # initial value of f, educated guess
-  f2 = 0.4, # final value of f, educated guess
-  ratio = 2
-)
-fsi <- with(
-  pars_default,
-  r / (r + ur)
-)
-nsi <- 1 - fsi
-i0 <- 8
-state_0 <- c(
-  S = nsi * (pars_default$N - i0),
+my_path <- paste0(here::here(), "/selfIsolationModel/")
+source(paste0(my_path, "functions_sir.R"))  # libraries to load plus function definitions
+
+pars = list(N = 4.4e6, #population of BC. Another potential issue as BC isn't homogeneously mixing; could fit to Vancouver instead
+  D = 5,
+  R0 = 2.65,
+  k1 = 1/5,
+  k2 = 1,
+  q = 0.05,
+  r = 1,
+  ur = 0.4,
+  f1 = 1.0,   # initial value of f
+  f2 = 0.4,     # final value of f
+  ratio = 2)
+# AE thinks state is initial condition and i0 scales everything
+fsi = with(pars,
+  r/(r+ur))
+nsi = 1 - fsi
+i0 = 8
+state_0 = c(S  = nsi * (pars$N - i0),
   E1 = 0.4 * nsi * i0,
   E2 = 0.1 * nsi * i0,
-  I = 0.5 * nsi * i0,
+  I =  0.5 * nsi * i0,
   Q = 0,
   R = 0,
-  Sd = fsi * (pars_default$N - i0),
+  Sd = fsi * (pars$N - i0),
   E1d = 0.4 * fsi * i0,
   E2d = 0.1 * fsi * i0,
   Id = 0.5 * fsi * i0,
   Qd = 0,
-  Rd = 0
-)
+  Rd = 0)
 
-sdtiming_gradual <- function(t,
-                             start_decline = 13, # start the decline the next day
-                             end_decline = 22, # end decline at f2
-                             f1 = 1, # f value before decline
-                             f2 = 0.4) { # f value after decline
-  if (t < start_decline) {
-    return(f1)
-  }
-  if (t >= start_decline & t < end_decline) {
-    return(f2 + (end_decline - t) * (f1 - f2) / (end_decline - start_decline))
-  }
-  if (t >= end_decline) {
-    return(f2)
-  }
-}
-
-socdistmodel <- function(t,
-                         state,
-                         parms,
-                         sdtiming) {
-  with(as.list(c(
-    state,
-    parms
-  )), {
-    f <- sdtiming(t, f1 = f1, f2 = f2)
-    dSdt <- -(R0 / (D + 1 / k2)) * (I + E2 + f * (Id + E2d)) * S / N - r * S + ur * Sd
-    dE1dt <- (R0 / (D + 1 / k2)) * (I + E2 + f * (Id + E2d)) * S / N - k1 * E1 - r * E1 + ur * E1d
-    dE2dt <- k1 * E1 - k2 * E2 - r * E2 + ur * E2d
-    dIdt <- k2 * E2 - q * I - I / D - r * I + ur * Id
-    dQdt <- q * I - Q / D - r * Q + ur * Qd
-    dRdt <- I / D + Q / D - r * R + ur * Rd
-
-    dSddt <- -(f * R0 / (D + 1 / k2)) * (I + E2 + f * (Id + E2d)) * Sd / N + r * S - ur * Sd
-    dE1ddt <- (f * R0 / (D + 1 / k2)) * (I + E2 + f * (Id + E2d)) * Sd / N - k1 * E1d + r * E1 - ur * E1d
-    dE2ddt <- k1 * E1d - k2 * E2d + r * E2 - ur * E2d
-    dIddt <- k2 * E2d - q * Id - Id / D + r * I - ur * Id
-    dQddt <- q * Id - Qd / D + r * Q - ur * Qd
-    dRddt <- Id / D + Qd / D + r * R - ur * Rd
-    # dRdt = I/D; dr + ds + di =0, S+I+R = N --> R = N-S-I and we eliminate R
-    list(c(
-      dSdt,
-      dE1dt,
-      dE2dt,
-      dIdt,
-      dQdt,
-      dRdt,
-      dSddt,
-      dE1ddt,
-      dE2ddt,
-      dIddt,
-      dQddt,
-      dRddt
-    ))
-  })
-}
+times = seq(from=-30,   # should probably define values up front
+  to=30,
+  by=0.1)
 
 getlambd <- function(out,
                      pars,
@@ -103,12 +49,12 @@ getlambd <- function(out,
   try(if (max(out$time) < day) {
     stop("model simulation is not long enough for the data")
   })
-  try(if (min(out$time) > day - (2 * meanDelay + 1)) {
+  try(if (min(out$time) > day - (22 + 1)) {
     stop("we need an earlier start time for the model")
   })
 
   # relevant times to identify new cases
-  ii <- which(out$time > day - 2 * meanDelay & out$time <= day) # then just
+  ii <- which(out$time > day - 22 & out$time <= day) # then just
   # need dweibull over this range
   dx <- out$time[ii[2]] - out$time[ii[1]] # assumes equal time intervals
 
@@ -136,25 +82,28 @@ getlambd <- function(out,
   # aha - just trapeziod rule for integrating?
 }
 
-example_simulation <- as.data.frame(
-  deSolve::ode(
-    y = state_0,
-    times = seq(0, 91, 0.1),
+sim_dat <- purrr::map(1:20, function(x) {
+  example_simulation = as.data.frame(deSolve::ode(y = state_0,
+    times = times,
     func = socdistmodel,
-    parms = pars_default,
-    sdtiming = sdtiming_gradual
-  )
-)
+    parms = pars,
+    sdtiming = sdtiming_gradual))
 
-dat <- data.frame(
-  Date = seq(lubridate::ymd("2020-03-01"),
-    lubridate::ymd("2020-04-01"), by = "day"))
-dat$day <- seq_along(dat$Date)
-lambda_d <- sapply(seq(30, 91), function(x) {
-  getlambd(example_simulation, pars = pars_default, data = dat, day = x)
+  # example_simulation %>% reshape2::melt(id.vars = "time") %>% ggplot(aes(time, value)) + facet_wrap(~variable, scales = "free_y") + geom_line()
+
+  dat <- data.frame(
+    Date = seq(lubridate::ymd("2020-03-01"),
+      lubridate::ymd("2020-04-01"), by = "day"))
+  dat$day <- seq_along(dat$Date)
+  lambda_d <- sapply(seq(1, max(example_simulation$time)), function(x) {
+    getlambd(example_simulation, pars = pars_default, data = dat, day = x)
+  })
+
+  # plot(seq(1, max(example_simulation$time)), lambda_d)
+
+  sim_dat <- data.frame(day = seq(1, max(example_simulation$time)),
+    lambda_d = lambda_d, obs = rpois(30, lambda_d))
+  sim_dat
 })
 
-plot(seq(-29, 32), lambda_d)
-
-sim_dat <- data.frame(day = 1:32,
-  lambda_d = lambda_d[31:62], obs = rpois(32, lambda_d[31:62]))
+saveRDS(sim_dat, file = "sim-test-dat.rds")

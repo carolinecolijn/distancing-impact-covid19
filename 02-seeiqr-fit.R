@@ -30,21 +30,21 @@ bcdata$day <- seq_len(nrow(bcdata))
 # written in the .csv file (which will mess up the case counts as they're
 # differences). Code will still work once that's fixed.
 new_data = read.csv(here::here("nCoVDailyData/CaseCounts/BC Case counts.csv"),
-                    header = TRUE) %>%
+  header = TRUE) %>%
   dplyr::as_tibble()
 names(new_data)[names(new_data) == "BC"] = "Cases"
 new_data$Date = lubridate::dmy(new_data$Date)
 
 new_data$day <- seq_len(nrow(new_data))
 new_data$daily_diffs <- c(new_data$Cases[2] - new_data$Cases[1],
-                          diff(new_data$Cases))
+  diff(new_data$Cases))
 # numbers match bcdata, plus the extra updated days (early and late)
 
 # Load in number of tests each day:
 # Crude for now - want to check how the numbers of cases (positive tests)
 # compare with the ones in new_data. Could scale them up perhaps.
 load(paste0(here::here(),
-            "/nCoVDailyData/Labdata/testsanonym.RData"))
+  "/nCoVDailyData/Labdata/testsanonym.RData"))
 # Only contains dataframe 'testsanonymized'
 
 tests_anon <- dplyr::as_tibble(testsanonymized) %>%
@@ -54,28 +54,22 @@ tests_anon <- dplyr::as_tibble(testsanonymized) %>%
 tests_by_day <- tests_anon %>%
   dplyr::group_by(results_date) %>%
   dplyr::count(name = "total_tests")
-  # gives dateframe of date and total_tests
+# gives dateframe of date and total_tests
 
-
-
-
-# daily_diffs <- bcdata$daily_diffs
-# TODO: fudge this for now to give same start date as bcdata (which the initial conditions
-# have been tuned to somewhat).
+# TODO: fudge this for now to give same start date as bcdata
+# (which the initial conditions have been tuned to somewhat).
 daily_diffs <- dplyr::filter(new_data, Date >= "2020-03-01")$daily_diffs
 
 # TODO: setup-dates.R explains how Andy is setting up the dates (it's mostly
 # explanations that I didn't want to clutter up here).
 
-
 # Load in the detailed case data of estimated times between people's onset of
 # symptoms and their test becoming a 'reported case'. Ceate delay_data tibble(),
 # where for the negative binomial model you want the time_to_report column (may
 # need as.numeric() as they are in days).
-source(here::here("/selfIsolationModel/SIR-functionalised/funcs.R"))  # libraries to load plus function
-                 # definitions and ggplot theme - ugh, Sean will hate me! Just need the one function:
+source(here::here("/selfIsolationModel/SIR-functionalised/funcs.R"))
+# Just need the one function:
 delay_data <- load_tidy_delay_data()[["delay_data"]]
-
 
 fsi <- x_r[["r"]] / (x_r[["r"]] + x_r[["ur"]])
 nsi <- 1 - fsi
@@ -123,7 +117,8 @@ get_time_day_id0 <- function(day, time, days_back) {
   }
 }
 time_day_id0 <- vapply(days, get_time_day_id0, numeric(1),
-  time = time, days_back = 45L)
+  time = time, days_back = 45L
+)
 # needs to be at least 40 or it starts affecting the results
 
 sampFrac <- ifelse(seq_along(time) < time_day_id[14], 0.35, 0.35 * 2)
@@ -137,13 +132,13 @@ sampFrac <- ifelse(seq_along(time) < time_day_id[14], 0.35, 0.35 * 2)
 R0_prior <- c(log(2.6), 0.2)
 
 get_beta_params <- function(mu, sd) {
-  var <- sd ^ 2
-  alpha <- ((1 - mu) / var - 1 / mu) * mu ^ 2
+  var <- sd^2
+  alpha <- ((1 - mu) / var - 1 / mu) * mu^2
   beta <- alpha * (1 / mu - 1)
   list(alpha = alpha, beta = beta)
 }
 
-beta_sd <- 0.05
+beta_sd <- 0.1
 beta_mean <- 0.4
 beta_shape1 <- get_beta_params(beta_mean, beta_sd)$alpha
 beta_shape2 <- get_beta_params(beta_mean, beta_sd)$beta
@@ -164,8 +159,8 @@ stan_data <- list(
   t0 = min(time) - 1,
   time = time,
   x_r = x_r,
-  delayShape = 1.972,
-  delayScale = 12.053,
+  delayShape = 1.9720199,
+  delayScale = 12.0529283,
   sampFrac = sampFrac,
   time_day_id = time_day_id,
   time_day_id0 = time_day_id0,
@@ -183,19 +178,23 @@ map_estimate <- optimizing(
   seeiqr_model,
   data = stan_data
 )
-map_estimate$par['R0']
-map_estimate$par['f2']
-map_estimate$par['phi[1]']
+map_estimate$par["R0"]
+map_estimate$par["f2"]
+map_estimate$par["phi[1]"]
 
 initf <- function(stan_data) {
-  R0 <- rlnorm(1, log(map_estimate$par[['R0']]), 0.3)
-  f2 <- rbeta(1,
-    get_beta_params(map_estimate$par[['f2']], 0.1)$alpha,
-    get_beta_params(map_estimate$par[['f2']], 0.1)$beta)
+  R0 <- rlnorm(1, log(map_estimate$par[["R0"]]), 0.3)
+  f2 <- rbeta(
+    1,
+    get_beta_params(map_estimate$par[["f2"]], 0.1)$alpha,
+    get_beta_params(map_estimate$par[["f2"]], 0.1)$beta
+  )
   init <- list(R0 = R0, f2 = f2)
   if (stan_data$est_phi) {
-    init <- c(init, list(phi =
-        array(rlnorm(1, log(map_estimate$par[['phi[1]']]), 0.1))))
+    init <- c(init, list(
+      phi =
+        array(rlnorm(1, log(map_estimate$par[["phi[1]"]]), 0.1))
+    ))
   }
   init
 }

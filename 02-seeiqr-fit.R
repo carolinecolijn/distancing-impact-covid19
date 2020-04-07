@@ -40,7 +40,23 @@ new_data$daily_diffs <- c(new_data$Cases[2] - new_data$Cases[1],
                           diff(new_data$Cases))
 # numbers match bcdata, plus the extra updated days (early and late)
 
-# See SIR-explore.Rmd regarding including number of tests
+# Load in number of tests each day:
+# Crude for now - want to check how the numbers of cases (positive tests)
+# compare with the ones in new_data. Could scale them up perhaps.
+load(paste0(here::here(),
+            "/nCoVDailyData/Labdata/testsanonym.RData"))
+# Only contains dataframe 'testsanonymized'
+
+tests_anon <- dplyr::as_tibble(testsanonymized) %>%
+  type.convert() %>%
+  dplyr::mutate(results_date = date(results_date))
+
+tests_by_day <- tests_anon %>%
+  dplyr::group_by(results_date) %>%
+  dplyr::count(name = "total_tests")
+  # gives dateframe of date and total_tests
+
+
 
 
 # daily_diffs <- bcdata$daily_diffs

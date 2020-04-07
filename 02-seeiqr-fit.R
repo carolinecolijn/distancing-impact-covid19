@@ -177,7 +177,7 @@ print(fit, pars = c("theta", "phi"))
 # theta[1] 2.57    0.00 0.09 2.41 2.51 2.57 2.62  2.76  1427    1
 # phi      1.47    0.01 0.42 0.83 1.18 1.41 1.69  2.44  1503    1
 
-# Using new_data:
+# Using new_data (but 1st and 2nd April were wrong):
 # > source("02-seeiqr-fit.R")
 # recompiling to avoid crashing R session
 # Inference for Stan model: seeiqr.
@@ -191,6 +191,15 @@ print(fit, pars = c("theta", "phi"))
 # new_data has extra data so expect small change in results, looks okay though
 # n_eff reduced. BUT new_data has those new low values that I think weren't bcdata.
 
+# Using new data with correct 1st and 2nd April - n_eff increases from above,
+#  which makes sense:
+# Inference for Stan model: seeiqr.
+# 4 chains, each with iter=1000; warmup=500; thin=1;
+# post-warmup draws per chain=500, total post-warmup draws=2000.
+
+#         mean se_mean   sd 2.5%  25%  50%  75% 97.5% n_eff Rhat
+#theta[1] 2.56    0.00 0.08 2.41 2.50 2.55 2.60  2.72  1518    1
+#phi      1.76    0.01 0.47 1.01 1.43 1.71 2.02  2.86  1184    1
 
 
 post <- rstan::extract(fit)

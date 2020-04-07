@@ -79,13 +79,15 @@ data {
   real R0_prior[2];   // lognormal log mean and SD for R0 prior
   real phi_prior[2];  // lognormal log mean and SD for phi prior [NB2(mu, phi)]
   int<lower=0, upper=1> priors_only; // logical: include likelihood or just priors?
+  int<lower=0, upper=1> est_phi;
+  int<lower=0, upper=1> obs_model;
 }
 transformed data {
   int  x_i[0];      // fake; needed for ODE function
 }
 parameters {
  real theta[1];     // R0 only for now
- real<lower=0> phi; // NB2 (inverse) dispersion
+ real<lower=0> phi[est_phi]; // NB(2) (inverse) dispersion
 }
 transformed parameters {
   real meanDelay = delayScale * tgamma(1 + 1 / delayShape);
@@ -119,13 +121,20 @@ transformed parameters {
 }
 model {
   // priors:
-  phi ~ lognormal(phi_prior[1], phi_prior[2]);
+  if (est_phi) {
+    phi[1] ~ lognormal(phi_prior[1], phi_prior[2]);
+  }
   theta[1] ~ lognormal(R0_prior[1], R0_prior[2]);
 
   // data likelihood:
   if (!priors_only) {
-    for (n in 1:last_day_obs)
-        daily_diffs[n] ~ neg_binomial_2_log(eta[n], phi);
+    for (n in 1:last_day_obs) {
+      if (obs_model == 0) {
+        daily_diffs[n] ~ poisson_log(eta[n]);
+      } else {
+        daily_diffs[n] ~ neg_binomial_2_log(eta[n], phi[1]);
+      }
+    }
   }
 }
 generated quantities{
@@ -133,6 +142,10 @@ generated quantities{
 
   // posterior predictive draws:
   for (n in 1:N) {
-    y_rep[n] = neg_binomial_2_log_rng(eta[n], phi);
+    if (obs_model == 0) {
+      y_rep[n] = poisson_log_rng(eta[n]);
+    } else {
+      y_rep[n] = neg_binomial_2_log_rng(eta[n], phi[1]);
+    }
   }
 }

@@ -9,7 +9,7 @@ setwd(here::here("selfIsolationModel", "stan"))
 dir.create("figs", showWarnings = FALSE)
 
 fit_array <- as.array(fit)
-bayesplot::mcmc_trace(fit_array, pars = c("theta[1]", "phi"))
+bayesplot::mcmc_trace(fit_array, pars = c("theta[1]", "phi[1]"))
 ggsave("figs/traceplot.pdf", width = 6, height = 3)
 
 R0 <- post$theta[, 1]
@@ -28,7 +28,7 @@ ggplot(tibble(R0 = R0)) +
   coord_cartesian(xlim = range(.x), expand = FALSE)
 ggsave("figs/R0.pdf", width = 6, height = 4)
 
-phi_hat <- post$phi
+phi_hat <- post$phi[, 1]
 .x <- seq(0.1, 4, length.out = 200)
 breaks <- seq(min(.x), max(.x), 0.08)
 ggplot(tibble(phi = phi_hat)) +

@@ -120,6 +120,8 @@ sampFrac <- ifelse(seq_along(time) < time_day_id[14], 0.35, 0.35 * 2)
 # quantile(x, probs = c(0.025, 0.5, 0.975))
 R0_prior <- c(log(2.6), 0.2)
 
+obs_model <- 1L # 1L = NB2, 0L = Poisson
+
 stan_data <- list(
   T = length(time),
   days = days,
@@ -138,7 +140,9 @@ stan_data <- list(
   R0_prior = R0_prior,
   phi_prior = c(log(1), 0.5),
   priors_only = 0L,
-  last_day_obs = last_day_obs
+  last_day_obs = last_day_obs,
+  obs_model = obs_model,
+  est_phi = if (obs_model == 1L) 1L else 0L
 )
 
 seeiqr_model <- stan_model("seeiqr.stan")
@@ -147,60 +151,26 @@ map_estimate <- optimizing(
   data = stan_data
 )
 map_estimate$par['theta[1]']
-map_estimate$par['phi']
+map_estimate$par['phi[1]']
 
-initf <- function() {
-  list(
-    theta = array(rlnorm(1, log(map_estimate$par[['theta[1]']]), 0.2)),
-    phi = rlnorm(1, log(map_estimate$par[['phi']]), 0.1)
-  )
+initf <- function(stan_data) {
+  init <- list(theta = array(rlnorm(1, log(map_estimate$par[['theta[1]']]), 0.2)))
+  if (stan_data$est_phi) {
+    init <- c(init, list(phi = array(rlnorm(1, log(map_estimate$par[['phi[1]']]), 0.1))))
+  }
+  init
 }
 fit <- sampling(
   seeiqr_model,
   data = stan_data,
-  iter = 1000L,
+  iter = 600L,
   chains = 4L,
-  init = initf,
+  init = function() initf(stan_data),
   seed = 4, # https://xkcd.com/221/
   pars = c("theta", "phi", "lambda_d", "y_hat", "y_rep")
 )
 # saveRDS(fit, file = "sir-fit.rds")
-
 print(fit, pars = c("theta", "phi"))
-# Using bcdata:
-#> source("02-seeiqr-fit.R")
-# Inference for Stan model: seeiqr.
-# 4 chains, each with iter=1000; warmup=500; thin=1;
-# post-warmup draws per chain=500, total post-warmup draws=2000.
-
-#         mean se_mean   sd 2.5%  25%  50%  75% 97.5% n_eff Rhat
-# theta[1] 2.57    0.00 0.09 2.41 2.51 2.57 2.62  2.76  1427    1
-# phi      1.47    0.01 0.42 0.83 1.18 1.41 1.69  2.44  1503    1
-
-# Using new_data (but 1st and 2nd April were wrong):
-# > source("02-seeiqr-fit.R")
-# recompiling to avoid crashing R session
-# Inference for Stan model: seeiqr.
-# 4 chains, each with iter=1000; warmup=500; thin=1;
-# post-warmup draws per chain=500, total post-warmup draws=2000.
-#
-#          mean se_mean   sd 2.5% 25%  50%  75% 97.5% n_eff Rhat
-# theta[1] 2.55    0.00 0.08 2.40 2.5 2.55 2.60  2.73  1030    1
-# phi      1.61    0.01 0.44 0.91 1.3 1.55 1.85  2.65  1153    1
-#
-# new_data has extra data so expect small change in results, looks okay though
-# n_eff reduced. BUT new_data has those new low values that I think weren't bcdata.
-
-# Using new data with correct 1st and 2nd April - n_eff increases from above,
-#  which makes sense:
-# Inference for Stan model: seeiqr.
-# 4 chains, each with iter=1000; warmup=500; thin=1;
-# post-warmup draws per chain=500, total post-warmup draws=2000.
-
-#         mean se_mean   sd 2.5%  25%  50%  75% 97.5% n_eff Rhat
-#theta[1] 2.56    0.00 0.08 2.41 2.50 2.55 2.60  2.72  1518    1
-#phi      1.76    0.01 0.47 1.01 1.43 1.71 2.02  2.86  1184    1
-
 
 post <- rstan::extract(fit)
 

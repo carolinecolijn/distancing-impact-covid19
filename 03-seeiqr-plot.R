@@ -30,10 +30,10 @@ ggsave("figs/R0.pdf", width = 6, height = 4)
 
 f2 <- post$f2
 .x <- seq(0, 1, length.out = 200)
-breaks <- seq(min(.x), max(.x), 0.015)
+breaks <- seq(min(.x), max(.x), 0.03)
 ggplot(tibble(f2 = f2)) +
   geom_ribbon(
-    data = tibble(f2 = .x, density = dlnorm(.x, log(0.4), 0.2)),
+    data = tibble(f2 = .x, density = dbeta(.x, beta_shape1, beta_shape2)),
     aes(x = f2, ymin = 0, ymax = density), alpha = 0.5, colour = "grey50",
     fill = "grey50"
   ) +

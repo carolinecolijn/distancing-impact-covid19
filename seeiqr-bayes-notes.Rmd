@@ -51,7 +51,7 @@ incl_fig("R0")
 incl_fig("phi")
 ```
 
-```{r states, fig.cap="Draws from the state joint posterior distribution.", out.width="\\textwidth"}
+```{r states, fig.cap="Draws from the state joint posterior distribution. Vertical dashed line represents the last day of data.", out.width="\\textwidth"}
 incl_fig("states")
 ```
 
@@ -71,6 +71,6 @@ incl_fig("posterior-predictive-case-diffs-facet")
 incl_fig("posterior-predictive-case-diffs")
 ```
 
-```{r ppd-quant, fig.cap="Same as last figure but with 80\\% and 50\\% quantiles. Black line represents the median. Red lines represents the data.", out.width="5in"}
+```{r ppd-quant, fig.cap="Same as last figure but with 80\\% and 50\\% quantiles. Black line represents the median. Red line represents the data.", out.width="5in"}
 incl_fig("posterior-predictive-quantiles-case-diffs")
 ```

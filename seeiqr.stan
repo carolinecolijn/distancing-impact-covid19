@@ -82,7 +82,7 @@ data {
   int time_day_id[N]; // last time increment associated with each day
   int time_day_id0[N];// first time increment for Weibull integration of case counts
   real R0_prior[2];   // lognormal log mean and SD for R0 prior
-  real phi_prior[2];  // lognormal log mean and SD for phi prior [NB2(mu, phi)]
+  real phi_prior;     // SD of normal prior on 1/sqrt(phi) [NB2(mu, phi)]
   real f2_prior[2];   // lognormal log mean and SD for f2 prior
   int<lower=0, upper=1> priors_only; // logical: include likelihood or just priors?
   int<lower=0, upper=1> est_phi;
@@ -140,9 +140,13 @@ transformed parameters {
 model {
   // priors:
   if (est_phi) {
-    phi[1] ~ lognormal(phi_prior[1], phi_prior[2]);
-    // https://mc-stan.org/docs/2_20/stan-users-guide/changes-of-variables.html
-    // 1/phi[1] ~ normal(0, phi_prior[2]);
+    // phi[1] ~ lognormal(phi_prior[1], phi_prior[2]);
+    // https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations
+    // http://andrewgelman.com/2018/04/03/justify-my-love/
+    1/sqrt(phi[1]) ~ normal(0, phi_prior);
+    // D(expression(1/sqrt(x)), "x")
+    target += log(0.5 * phi[1]^-0.5/sqrt(phi[1])^2); // Jacobian adjustment
+    // 1/phi[1] ~ normal(0, phi_prior);
     // target += -2 * log(phi[1]); // Jacobian adjustment
   }
   R0 ~ lognormal(R0_prior[1], R0_prior[2]);

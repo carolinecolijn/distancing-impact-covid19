@@ -10,7 +10,9 @@
 #' @param time_increment Time increment for ODEs and Weibull delay-model integration
 #' @param days_back Number of days to go back for Weibull delay-model integration
 #' @param R0_prior Lognormal log mean and SD for R0 prior
-#' @param phi_prior Lognormal log mean and SD for NB2 dispersion prior
+#' @param phi_prior SD of Normal(0, SD) prior placed on 1/sqrt(phi),
+#'   where NB2(mu, phi).
+#'   <https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations>
 #' @param f2_prior Beta mean and SD for `f2` parameter (fraction of infection force?)
 #' @param iter MCMC iterations per chain
 #' @param seed MCMC seed
@@ -33,7 +35,7 @@ fit_seeiqr <- function(daily_cases,
                        time_increment = 0.1,
                        days_back = 60,
                        R0_prior = c(log(2.6), 0.2),
-                       phi_prior = c(log(1), 0.5),
+                       phi_prior = 1,
                        f2_prior = c(0.4, 0.1),
                        iter = 800,
                        seed = 4,

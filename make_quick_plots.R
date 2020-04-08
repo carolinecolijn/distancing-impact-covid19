@@ -157,7 +157,8 @@ make_quick_plots <- function(obj, id = "", ext = ".png", actual_dates) {
     ylab("New cases") +
     xlab("Day") +
     geom_vline(xintercept = actual_dates[obj$last_day_obs], lty = 2, alpha = 0.6) +
-    coord_cartesian(expand = FALSE)
+    coord_cartesian(expand = FALSE) +
+    theme(plot.margin = margin(11/2,11, 11/2, 11/2))
   ggsave(paste0("figs/posterior-predictive-quantiles-case-diffs", id, ext), width = 6, height = 4)
 
   # cumulative
@@ -193,7 +194,8 @@ make_quick_plots <- function(obj, id = "", ext = ".png", actual_dates) {
     ylab("Cumulative cases") +
     xlab("Day") +
     geom_vline(xintercept = actual_dates[obj$last_day_obs], lty = 2, alpha = 0.6) +
-    coord_cartesian(expand = FALSE)
+    coord_cartesian(expand = FALSE) +
+    theme(plot.margin = margin(11/2,11, 11/2, 11/2))
   ggsave(paste0("figs/posterior-predictive-quantiles-case-cumsum", id, ext), width = 6, height = 4)
 
 }

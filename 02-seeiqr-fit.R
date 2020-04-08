@@ -3,7 +3,7 @@ rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 setwd(here::here("selfIsolationModel", "stan"))
 source("fit_seeiqr.R")
-dir.create("models", showWarnings = FALSE)
+dir.create("models2", showWarnings = FALSE)
 
 dat <- readr::read_csv(here::here("nCoVDailyData/CaseCounts/BC Case counts.csv"))
 names(dat)[names(dat) == "BC"] <- "Cases"
@@ -49,93 +49,23 @@ m[[6]] <- fit_seeiqr(
   daily_diffs,
   fixed_f_forecast = 0.2,
   seeiqr_model = seeiqr_model)
-m[[7]] <- fit_seeiqr(
-  daily_diffs,
-  sampled_fraction1 = 0.2,
-  sampled_fraction2 = 0.7,
-  sampled_fraction_day_change = 12,
-  seeiqr_model = seeiqr_model)
-m[[8]] <- fit_seeiqr(
-  daily_diffs,
-  sampled_fraction1 = 0.2,
-  sampled_fraction2 = 0.7,
-  sampled_fraction_day_change = 12,
-  pars = c(
-    N = 4.4e6, D = 4, k1 = 1 / 5,
-    k2 = 1, q = 0.05,
-    r = 1, ur = 0.2, f1 = 1.0,
-    start_decline = 15,
-    end_decline = 22
-  ),
-  seeiqr_model = seeiqr_model)
-m[[9]] <- fit_seeiqr(
-  daily_diffs,
-  sampled_fraction1 = 0.2,
-  sampled_fraction2 = 0.7,
-  sampled_fraction_day_change = 12,
-  pars = c(
-    N = 4.4e6, D = 4, k1 = 1 / 4,
-    k2 = 1, q = 0.05,
-    r = 1, ur = 0.2, f1 = 1.0,
-    start_decline = 15,
-    end_decline = 22
-  ),
-  seeiqr_model = seeiqr_model)
-m[[10]] <- fit_seeiqr(
-  daily_diffs,
-  sampled_fraction1 = 0.2,
-  sampled_fraction2 = 0.7,
-  sampled_fraction_day_change = 12,
-  pars = c(
-    N = 4.4e6, D = 4, k1 = 1 / 4,
-    k2 = 1, q = 0.05,
-    r = 1, ur = 0.2, f1 = 1.0,
-    start_decline = 15,
-    end_decline = 22
-  ),
-  delayScale = 9,
-  seeiqr_model = seeiqr_model)
-m[[11]] <- fit_seeiqr(
-  daily_diffs,
-  sampled_fraction1 = 0.2,
-  sampled_fraction2 = 0.7,
-  sampled_fraction_day_change = 12,
-  delayScale = 9,
-  seeiqr_model = seeiqr_model)
-m[[12]] <- fit_seeiqr(
-  daily_diffs,
-  delayScale = 9,
-  seeiqr_model = seeiqr_model)
-m[[13]] <- fit_seeiqr(
-  daily_diffs,
-  sampled_fraction1 = 0.1,
-  sampled_fraction2 = 0.7,
-  sampled_fraction_day_change = 12,
-  seeiqr_model = seeiqr_model)
 
-# ignore <- lapply(seq_along(m), function(x) {
-#   saveRDS(m[[x]], file = paste0("models/stan-fit-", x, ".rds"))
-# })
-#
-# # or start here to avoid re-fitting:
-# f <- list.files("models", full.names = TRUE)
-# m <- lapply(seq_along(f), function(x) {
-#   readRDS(paste0("models/stan-fit-", x, ".rds"))
-# })
+ignore <- lapply(seq_along(m), function(x) {
+  saveRDS(m[[x]], file = paste0("models2/stan-fit-", x, ".rds"))
+})
+
+# or start here to avoid re-fitting:
+f <- list.files("models2", full.names = TRUE)
+m <- lapply(seq_along(f), function(x) {
+  readRDS(paste0("models2/stan-fit-", x, ".rds"))
+})
 names(m) <- c(
   "01. Strength of S.D.\nas estimated",
   "02. Strength of S.D.\nprojected 1.0",
   "03. Sampled 0.3;\nStrength of S.D.\nas estimated",
-  "04. Poisson",
+  "04. Poisson\nobservation error",
   "05. Strength of S.D.\nprojected 0.6",
-  "06. Strength of S.D.\nprojected 0.2",
-  "07. Sampling 0.2-0.7\non day 12",
-  "08. ur = 0.2; D = 4",
-  "09. ur = 0.2; D = 4; k = 1/4",
-  "10. ur = 0.2; D = 4; k = 1/4;\ndelayScale = 9",
-  "11. Sampling 0.2-0.7\non day 12;\ndelayScale = 9",
-  "12. Strength of S.D.\nas estimated\ndelayScale = 9",
-  "13. Sampling 0.1-0.7\non day 12"
+  "06. Strength of S.D.\nprojected 0.2"
   )
 
 # Check summary:
@@ -192,7 +122,7 @@ make_projection_plot <- function(models, cumulative = FALSE,
   ggplot(out, aes(x = day, y = med, ymin = lwr, ymax = upr, colour = Scenario,
     fill = Scenario)) +
     geom_ribbon(alpha = 0.2, colour = NA) +
-    facet_wrap(~Scenario, ncol = 3) +
+    facet_wrap(~Scenario, ncol = 2) +
     geom_ribbon(alpha = 0.2, mapping = aes(ymin = lwr2, ymax = upr2), colour = NA) +
     geom_line(alpha = 0.9, lwd = 1) +
     geom_point(
@@ -214,12 +144,12 @@ make_projection_plot <- function(models, cumulative = FALSE,
 }
 
 .today <- lubridate::today()
-make_projection_plot(m)
+make_projection_plot(m, ylim = c(0, 180))
 ggsave(paste0("figs/case-projections-", .today, ".png"),
-  width = 8, height = 10)
-# make_projection_plot(m, cumulative = TRUE, ylim = c(0, 3500))
-# ggsave(paste0("figs/cumulative-case-projections-", .today, ".png"),
-#   width = 6, height = 9)
+  width = 5, height = 8)
+make_projection_plot(m, cumulative = TRUE, ylim = c(0, 3200))
+ggsave(paste0("figs/cumulative-case-projections-", .today, ".png"),
+  width = 5, height = 8)
 
 
 # Theta plots ---------------------------------------------------------
@@ -248,7 +178,7 @@ ggplot(theta_df, aes(value)) +
   coord_cartesian(expand = FALSE, ylim = c(0, NA)) +
   ylab("")
 ggsave(paste0("figs/theta-posteriors", .today, ".png"),
-  width = 5, height = 18)
+  width = 5, height = 12)
 
 
 # --------------------------------------------------

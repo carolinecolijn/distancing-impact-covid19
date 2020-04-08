@@ -46,17 +46,17 @@ fit_seeiqr <- function(daily_cases,
                        f2_prior = c(0.4, 0.15),
                        seed = 4,
                        chains = if (parallel::detectCores() > 8) 8 else 4,
-                       iter = if (chains == 8) 400 else 800,
-                       sampled_fraction1 = 0.35,
-                       sampled_fraction2 = 0.70,
-                       sampled_fraction_day_change = 14,
+                       iter = if (chains == 8) 500 else 1000,
+                       sampled_fraction1 = 0.2,
+                       sampled_fraction2 = 0.7,
+                       sampled_fraction_day_change = 12,
                        fixed_f_forecast = NULL,
                        pars = c(
-                         N = 4.4e6, D = 5, k1 = 1 / 5,
+                         N = 4.4e6, D = 4, k1 = 1 / 4,
                          k2 = 1, q = 0.05,
-                         r = 1, ur = 0.4, f1 = 1.0,
-                         start_decline = 15, # in days
-                         end_decline = 22 # in days
+                         r = 1, ur = 0.2, f1 = 1.0,
+                         start_decline = 15,
+                         end_decline = 22
                        ),
                        i0 = 8,
                        fsi = pars[["r"]] / (pars[["r"]] + pars[["ur"]]),
@@ -75,10 +75,9 @@ fit_seeiqr <- function(daily_cases,
                          Qd = 0,
                          Rd = 0
                        ),
-                        save_state_predictions = FALSE,
-                        delayScale = 12.0529283,
-                        delayShape = 1.9720199
-  ) {
+                       save_state_predictions = FALSE,
+                       delayScale = 9,
+                       delayShape = 1.9720199) {
   obs_model <- match.arg(obs_model)
   obs_model <- if (obs_model == "NB2") 1L else 0L
   x_r <- pars
@@ -188,11 +187,13 @@ fit_seeiqr <- function(daily_cases,
     pars = pars_save
   )
   post <- rstan::extract(fit)
-  list(fit = fit, post = post, phi_prior = phi_prior, R0_prior = R0_prior,
+  list(
+    fit = fit, post = post, phi_prior = phi_prior, R0_prior = R0_prior,
     f2_prior = f2_prior, obs_model = obs_model, sampFrac = sampFrac, state_0 = state_0,
     daily_cases = daily_cases, daily_tests = daily_tests, days = days, time = time,
     last_day_obs = last_day_obs, pars = x_r, f2_prior_beta_shape1 = beta_shape1,
-    f2_prior_beta_shape2 = beta_shape2, stan_data = stan_data)
+    f2_prior_beta_shape2 = beta_shape2, stan_data = stan_data
+  )
 }
 
 get_beta_params <- function(mu, sd) {

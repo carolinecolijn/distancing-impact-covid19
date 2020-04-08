@@ -13,7 +13,8 @@ dir.create("figs", showWarnings = FALSE)
 actual_dates <- new_data$Date
 actual_dates <- seq(actual_dates[1], actual_dates[length(actual_dates)] + 25, by = "1 day")
 
-make_quick_plots(m2, id = paste0("-offset-NB2-", .today))
-make_quick_plots(m, id = "-NB2", actual_dates = actual_dates)
+# make_quick_plots(fits, id = paste0("-offset-NB2-", .today))
+make_quick_plots(fits[[1]], id = "-NB2-fixed", actual_dates = actual_dates)
+make_quick_plots(fits[[2]], id = "-NB2-double-f-forecast", actual_dates = actual_dates)
 
 setwd(wd)

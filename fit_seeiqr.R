@@ -4,6 +4,7 @@
 #' @param daily_tests An optional vector of daily test numbers.
 #'   Should include assumed tests for the forecast.
 #'   I.e. `length(daily_cases) + forecast_days = length(daily_cases)`
+#' @param Model from `rstan::stan_model(seeiqr_model)`.
 #' @param obs_model Type of observation model
 #' @param forecast_days Number of days into the future to forecast
 #' @param time_increment Time increment for ODEs and Weibull delay-model integration
@@ -17,7 +18,7 @@
 #' @param sampled_fraction1 Fraction sampled before `sampled_fraction_day_change`
 #' @param sampled_fraction2 Fraction sampled at and after `sampled_fraction_day_change`
 #' @param sampled_fraction_day_change Date fraction sample changes
-#' @param f_ratio_forecast Ratio to multiply `f` by in the forecast
+#' @param fixed_f_forecast Optional fixed `f` for forecast.
 #' @param pars A named numeric vector of fixed parameter values
 #' @param i0 A scaling factor FIXME
 #' @param fsi FIXME
@@ -26,37 +27,39 @@
 
 fit_seeiqr <- function(daily_cases,
                        daily_tests = NULL,
+                       seeiqr_model,
                        obs_model = c("NB2", "Poisson"),
                        forecast_days = 25,
-                       time_increment = 0.2,
-                       days_back = 50,
+                       time_increment = 0.1,
+                       days_back = 45,
                        R0_prior = c(log(2.6), 0.2),
                        phi_prior = c(log(1), 0.5),
-                       f2_prior = c(0.4, 0.15),
-                       iter = 1000,
+                       f2_prior = c(0.4, 0.1),
+                       iter = 800,
                        seed = 4,
                        chains = 4,
                        sampled_fraction1 = 0.35,
                        sampled_fraction2 = 0.70,
                        sampled_fraction_day_change = 14,
-                       f_ratio_forecast = 1,
+                       fixed_f_forecast = NULL,
                        pars = c(
                          N = 4.4e6, D = 5, k1 = 1 / 5,
                          k2 = 1, q = 0.05,
                          r = 1, ur = 0.4, f1 = 1.0,
-                         start_decline = 12, end_decline = 22
+                         start_decline = 1.5/time_increment, # in `time` units from 0!
+                         end_decline = 2.2/time_increment # in `time` units from 0!
                        ),
                        i0 = 8,
-                       fsi = x_r[["r"]] / (x_r[["r"]] + x_r[["ur"]]),
+                       fsi = pars[["r"]] / (pars[["r"]] + pars[["ur"]]),
                        nsi = 1 - fsi,
                        state_0 = c(
-                         S = nsi * (x_r[["N"]] - i0),
+                         S = nsi * (pars[["N"]] - i0),
                          E1 = 0.4 * nsi * i0,
                          E2 = 0.1 * nsi * i0,
                          I = 0.5 * nsi * i0,
                          Q = 0,
                          R = 0,
-                         Sd = fsi * (x_r[["N"]] - i0),
+                         Sd = fsi * (pars[["N"]] - i0),
                          E1d = 0.4 * fsi * i0,
                          E2d = 0.1 * fsi * i0,
                          Id = 0.5 * fsi * i0,
@@ -86,8 +89,12 @@ fit_seeiqr <- function(daily_cases,
   last_day_obs <- length(daily_diffs)
   time <- seq(-30, max(days) + forecast_days, time_increment)
   last_time_obs <- max(which(time < last_day_obs)) # FIXME: + 1?
-  x_r <- c(x_r, f_ratio_forecast)
+  x_r <- c(x_r, if (!is.null(fixed_f_forecast)) fixed_f_forecast else 0)
   x_r <- c(x_r, last_time_obs)
+
+  # turn start_decline and end_decline into 'time':
+  # x_r[['start_decline']] <- max(which(time < x_r[['start_decline']]))
+  # x_r[['end_decline']] <- max(which(time < x_r[['end_decline']]))
 
   get_time_id <- function(day, time) max(which(time < day))
   time_day_id <- vapply(days, get_time_id, numeric(1), time = time)
@@ -134,15 +141,13 @@ fit_seeiqr <- function(daily_cases,
     obs_model = obs_model,
     est_phi = if (obs_model == 1L) 1L else 0L
   )
-
-  seeiqr_model <- stan_model("seeiqr.stan")
   map_estimate <- optimizing(
     seeiqr_model,
     data = stan_data
   )
-  map_estimate$par["R0"]
-  map_estimate$par["f2"]
-  map_estimate$par["phi[1]"]
+  # map_estimate$par["R0"]
+  # map_estimate$par["f2"]
+  # map_estimate$par["phi[1]"]
 
   initf <- function(stan_data) {
     R0 <- rlnorm(1, log(map_estimate$par[["R0"]]), 0.3)

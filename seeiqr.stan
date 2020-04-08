@@ -31,7 +31,7 @@ functions{
     real f1    = x_r[8];
     real start_decline = x_r[9];
     real end_decline = x_r[10];
-    real f_ratio_forecast = x_r[11];
+    real fixed_f_forecast = x_r[11];
     real last_obs_time = x_r[12];
 
     real dydt[12];
@@ -44,8 +44,8 @@ functions{
     } else {
       f = f2;
     }
-    if (t >= last_obs_time) {
-      f = f * f_ratio_forecast;
+    if (t >= last_obs_time && fixed_f_forecast != 0) {
+      f = f * fixed_f_forecast;
     }
 
     dydt[1]  = -(R0/(D+1/k2)) * (I + E2 + f*(Id+E2d)) * S/N - r*S + ur*Sd;
@@ -152,7 +152,7 @@ model {
 }
 generated quantities{
   int y_rep[N]; // posterior predictive replicates
-  vector[last_day_obs] log_lik; // log_lik is for use with the loo package for LOOIC
+  // vector[last_day_obs] log_lik; // log_lik is for use with the loo package for LOOIC
   for (n in 1:N) {
     if (obs_model == 0) {
       y_rep[n] = poisson_log_rng(eta[n]);
@@ -160,11 +160,11 @@ generated quantities{
       y_rep[n] = neg_binomial_2_log_rng(eta[n], phi[1]);
     }
   }
-  for (n in 1:last_day_obs) {
-    if (obs_model == 0) {
-      log_lik[n] = poisson_log_lpmf(daily_diffs[n] | eta[n]);
-    } else {
-      log_lik[n] = neg_binomial_2_log_lpmf(daily_diffs[n] | eta[n], phi[1]);
-    }
-  }
+  // for (n in 1:last_day_obs) {
+  //   if (obs_model == 0) {
+  //     log_lik[n] = poisson_log_lpmf(daily_diffs[n] | eta[n]);
+  //   } else {
+  //     log_lik[n] = neg_binomial_2_log_lpmf(daily_diffs[n] | eta[n], phi[1]);
+  //   }
+  // }
 }

@@ -56,6 +56,9 @@ stopifnot(
 get_time_id <- function(day, time) max(which(time < day))
 time_day_id <- vapply(days, get_time_id, numeric(1), time = time)
 
+# x_r[['start_decline']] <- max(which(time < x_r[['start_decline']]))
+# x_r[['end_decline']] <- max(which(time < x_r[['end_decline']]))
+
 sim <- stan(
   "seeiqr-sim.stan",
   data = list(

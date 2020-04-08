@@ -103,6 +103,9 @@ transformed parameters {
   real lambda_d[N];
   real sum_ft_inner;
   real eta[N]; // expected value on link scale (log)
+  real k2;
+  real E2;
+  real E2d;
 
   real theta[2];
   real y_hat[T,12];
@@ -118,8 +121,11 @@ transformed parameters {
   }
   for (n in 1:N) {
     for (t in time_day_id0[n]:time_day_id[n]) {
-        ft[t] = sampFrac[t] * x_r[4] * (y_hat[t,2] + y_hat[t,3]) *
-                exp(weibull_lpdf(days[n] - time[t] | delayShape, delayScale));
+      k2 = x_r[4];
+      E2 = y_hat[t,3];
+      E2d = y_hat[t,9];
+      ft[t] = sampFrac[t] * k2 * (E2 + E2d) *
+      exp(weibull_lpdf(days[n] - time[t] | delayShape, delayScale));
     }
     sum_ft_inner = 0;
     for (t in (time_day_id0[n] + 1):(time_day_id[n] - 1)) {

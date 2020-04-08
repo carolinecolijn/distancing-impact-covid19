@@ -46,8 +46,8 @@ fit_seeiqr <- function(daily_cases,
                          N = 4.4e6, D = 5, k1 = 1 / 5,
                          k2 = 1, q = 0.05,
                          r = 1, ur = 0.4, f1 = 1.0,
-                         start_decline = 1.5/time_increment, # in `time` units from 0!
-                         end_decline = 2.2/time_increment # in `time` units from 0!
+                         start_decline = 15, # in days
+                         end_decline = 22 # in days
                        ),
                        i0 = 8,
                        fsi = pars[["r"]] / (pars[["r"]] + pars[["ur"]]),
@@ -88,9 +88,8 @@ fit_seeiqr <- function(daily_cases,
   days <- seq(1, length(daily_diffs) + forecast_days)
   last_day_obs <- length(daily_diffs)
   time <- seq(-30, max(days) + forecast_days, time_increment)
-  last_time_obs <- max(which(time < last_day_obs)) # FIXME: + 1?
   x_r <- c(x_r, if (!is.null(fixed_f_forecast)) fixed_f_forecast else 0)
-  x_r <- c(x_r, last_time_obs)
+  x_r <- c(x_r, last_day_obs)
 
   # turn start_decline and end_decline into 'time':
   # x_r[['start_decline']] <- max(which(time < x_r[['start_decline']]))

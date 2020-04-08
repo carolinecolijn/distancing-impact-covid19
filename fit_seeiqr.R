@@ -85,20 +85,18 @@ fit_seeiqr <- function(daily_cases,
     names(state_0) == c("S", "E1", "E2", "I", "Q", "R", "Sd", "E1d", "E2d", "Id", "Qd", "Rd")
   )
 
-  days <- seq(1, length(daily_diffs) + forecast_days)
-  last_day_obs <- length(daily_diffs)
+  days <- seq(1, length(daily_cases) + forecast_days)
+  last_day_obs <- length(daily_cases)
   time <- seq(-30, max(days) + forecast_days, time_increment)
   x_r <- c(x_r, if (!is.null(fixed_f_forecast)) fixed_f_forecast else 0)
   x_r <- c(x_r, last_day_obs)
 
-  # turn start_decline and end_decline into 'time':
-  # x_r[['start_decline']] <- max(which(time < x_r[['start_decline']]))
-  # x_r[['end_decline']] <- max(which(time < x_r[['end_decline']]))
-
-  get_time_id <- function(day, time) max(which(time < day))
+  # find the equivalent time of each day (end):
+  get_time_id <- function(day, time) max(which(time <= day))
   time_day_id <- vapply(days, get_time_id, numeric(1), time = time)
 
   get_time_day_id0 <- function(day, time, days_back) {
+    # go back `days_back` or to beginning if that's negative time:
     check <- time < (day - days_back)
     if (sum(check) == 0L) {
       1L
@@ -106,11 +104,13 @@ fit_seeiqr <- function(daily_cases,
       max(which(check))
     }
   }
+  # find the equivalent time of each day (start):
   time_day_id0 <- vapply(days, get_time_day_id0, numeric(1),
     time = time, days_back = days_back
   )
 
-  sampFrac <- ifelse(seq_along(time) < time_day_id[sampled_fraction_day_change], sampled_fraction1, sampled_fraction2)
+  sampFrac <- ifelse(seq_along(time) < time_day_id[sampled_fraction_day_change],
+    sampled_fraction1, sampled_fraction2)
 
   beta_sd <- f2_prior[2]
   beta_mean <- f2_prior[1]
@@ -120,7 +120,7 @@ fit_seeiqr <- function(daily_cases,
   stan_data <- list(
     T = length(time),
     days = days,
-    daily_diffs = daily_diffs,
+    daily_cases = daily_cases,
     offset = if (is.null(daily_tests)) rep(log(1), length(days)) else log(daily_tests),
     N = length(days),
     y0 = state_0,

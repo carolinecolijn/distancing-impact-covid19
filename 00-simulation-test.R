@@ -1,27 +1,31 @@
 setwd(here::here("selfIsolationModel/stan"))
 my_path <- paste0(here::here(), "/selfIsolationModel/")
-source(paste0(my_path, "functions_sir.R"))  # libraries to load plus function definitions
+source(paste0(my_path, "functions_sir.R"))
 
-pars = list(N = 4.4e6, #population of BC. Another potential issue as BC isn't homogeneously mixing; could fit to Vancouver instead
+pars <- list(
+  N = 4.4e6, # population of BC
   D = 5,
   R0 = 2.65,
-  k1 = 1/5,
+  k1 = 1 / 5,
   k2 = 1,
   q = 0.05,
   r = 1,
   ur = 0.4,
-  f1 = 1.0,   # initial value of f
-  f2 = 0.4,     # final value of f
-  ratio = 2)
-# AE thinks state is initial condition and i0 scales everything
-fsi = with(pars,
-  r/(r+ur))
-nsi = 1 - fsi
-i0 = 8
-state_0 = c(S  = nsi * (pars$N - i0),
+  f1 = 1.0,
+  f2 = 0.4,
+  ratio = 2
+)
+fsi <- with(
+  pars,
+  r / (r + ur)
+)
+nsi <- 1 - fsi
+i0 <- 8
+state_0 <- c(
+  S = nsi * (pars$N - i0),
   E1 = 0.4 * nsi * i0,
   E2 = 0.1 * nsi * i0,
-  I =  0.5 * nsi * i0,
+  I = 0.5 * nsi * i0,
   Q = 0,
   R = 0,
   Sd = fsi * (pars$N - i0),
@@ -29,24 +33,29 @@ state_0 = c(S  = nsi * (pars$N - i0),
   E2d = 0.1 * fsi * i0,
   Id = 0.5 * fsi * i0,
   Qd = 0,
-  Rd = 0)
+  Rd = 0
+)
 
-times = seq(from=-30,   # should probably define values up front
-  to=30,
-  by=0.1)
+times <- seq(
+  from = -30,
+  to = 30,
+  by = 0.1
+)
 
 sim_dat <- purrr::map(1:16, function(x) {
-  example_simulation = as.data.frame(deSolve::ode(y = state_0,
+  example_simulation <- as.data.frame(deSolve::ode(
+    y = state_0,
     times = times,
     func = socdistmodel,
     parms = pars,
-    sdtiming = sdtiming_gradual))
-
-  # example_simulation %>% reshape2::melt(id.vars = "time") %>% ggplot(aes(time, value)) + facet_wrap(~variable, scales = "free_y") + geom_line()
-
+    sdtiming = sdtiming_gradual
+  ))
   dat <- data.frame(
     Date = seq(lubridate::ymd("2020-03-01"),
-      lubridate::ymd("2020-04-01"), by = "day"))
+      lubridate::ymd("2020-04-01"),
+      by = "day"
+    )
+  )
   dat$day <- seq_along(dat$Date)
   lambda_d <- sapply(seq(1, max(example_simulation$time)), function(x) {
     getlambd(example_simulation, pars = pars, data = dat, day = x)
@@ -54,8 +63,10 @@ sim_dat <- purrr::map(1:16, function(x) {
 
   # plot(seq(1, max(example_simulation$time)), lambda_d)
 
-  sim_dat <- data.frame(day = seq(1, max(example_simulation$time)),
-    lambda_d = lambda_d, obs = MASS::rnegbin(30, lambda_d, theta = 1.5))
+  sim_dat <- data.frame(
+    day = seq(1, max(example_simulation$time)),
+    lambda_d = lambda_d, obs = MASS::rnegbin(30, lambda_d, theta = 1.5)
+  )
   sim_dat
 })
 
@@ -75,9 +86,11 @@ sim <- furrr::future_map(seq_along(sim_dat), function(x) {
     seeiqr_model = seeiqr_model,
     forecast_days = 1,
     R0_prior = c(log(2.65), 0.2),
-    f2_prior = c(0.4, 0.1), # first is fake for now
+    f2_prior = c(0.4, 0.15),
     iter = 500,
-    chains = 1)
+    chains = 1,
+    time_increment = 0.1
+  )
 })
 print(sim[[1]]$fit, pars = c("R0", "f2", "phi"))
 
@@ -125,24 +138,27 @@ fit <- fit_seeiqr(
   chains = 1,
   iter = 700,
   forecast_days = 1,
-  seeiqr_model = seeiqr_model)
+  seeiqr_model = seeiqr_model
+)
 print(fit$fit, pars = c("R0", "f2", "phi"))
-fit$post$y_rep[1,]
+fit$post$y_rep[1, ]
 
 ppd_sim <- furrr::future_map(1:16, function(x) {
   fit_seeiqr(
-    daily_cases = fit$post$y_rep[x,],
+    daily_cases = fit$post$y_rep[x, ],
     chains = 1,
     iter = 350,
     forecast_days = 1,
-    seeiqr_model = seeiqr_model)
+    seeiqr_model = seeiqr_model
+  )
 })
 
 check_sim <- function(.par) {
   out <- purrr::map_df(seq_along(ppd_sim), function(x) {
     data.frame(sim = x, parameter = ppd_sim[[x]]$post[[.par]])
   })
-  ggplot(out, aes_string("as.factor(sim)", "parameter")) + geom_boxplot() +
+  ggplot(out, aes_string("as.factor(sim)", "parameter")) +
+    geom_boxplot() +
     geom_hline(yintercept = median(fit$post[[.par]])) +
     geom_hline(yintercept = quantile(fit$post[[.par]], 0.1)) +
     geom_hline(yintercept = quantile(fit$post[[.par]], 0.9)) +

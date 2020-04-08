@@ -61,10 +61,15 @@ total_tests <- c(total_tests, rep(total_tests[length(total_tests)], 25))
 # # Just need the one function:
 # delay_data <- load_tidy_delay_data()[["delay_data"]]
 
-m <- fit_seeiqr(daily_diffs)
-m2 <- fit_seeiqr(daily_diffs, daily_tests = total_tests, forecast_days = 25)
+fits <- list()
+fits[[1]] <- fit_seeiqr(daily_diffs)
+fits[[2]] <- fit_seeiqr(daily_diffs, f_ratio_forecast = 2)
+fits[[3]] <- fit_seeiqr(daily_diffs, sampled_fraction2 = 0.3, sampled_fraction2 = 0.3)
+
+
+# m2 <- fit_seeiqr(daily_diffs, daily_tests = total_tests, forecast_days = 25)
 
 print(m$fit, pars = c("R0", "f2", "phi"))
-print(m2$fit, pars = c("R0", "f2", "phi"))
+# print(m2$fit, pars = c("R0", "f2", "phi"))
 
 setwd(wd)

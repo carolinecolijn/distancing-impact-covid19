@@ -188,7 +188,11 @@ fit_seeiqr <- function(daily_cases,
     pars = pars_save
   )
   post <- rstan::extract(fit)
-  list(fit = fit, post = post, phi_prior = phi_prior, R0_prior = R0_prior, f2_prior = f2_prior, obs_model = obs_model, sampFrac = sampFrac, state_0 = state_0, daily_cases = daily_cases, daily_tests = daily_tests, days = days, time = time, last_day_obs = last_day_obs, pars = x_r, f2_prior_beta_shape1 = beta_shape1, f2_prior_beta_shape2 = beta_shape2, stan_data = stan_data)
+  list(fit = fit, post = post, phi_prior = phi_prior, R0_prior = R0_prior,
+    f2_prior = f2_prior, obs_model = obs_model, sampFrac = sampFrac, state_0 = state_0,
+    daily_cases = daily_cases, daily_tests = daily_tests, days = days, time = time,
+    last_day_obs = last_day_obs, pars = x_r, f2_prior_beta_shape1 = beta_shape1,
+    f2_prior_beta_shape2 = beta_shape2, stan_data = stan_data)
 }
 
 get_beta_params <- function(mu, sd) {

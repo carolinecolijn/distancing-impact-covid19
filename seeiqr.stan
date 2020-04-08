@@ -140,12 +140,11 @@ transformed parameters {
 model {
   // priors:
   if (est_phi) {
-    // phi[1] ~ lognormal(phi_prior[1], phi_prior[2]);
     // https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations
     // http://andrewgelman.com/2018/04/03/justify-my-love/
     1/sqrt(phi[1]) ~ normal(0, phi_prior);
-    // D(expression(1/sqrt(x)), "x")
-    target += log(0.5 * phi[1]^-0.5/sqrt(phi[1])^2); // Jacobian adjustment
+    // D(expression(1/sqrt(x)), "x"); log(0.5 * x^-0.5/sqrt(x)^2
+    target += log(0.5) - 1.5 * log(phi[1]); // Jacobian adjustment
     // 1/phi[1] ~ normal(0, phi_prior);
     // target += -2 * log(phi[1]); // Jacobian adjustment
   }

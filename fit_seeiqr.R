@@ -6,7 +6,7 @@
 #'   I.e. `length(daily_cases) + forecast_days = length(daily_cases)`
 #' @param obs_model Type of observation model
 #' @param forecast_days Number of days into the future to forecast
-#' @param time_increment Time increment for Weibull delay-model integration
+#' @param time_increment Time increment for ODEs and Weibull delay-model integration
 #' @param days_back Number of days to go back for Weibull delay-model integration
 #' @param R0_prior Lognormal log mean and SD for R0 prior
 #' @param phi_prior Lognormal log mean and SD for NB2 dispersion prior
@@ -27,14 +27,14 @@ fit_seeiqr <- function(daily_cases,
                        daily_tests = NULL,
                        obs_model = c("NB2", "Poisson"),
                        forecast_days = 25,
-                       time_increment = 0.2, # for Weibull integration
-                       days_back = 50, # for Weibull integration
-                       R0_prior = c(log(2.6), 0.2), # Lognormal log mean and SD
-                       phi_prior = c(log(1), 0.5), # Lognormal log mean and SD
-                       f2_prior = c(0.4, 0.1), # Beta mean and SD,
-                       iter = 500, # MCMC iterations perching
-                       seed = 42, # MCMC seed
-                       chains = 4, # Number of MCMC chains
+                       time_increment = 0.2,
+                       days_back = 50,
+                       R0_prior = c(log(2.6), 0.2),
+                       phi_prior = c(log(1), 0.5),
+                       f2_prior = c(0.4, 0.1),
+                       iter = 500,
+                       seed = 42,
+                       chains = 4,
                        sampled_fraction1 = 0.35,
                        sampled_fraction2 = 0.70,
                        sampled_fraction_day_change = 14,
@@ -102,13 +102,6 @@ fit_seeiqr <- function(daily_cases,
 
   sampFrac <- ifelse(seq_along(time) < time_day_id[sampled_fraction_day_change], sampled_fraction1, sampled_fraction2)
 
-  get_beta_params <- function(mu, sd) {
-    var <- sd^2
-    alpha <- ((1 - mu) / var - 1 / mu) * mu^2
-    beta <- alpha * (1 / mu - 1)
-    list(alpha = alpha, beta = beta)
-  }
-
   beta_sd <- f2_prior[2]
   beta_mean <- f2_prior[1]
   beta_shape1 <- get_beta_params(beta_mean, beta_sd)$alpha
@@ -175,5 +168,12 @@ fit_seeiqr <- function(daily_cases,
   # saveRDS(fit, file = "sir-fit.rds")
   # print(fit, pars = c("R0", "f2", "phi"))
   post <- rstan::extract(fit)
-  list(fit = fit, post = post)
+  list(fit = fit, post = post, phi_prior = phi_prior, R0_prior = R0_prior, f2_prior = f2_prior, obs_model = obs_model, sampFrac = sampFrac, state_0 = state_0, daily_cases = daily_cases, daily_tests = daily_tests, days = days, time = time, last_day_obs = last_day_obs, pars = x_r, f2_prior_beta_shape1 = beta_shape1, f2_prior_beta_shape2 = beta_shape2)
+}
+
+get_beta_params <- function(mu, sd) {
+  var <- sd^2
+  alpha <- ((1 - mu) / var - 1 / mu) * mu^2
+  beta <- alpha * (1 / mu - 1)
+  list(alpha = alpha, beta = beta)
 }

@@ -64,4 +64,7 @@ total_tests <- c(total_tests, rep(total_tests[length(total_tests)], 25))
 m <- fit_seeiqr(daily_diffs)
 m2 <- fit_seeiqr(daily_diffs, daily_tests = total_tests, forecast_days = 25)
 
+print(m$fit, pars = c("R0", "f2", "phi"))
+print(m2$fit, pars = c("R0", "f2", "phi"))
+
 setwd(wd)

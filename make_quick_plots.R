@@ -1,4 +1,4 @@
-make_quick_plots <- function(obj, id = "", ext = ".png") {
+make_quick_plots <- function(obj, id = "", ext = ".png", actual_dates) {
   post <- obj$post
   fit <- obj$fit
   fit_array <- as.array(fit)
@@ -10,7 +10,7 @@ make_quick_plots <- function(obj, id = "", ext = ".png") {
   ggsave(paste0("figs/traceplot", id, ext), width = 6, height = 3)
 
   R0 <- post$R0
-  .x <- seq(1.3, 3.8, length.out = 200)
+  .x <- seq(1.8, 2.8, length.out = 200)
   breaks <- seq(min(.x), max(.x), 0.05)
   ggplot(tibble(R0 = R0)) +
     geom_ribbon(
@@ -129,6 +129,7 @@ make_quick_plots <- function(obj, id = "", ext = ".png") {
     geom_vline(xintercept = obj$last_day_obs, lty = 2, alpha = 0.6)
   ggsave(paste0("figs/posterior-predictive-case-diffs-facet", id, ext), width = 9, height = 6.25)
 
+  dat <- tibble(day = actual_dates[1:obj$last_day_obs], value = obj$daily_cases)
   post$y_rep %>%
     reshape2::melt() %>%
     dplyr::rename(day = Var2) %>%
@@ -140,17 +141,59 @@ make_quick_plots <- function(obj, id = "", ext = ".png") {
       upr2 = quantile(value, probs = 0.75),
       med = median(value)
     ) %>%
+    mutate(day = actual_dates[day]) %>%
     ggplot(aes(day, y = med, ymin = lwr, ymax = upr)) +
     geom_ribbon(alpha = 0.2) +
     geom_ribbon(alpha = 0.2, mapping = aes(ymin = lwr2, ymax = upr2)) +
     geom_line(alpha = 0.9, lwd = 1) +
+    geom_point(
+      data = dat,
+      col = "red", inherit.aes = FALSE, aes(x = day, y = value),
+    ) +
     geom_line(
-      data = tibble(day = seq_len(obj$last_day_obs), value = obj$daily_cases),
-      col = "red", inherit.aes = FALSE, aes(x = day, y = value), lwd = 0.5
+      data = dat,
+      col = "red", inherit.aes = FALSE, aes(x = day, y = value), lwd = 0.2, alpha = 0.5
     ) +
     ylab("New cases") +
     xlab("Day") +
-    geom_vline(xintercept = obj$last_day_obs, lty = 2, alpha = 0.6)
+    geom_vline(xintercept = actual_dates[obj$last_day_obs], lty = 2, alpha = 0.6) +
+    coord_cartesian(expand = FALSE)
   ggsave(paste0("figs/posterior-predictive-quantiles-case-diffs", id, ext), width = 6, height = 4)
+
+  # cumulative
+
+  dat <- tibble(day = actual_dates[1:obj$last_day_obs], value = cumsum(obj$daily_cases))
+
+  post$y_rep %>%
+    reshape2::melt() %>%
+    dplyr::rename(day = Var2) %>%
+    dplyr::group_by(iterations) %>%
+    mutate(value = cumsum(value)) %>%
+    dplyr::group_by(day) %>%
+    summarise(
+      lwr = quantile(value, probs = 0.1),
+      lwr2 = quantile(value, probs = 0.25),
+      upr = quantile(value, probs = 0.9),
+      upr2 = quantile(value, probs = 0.75),
+      med = median(value)
+    ) %>%
+    mutate(day = actual_dates[day]) %>%
+    ggplot(aes(day, y = med, ymin = lwr, ymax = upr)) +
+    geom_ribbon(alpha = 0.2) +
+    geom_ribbon(alpha = 0.2, mapping = aes(ymin = lwr2, ymax = upr2)) +
+    geom_line(alpha = 0.9, lwd = 1) +
+    geom_point(
+      data = dat,
+      col = "red", inherit.aes = FALSE, aes(x = day, y = value),
+    ) +
+    geom_line(
+      data = dat,
+      col = "red", inherit.aes = FALSE, aes(x = day, y = value), lwd = 0.2, alpha = 0.5
+    ) +
+    ylab("Cumulative cases") +
+    xlab("Day") +
+    geom_vline(xintercept = actual_dates[obj$last_day_obs], lty = 2, alpha = 0.6) +
+    coord_cartesian(expand = FALSE)
+  ggsave(paste0("figs/posterior-predictive-quantiles-case-cumsum", id, ext), width = 6, height = 4)
 
 }

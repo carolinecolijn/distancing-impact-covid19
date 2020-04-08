@@ -10,7 +10,10 @@ setwd(here::here("selfIsolationModel", "stan"))
 dir.create("figs", showWarnings = FALSE)
 
 .today <- lubridate::today()
+actual_dates <- new_data$Date
+actual_dates <- seq(actual_dates[1], actual_dates[length(actual_dates)] + 25, by = "1 day")
+
 make_quick_plots(m2, id = paste0("-offset-NB2-", .today))
-make_quick_plots(m, id = "-NB2")
+make_quick_plots(m, id = "-NB2", actual_dates = actual_dates)
 
 setwd(wd)

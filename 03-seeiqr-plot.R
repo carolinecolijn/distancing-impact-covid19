@@ -19,5 +19,6 @@ make_quick_plots(fits[[2]], id = "-NB2-f1-forecast", actual_dates = actual_dates
 
 actual_dates <- seq(actual_dates[1], actual_dates[length(actual_dates)] + 90, by = "1 day")
 make_quick_plots(fits[[3]], id = "-NB2-0.3-sampled-long-projection", actual_dates = actual_dates)
+make_quick_plots(fits[[4]], id = "-NB2-0.3-detection-0.2-f-projection", actual_dates = actual_dates)
 
 setwd(wd)

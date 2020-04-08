@@ -34,55 +34,7 @@ times = seq(from=-30,   # should probably define values up front
   to=30,
   by=0.1)
 
-getlambd <- function(out,
-                     pars,
-                     day,
-                     data = bcdata,
-                     sampFrac = 0.35,
-                     delayShape = 1.9720199,
-                     delayScale = 12.0529283) {
-  meanDelay <- delayScale * gamma(1 + 1 / delayShape)
-  # = 10.685 with parameters 1.972... and 12.0529...
-  try(if (var(diff(out$time)) > 0.005) {
-    stop("approx integral assumes equal time steps")
-  })
-  try(if (max(out$time) < day) {
-    stop("model simulation is not long enough for the data")
-  })
-  try(if (min(out$time) > day - (22 + 1)) {
-    stop("we need an earlier start time for the model")
-  })
-
-  # relevant times to identify new cases
-  ii <- which(out$time > day - 22 & out$time <= day) # then just
-  # need dweibull over this range
-  dx <- out$time[ii[2]] - out$time[ii[1]] # assumes equal time intervals
-
-  # all new cases arising at each of those times
-  incoming <- with(pars, {
-    k2 * (out$E2[ii] + out$E2d[ii])
-  })
-
-  march15_modelform <- data$day[which(data$Date == as.Date("2020-03-14"))]
-  # march15_modelform <- 14
-  thisSamp <- ifelse(day < march15_modelform,
-    sampFrac,
-    sampFrac * pars$ratio
-  ) # here is ratio. it's in pars.
-
-  # each of the past times' contribution to this day's case count
-  ft <- thisSamp * incoming * dweibull(
-    x = max(out$time[ii]) - out$time[ii], # values over which to integrate (correct?)
-    shape = delayShape,
-    scale = delayScale
-  )
-
-  # return numerical integral of ft
-  return(0.5 * (dx) * (ft[1] + 2 * sum(ft[2:(length(ft) - 1)]) + ft[length(ft)]))
-  # aha - just trapeziod rule for integrating?
-}
-
-sim_dat <- purrr::map(1:20, function(x) {
+sim_dat <- purrr::map(1:8, function(x) {
   example_simulation = as.data.frame(deSolve::ode(y = state_0,
     times = times,
     func = socdistmodel,
@@ -96,14 +48,108 @@ sim_dat <- purrr::map(1:20, function(x) {
       lubridate::ymd("2020-04-01"), by = "day"))
   dat$day <- seq_along(dat$Date)
   lambda_d <- sapply(seq(1, max(example_simulation$time)), function(x) {
-    getlambd(example_simulation, pars = pars_default, data = dat, day = x)
+    getlambd(example_simulation, pars = pars, data = dat, day = x)
   })
 
   # plot(seq(1, max(example_simulation$time)), lambda_d)
 
   sim_dat <- data.frame(day = seq(1, max(example_simulation$time)),
-    lambda_d = lambda_d, obs = rpois(30, lambda_d))
+    lambda_d = lambda_d, obs = MASS::rnegbin(30, lambda_d, theta = 1.5))
   sim_dat
 })
 
-saveRDS(sim_dat, file = "sim-test-dat.rds")
+plot(sim_dat[[1]]$lambda_d)
+plot(sim_dat[[1]]$obs)
+
+source("fit_seeiqr.R")
+library(future)
+library(rstan)
+library(dplyr)
+library(ggplot2)
+seeiqr_model <- stan_model("seeiqr.stan")
+plan(multisession)
+sim <- furrr::future_map(1:8, function(x) {
+  fit_seeiqr(
+    sim_dat[[x]]$obs,
+    seeiqr_model = seeiqr_model,
+    forecast_days = 1,
+    R0_prior = c(log(2.65), 0.2),
+    f2_prior = c(0.4, 0.2),
+    iter = 700,
+    days_back = 60,
+    chains = 1)
+})
+# print(sim[[1]]$fit, pars = c("R0", "f2", "phi"))
+
+check_sim <- function(.par) {
+  out <- purrr::map_df(seq_along(sim), function(x) {
+    data.frame(sim = x, parameter = sim[[x]]$post[[.par]])
+  })
+  .hline <- if (.par == "R0") {
+    2.65
+  } else if (.par == "f2") {
+    0.4
+  } else if (.par == "phi") {
+    1.5
+  }
+  ggplot(out, aes_string("as.factor(sim)", "parameter")) +
+    geom_boxplot() +
+    geom_hline(yintercept = .hline) +
+    ylab(.par)
+}
+
+g1 <- check_sim("R0")
+g2 <- check_sim("phi")
+g3 <- check_sim("f2")
+cowplot::plot_grid(g1, g2, g3, nrow = 1)
+
+# Try fitting to posterior predictive draws: -----------------------------
+
+dat <- readr::read_csv(here::here("nCoVDailyData/CaseCounts/BC Case counts.csv"))
+names(dat)[names(dat) == "BC"] <- "Cases"
+dat$Date[71] <- "1/4/2020" # argh
+dat$Date[72] <- "2/4/2020" # argh
+dat$Date <- lubridate::dmy(dat$Date)
+dat$day <- seq_len(nrow(dat))
+dat$daily_diffs <- c(
+  dat$Cases[2] - dat$Cases[1],
+  diff(dat$Cases)
+)
+dat <- dplyr::filter(dat, Date >= "2020-03-01")
+daily_diffs <- dat$daily_diffs
+plot(daily_diffs)
+fit <- fit_seeiqr(
+  daily_diffs,
+  chains = 1,
+  iter = 500,
+  forecast_days = 1,
+  obs_model = "Poisson",
+  seeiqr_model = seeiqr_model)
+print(fit$fit, pars = c("R0", "f2", "phi"))
+fit$post$y_rep[1,]
+
+ppd_sim <- furrr::future_map(1:8, function(x) {
+  fit_seeiqr(
+    daily_cases = fit$post$y_rep[x,],
+    chains = 1,
+    iter = 350,
+    forecast_days = 1,
+    obs_model = "Poisson",
+    seeiqr_model = seeiqr_model)
+})
+
+check_sim <- function(.par) {
+  out <- purrr::map_df(seq_along(ppd_sim), function(x) {
+    data.frame(sim = x, parameter = ppd_sim[[x]]$post[[.par]])
+  })
+  ggplot(out, aes_string("as.factor(sim)", "parameter")) + geom_boxplot() +
+    geom_hline(yintercept = median(fit$post[[.par]])) +
+    geom_hline(yintercept = quantile(fit$post[[.par]], 0.1)) +
+    geom_hline(yintercept = quantile(fit$post[[.par]], 0.9)) +
+    ylab(.par)
+}
+
+g1 <- check_sim("R0")
+g2 <- check_sim("phi")
+g3 <- check_sim("f2")
+cowplot::plot_grid(g1, g2, g3, nrow = 1)

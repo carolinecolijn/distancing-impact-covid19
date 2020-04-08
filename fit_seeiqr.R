@@ -31,7 +31,7 @@ fit_seeiqr <- function(daily_cases,
                        obs_model = c("NB2", "Poisson"),
                        forecast_days = 25,
                        time_increment = 0.1,
-                       days_back = 45,
+                       days_back = 60,
                        R0_prior = c(log(2.6), 0.2),
                        phi_prior = c(log(1), 0.5),
                        f2_prior = c(0.4, 0.1),
@@ -154,6 +154,8 @@ fit_seeiqr <- function(daily_cases,
       1,
       get_beta_params(map_estimate$par[["f2"]], 0.1)$alpha,
       get_beta_params(map_estimate$par[["f2"]], 0.1)$beta
+      # get_beta_params(f2_prior[1], f2_prior[2])$alpha,
+      # get_beta_params(f2_prior[1], f2_prior[2])$beta
     )
     init <- list(R0 = R0, f2 = f2)
     if (stan_data$est_phi) {

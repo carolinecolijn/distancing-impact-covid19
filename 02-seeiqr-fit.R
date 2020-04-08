@@ -21,6 +21,38 @@ dat <- dplyr::filter(dat, Date >= "2020-03-01")
 daily_diffs <- dat$daily_diffs
 plot(daily_diffs)
 
+seeiqr_model <- stan_model("seeiqr.stan")
+
+m <- list()
+m[[1]] <- fit_seeiqr(
+  daily_diffs,
+  seeiqr_model = seeiqr_model)
+m[[2]] <- fit_seeiqr(
+  daily_diffs,
+  fixed_f_forecast = 1,
+  seeiqr_model = seeiqr_model)
+m[[3]] <- fit_seeiqr(
+  daily_diffs,
+  sampled_fraction1 = 0.3,
+  sampled_fraction2 = 0.3,
+  seeiqr_model = seeiqr_model,
+  forecast_days = 90)
+m[[4]] <- fit_seeiqr(
+  daily_diffs,
+  sampled_fraction1 = 0.3,
+  sampled_fraction2 = 0.3,
+  fixed_f_forecast = 0.2,
+  seeiqr_model = seeiqr_model,
+  forecast_days = 90)
+
+# e.g.
+# print(m[[1]]$fit, pars = c("R0", "f2", "phi"))
+# print(m[[4]]$fit, pars = c("R0", "f2", "phi"))
+
+# --------------------------------------------------
+
+
+
 # Load in number of tests each day:
 # Crude for now - want to check how the numbers of cases (positive tests)
 # compare with the ones in dat. Could scale them up perhaps.
@@ -53,31 +85,4 @@ plot(daily_diffs)
 # # Just need the one function:
 # delay_data <- load_tidy_delay_data()[["delay_data"]]
 
-seeiqr_model <- stan_model("seeiqr.stan")
 
-fits <- list()
-fits[[1]] <- fit_seeiqr(
-  daily_diffs,
-  seeiqr_model = seeiqr_model)
-fits[[2]] <- fit_seeiqr(
-  daily_diffs,
-  fixed_f_forecast = 1,
-  seeiqr_model = seeiqr_model)
-fits[[3]] <- fit_seeiqr(
-  daily_diffs,
-  sampled_fraction1 = 0.3,
-  sampled_fraction2 = 0.3,
-  seeiqr_model = seeiqr_model,
-  forecast_days = 90)
-fits[[4]] <- fit_seeiqr(
-  daily_diffs,
-  sampled_fraction1 = 0.3,
-  sampled_fraction2 = 0.3,
-  fixed_f_forecast = 0.2,
-  seeiqr_model = seeiqr_model,
-  forecast_days = 90)
-
-# e.g.
-# print(fits[[1]], pars = c("R0", "f2", "phi"))
-
-setwd(wd)

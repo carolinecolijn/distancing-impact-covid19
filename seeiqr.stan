@@ -141,6 +141,9 @@ model {
   // priors:
   if (est_phi) {
     phi[1] ~ lognormal(phi_prior[1], phi_prior[2]);
+    // https://mc-stan.org/docs/2_20/stan-users-guide/changes-of-variables.html
+    // 1/phi[1] ~ normal(0, phi_prior[2]);
+    // target += -2 * log(phi[1]); // Jacobian adjustment
   }
   R0 ~ lognormal(R0_prior[1], R0_prior[2]);
   f2 ~ beta(f2_prior[1], f2_prior[2]);

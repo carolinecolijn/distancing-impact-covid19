@@ -75,7 +75,6 @@ make_quick_plots <- function(obj, id = "", ext = ".pdf", first_date = "2020-03-0
     ggsave(paste0("figs/theta", id, ext), width = 3.5, height = 4.5)
   }
 
-  cowplot::plot_grid(g1, g2, g3, ncol = 1)
   draws <- sample(seq_along(post$lambda_d[, 1]), 100L)
   variables_df <- dplyr::tibble(
     variable = names(obj$state_0),

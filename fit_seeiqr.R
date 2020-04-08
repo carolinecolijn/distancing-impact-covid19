@@ -17,6 +17,7 @@
 #' @param sampled_fraction1 Fraction sampled before `sampled_fraction_day_change`
 #' @param sampled_fraction2 Fraction sampled at and after `sampled_fraction_day_change`
 #' @param sampled_fraction_day_change Date fraction sample changes
+#' @param f_ratio_forecast Ratio to multiply `f` by in the forecast
 #' @param pars A named numeric vector of fixed parameter values
 #' @param i0 A scaling factor FIXME
 #' @param fsi FIXME
@@ -31,13 +32,14 @@ fit_seeiqr <- function(daily_cases,
                        days_back = 50,
                        R0_prior = c(log(2.6), 0.2),
                        phi_prior = c(log(1), 0.5),
-                       f2_prior = c(0.4, 0.1),
-                       iter = 500,
-                       seed = 42,
+                       f2_prior = c(0.4, 0.15),
+                       iter = 1000,
+                       seed = 4,
                        chains = 4,
                        sampled_fraction1 = 0.35,
                        sampled_fraction2 = 0.70,
                        sampled_fraction_day_change = 14,
+                       f_ratio_forecast = 1,
                        pars = c(
                          N = 4.4e6, D = 5, k1 = 1 / 5,
                          k2 = 1, q = 0.05,
@@ -84,6 +86,8 @@ fit_seeiqr <- function(daily_cases,
   last_day_obs <- length(daily_diffs)
   time <- seq(-30, max(days) + forecast_days, time_increment)
   last_time_obs <- max(which(time < last_day_obs)) # FIXME: + 1?
+  x_r <- c(x_r, f_ratio_forecast)
+  x_r <- c(x_r, last_time_obs)
 
   get_time_id <- function(day, time) max(which(time < day))
   time_day_id <- vapply(days, get_time_id, numeric(1), time = time)

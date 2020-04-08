@@ -31,6 +31,8 @@ functions{
     real f1    = x_r[8];
     real start_decline = x_r[9];
     real end_decline = x_r[10];
+    real f_ratio_forecast = x_r[11];
+    real last_obs_time = x_r[12];
 
     real dydt[12];
 
@@ -41,6 +43,9 @@ functions{
       f = f2 + (end_decline - t) * (f1 - f2) / (end_decline - start_decline);
     } else {
       f = f2;
+    }
+    if (t >= last_obs_time) {
+      f = f * f_ratio_forecast;
     }
 
     dydt[1]  = -(R0/(D+1/k2)) * (I + E2 + f*(Id+E2d)) * S/N - r*S + ur*Sd;
@@ -70,7 +75,7 @@ data {
   int last_day_obs;   // last day of observed data; days after this are projections
   int daily_diffs[last_day_obs]; // daily new case counts
   real offset[N];      // offset in case counts (log(tests))
-  real x_r[10];       // data for ODEs (real numbers)
+  real x_r[12];       // data for ODEs (real numbers)
   real sampFrac[T];   // fraction of cases sampled per time step
   real delayScale;    // Weibull parameter for delay in becoming a case count
   real delayShape;    // Weibull parameter for delay in becoming a case count

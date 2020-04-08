@@ -26,24 +26,29 @@ seeiqr_model <- stan_model("seeiqr.stan")
 m <- list()
 m[[1]] <- fit_seeiqr(
   daily_diffs,
+  forecast_days = 90,
+  iter = 500,
   seeiqr_model = seeiqr_model)
 m[[2]] <- fit_seeiqr(
   daily_diffs,
   fixed_f_forecast = 1,
+  forecast_days = 90,
+  iter = 500,
   seeiqr_model = seeiqr_model)
 m[[3]] <- fit_seeiqr(
   daily_diffs,
   sampled_fraction1 = 0.3,
   sampled_fraction2 = 0.3,
+  iter = 500,
   seeiqr_model = seeiqr_model,
   forecast_days = 90)
-m[[4]] <- fit_seeiqr(
-  daily_diffs,
-  sampled_fraction1 = 0.3,
-  sampled_fraction2 = 0.3,
-  fixed_f_forecast = 0.2,
-  seeiqr_model = seeiqr_model,
-  forecast_days = 90)
+# m[[4]] <- fit_seeiqr(
+#   daily_diffs,
+#   sampled_fraction1 = 0.3,
+#   sampled_fraction2 = 0.3,
+#   fixed_f_forecast = 0.2,
+#   seeiqr_model = seeiqr_model,
+#   forecast_days = 90)
 
 # e.g.
 # print(m[[1]]$fit, pars = c("R0", "f2", "phi"))

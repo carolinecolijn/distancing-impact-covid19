@@ -56,10 +56,26 @@ plot(daily_diffs)
 seeiqr_model <- stan_model("seeiqr.stan")
 
 fits <- list()
-fits[[1]] <- fit_seeiqr(daily_diffs, seeiqr_model = seeiqr_model)
-fits[[2]] <- fit_seeiqr(daily_diffs, fixed_f_forecast = 1, seeiqr_model = seeiqr_model)
-fits[[3]] <- fit_seeiqr(daily_diffs, sampled_fraction1 = 0.3, sampled_fraction2 = 0.3,
-  seeiqr_model = seeiqr_model, forecast_days = 90)
+fits[[1]] <- fit_seeiqr(
+  daily_diffs,
+  seeiqr_model = seeiqr_model)
+fits[[2]] <- fit_seeiqr(
+  daily_diffs,
+  fixed_f_forecast = 1,
+  seeiqr_model = seeiqr_model)
+fits[[3]] <- fit_seeiqr(
+  daily_diffs,
+  sampled_fraction1 = 0.3,
+  sampled_fraction2 = 0.3,
+  seeiqr_model = seeiqr_model,
+  forecast_days = 90)
+fits[[4]] <- fit_seeiqr(
+  daily_diffs,
+  sampled_fraction1 = 0.3,
+  sampled_fraction2 = 0.3,
+  fixed_f_forecast = 0.2,
+  seeiqr_model = seeiqr_model,
+  forecast_days = 90)
 
 # e.g.
 # print(fits[[1]], pars = c("R0", "f2", "phi"))

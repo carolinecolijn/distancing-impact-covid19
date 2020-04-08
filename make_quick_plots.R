@@ -11,7 +11,7 @@ make_quick_plots <- function(obj, id = "", ext = ".png", actual_dates) {
 
   R0 <- post$R0
   .x <- seq(1.8, 2.8, length.out = 200)
-  breaks <- seq(min(.x), max(.x), 0.05)
+  breaks <- seq(min(.x), max(.x), 0.025)
   ggplot(tibble(R0 = R0)) +
     geom_ribbon(
       data = tibble(R0 = .x,

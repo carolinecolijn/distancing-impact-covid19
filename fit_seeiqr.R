@@ -14,9 +14,9 @@
 #'   where NB2(mu, phi) and `Var(Y) = mu + mu^2 / phi`.
 #'   <https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations>
 #' @param f2_prior Beta mean and SD for `f2` parameter (fraction of infection force?)
-#' @param iter MCMC iterations per chain
 #' @param seed MCMC seed
 #' @param chains Number of MCMC chains
+#' @param iter MCMC iterations per chain
 #' @param sampled_fraction1 Fraction sampled before `sampled_fraction_day_change`
 #' @param sampled_fraction2 Fraction sampled at and after `sampled_fraction_day_change`
 #' @param sampled_fraction_day_change Date fraction sample changes
@@ -37,9 +37,9 @@ fit_seeiqr <- function(daily_cases,
                        R0_prior = c(log(2.6), 0.2),
                        phi_prior = 1,
                        f2_prior = c(0.4, 0.15),
-                       iter = 1000,
                        seed = 4,
-                       chains = 4,
+                       chains = if (parallel::detectCores() > 8) 8 else 4,
+                       iter = if (chains == 8) 500 else 1000,
                        sampled_fraction1 = 0.35,
                        sampled_fraction2 = 0.70,
                        sampled_fraction_day_change = 14,

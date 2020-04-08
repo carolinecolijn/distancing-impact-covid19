@@ -1,7 +1,6 @@
 library(rstan)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
-wd <- getwd()
 setwd(here::here("selfIsolationModel", "stan"))
 source("fit_seeiqr.R")
 
@@ -15,7 +14,7 @@ dat$daily_diffs <- c(
   dat$Cases[2] - dat$Cases[1],
   diff(dat$Cases)
 )
-# TODO: fudge this for now to give same start date as bcdata
+# TODO: fudge this for now to give same start date as `bcdata`
 # (which the initial conditions have been tuned to somewhat).
 dat <- dplyr::filter(dat, Date >= "2020-03-01")
 daily_diffs <- dat$daily_diffs
@@ -23,25 +22,38 @@ plot(daily_diffs)
 
 seeiqr_model <- stan_model("seeiqr.stan")
 
+chains <- if (parallel::detectCores() > 8) 6 else 4
+iter <- if (chains == 6) 500 else 750
+
 m <- list()
 m[[1]] <- fit_seeiqr(
   daily_diffs,
-  forecast_days = 90,
-  iter = 500,
+  forecast_days = 60,
+  iter = iter,
+  chains = chains,
   seeiqr_model = seeiqr_model)
 m[[2]] <- fit_seeiqr(
   daily_diffs,
   fixed_f_forecast = 1,
   forecast_days = 90,
-  iter = 500,
+  iter = iter,
+  chains = chains,
   seeiqr_model = seeiqr_model)
 m[[3]] <- fit_seeiqr(
   daily_diffs,
   sampled_fraction1 = 0.3,
   sampled_fraction2 = 0.3,
-  iter = 500,
+  iter = iter,
+  chains = chains,
   seeiqr_model = seeiqr_model,
   forecast_days = 90)
+m[[4]] <- fit_seeiqr(
+  daily_diffs,
+  forecast_days = 90,
+  iter = iter,
+  chains = chains,
+  obs_model = "Poisson",
+  seeiqr_model = seeiqr_model)
 # m[[4]] <- fit_seeiqr(
 #   daily_diffs,
 #   sampled_fraction1 = 0.3,
@@ -55,8 +67,6 @@ m[[3]] <- fit_seeiqr(
 # print(m[[4]]$fit, pars = c("R0", "f2", "phi"))
 
 # --------------------------------------------------
-
-
 
 # Load in number of tests each day:
 # Crude for now - want to check how the numbers of cases (positive tests)
@@ -89,5 +99,3 @@ m[[3]] <- fit_seeiqr(
 # source(here::here("/selfIsolationModel/SIR-functionalised/funcs.R"))
 # # Just need the one function:
 # delay_data <- load_tidy_delay_data()[["delay_data"]]
-
-

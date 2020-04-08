@@ -1,6 +1,14 @@
-make_quick_plots <- function(obj, id = "", ext = ".png", actual_dates) {
+# Apologies, as the function is named, these are some very quick plots and
+# some messy code. This could be cleaned up into something much shorter
+# in more elegant. -SA
+
+make_quick_plots <- function(obj, id = "", ext = ".png", first_date = "2020-03-01") {
   post <- obj$post
   fit <- obj$fit
+
+  actual_dates <- seq(lubridate::ymd(first_date),
+    lubridate::ymd(first_date) + max(obj$days), by = "1 day")
+
   fit_array <- as.array(fit)
   if ("phi" %in% names(post)) {
     bayesplot::mcmc_trace(fit_array, pars = c("R0", "f2", "phi[1]"))
@@ -10,8 +18,8 @@ make_quick_plots <- function(obj, id = "", ext = ".png", actual_dates) {
   ggsave(paste0("figs/traceplot", id, ext), width = 6, height = 3)
 
   R0 <- post$R0
-  .x <- seq(1.8, 2.8, length.out = 200)
-  breaks <- seq(min(.x), max(.x), 0.025)
+  .x <- seq(2, 3.2, length.out = 200)
+  breaks <- seq(min(.x), max(.x), 0.02)
   ggplot(tibble(R0 = R0)) +
     geom_ribbon(
       data = tibble(R0 = .x,
@@ -47,12 +55,12 @@ make_quick_plots <- function(obj, id = "", ext = ".png", actual_dates) {
 
   if ("phi" %in% names(post)) {
     phi_hat <- post$phi[, 1]
-    .x <- seq(0.1, 4, length.out = 200)
-    breaks <- seq(min(.x), max(.x), 0.08)
+    .x <- seq(0.01, 100, length.out = 20000)
+    breaks <- seq(0, 5, 0.1)
     ggplot(tibble(phi = phi_hat)) +
       geom_ribbon(
-        data = tibble(phi = .x,
-          density = dlnorm(.x, obj$R0_prior[1], obj$R0_prior[1])),
+        data = tibble(phi = 1/sqrt(.x),
+          density = dnorm(.x, 0, obj$phi_prior)),
         aes(x = phi, ymin = 0, ymax = density),
         alpha = 0.5, colour = "grey50", fill = "grey50"
       ) +
@@ -60,7 +68,7 @@ make_quick_plots <- function(obj, id = "", ext = ".png", actual_dates) {
         breaks = breaks, aes(x = phi, y = ..density..),
         fill = "blue", alpha = 0.5
       ) +
-      coord_cartesian(xlim = range(.x), expand = FALSE)
+      coord_cartesian(expand = FALSE, xlim = c(0, 5))
     ggsave(paste0("figs/phi", id, ext), width = 6, height = 4)
   }
 

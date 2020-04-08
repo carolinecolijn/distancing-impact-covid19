@@ -48,6 +48,8 @@ diff(new_data$Date)
 plot(total_tests)
 plot(daily_diffs/total_tests)
 
+total_tests <- c(total_tests, rep(total_tests[length(total_tests)], 25))
+
 ## Andy's code, to be integrated...
 # TODO: setup-dates.R explains how Andy is setting up the dates (it's mostly
 # explanations that I didn't want to clutter up here).
@@ -60,6 +62,6 @@ plot(daily_diffs/total_tests)
 # delay_data <- load_tidy_delay_data()[["delay_data"]]
 
 m <- fit_seeiqr(daily_diffs)
-# m2 <- fit_seeiqr(daily_diffs, daily_tests = total_tests)
+m2 <- fit_seeiqr(daily_diffs, daily_tests = total_tests, forecast_days = 25)
 
 setwd(wd)

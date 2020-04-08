@@ -1,7 +1,9 @@
 #' Fit the Stan SEEIQR model
 #'
 #' @param daily_cases A vector of daily new cases
-#' @param daily_cases An optional vector of daily test numbers
+#' @param daily_tests An optional vector of daily test numbers.
+#'   Should include assumed tests for the forecast.
+#'   I.e. `length(daily_cases) + forecast_days = length(daily_cases)`
 #' @param obs_model Type of observation model
 #' @param forecast_days Number of days into the future to forecast
 #' @param time_increment Time increment for Weibull delay-model integration
@@ -64,7 +66,7 @@ fit_seeiqr <- function(daily_cases,
   x_r <- pars
 
   if (!is.null(daily_tests)) {
-    stopifnot(length(daily_tests) == length(daily_cases))
+    stopifnot(length(daily_cases) + forecast_days == length(daily_tests))
     if (min(daily_tests) == 0) {
       warning("Replacing 0 daily tests with 1.")
       daily_tests[daily_tests == 0] <- 1

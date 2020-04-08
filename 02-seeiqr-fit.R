@@ -95,27 +95,48 @@ m[[10]] <- fit_seeiqr(
   ),
   delayScale = 9,
   seeiqr_model = seeiqr_model)
+m[[11]] <- fit_seeiqr(
+  daily_diffs,
+  sampled_fraction1 = 0.2,
+  sampled_fraction2 = 0.7,
+  sampled_fraction_day_change = 12,
+  delayScale = 9,
+  seeiqr_model = seeiqr_model)
+m[[12]] <- fit_seeiqr(
+  daily_diffs,
+  delayScale = 9,
+  seeiqr_model = seeiqr_model)
+m[[13]] <- fit_seeiqr(
+  daily_diffs,
+  sampled_fraction1 = 0.1,
+  sampled_fraction2 = 0.7,
+  sampled_fraction_day_change = 12,
+  seeiqr_model = seeiqr_model)
 
-ignore <- lapply(seq_along(m), function(x) {
-  saveRDS(m[[x]], file = paste0("models/stan-fit-", x, ".rds"))
-})
-
-# or start here to avoid re-fitting:
-f <- list.files("models", full.names = TRUE)
-m <- lapply(seq_along(f), function(x) {
-  readRDS(paste0("models/stan-fit-", x, ".rds"))
-})
+# ignore <- lapply(seq_along(m), function(x) {
+#   saveRDS(m[[x]], file = paste0("models/stan-fit-", x, ".rds"))
+# })
+#
+# # or start here to avoid re-fitting:
+# f <- list.files("models", full.names = TRUE)
+# m <- lapply(seq_along(f), function(x) {
+#   readRDS(paste0("models/stan-fit-", x, ".rds"))
+# })
 names(m) <- c(
-  "Strength of S.D.\nas estimated",
-  "Strength of S.D.\nprojected 1.0",
-  "Sampled 0.3;\nStrength of S.D.\nas estimated",
-  "Poisson",
-  "Strength of S.D.\nprojected 0.6",
-  "Strength of S.D.\nprojected 0.2",
-  "Sampling 0.2-0.7\non day 12",
-  "ur = 0.2; D = 4",
-  "ur = 0.2; D = 4; k = 1/4",
-  "ur = 0.2; D = 4; k = 1/4; delayScale = 9")
+  "01. Strength of S.D.\nas estimated",
+  "02. Strength of S.D.\nprojected 1.0",
+  "03. Sampled 0.3;\nStrength of S.D.\nas estimated",
+  "04. Poisson",
+  "05. Strength of S.D.\nprojected 0.6",
+  "06. Strength of S.D.\nprojected 0.2",
+  "07. Sampling 0.2-0.7\non day 12",
+  "08. ur = 0.2; D = 4",
+  "09. ur = 0.2; D = 4; k = 1/4",
+  "10. ur = 0.2; D = 4; k = 1/4;\ndelayScale = 9",
+  "11. Sampling 0.2-0.7\non day 12;\ndelayScale = 9",
+  "12. Strength of S.D.\nas estimated\ndelayScale = 9",
+  "13. Sampling 0.1-0.7\non day 12"
+  )
 
 # Check summary:
 # e.g.
@@ -167,11 +188,11 @@ make_projection_plot <- function(models, cumulative = FALSE,
       value = obj$daily_cases)
   }
   cols <- RColorBrewer::brewer.pal(8, "Dark2")
-  cols <- rep(cols, 2)
+  cols <- rep(cols, 5)
   ggplot(out, aes(x = day, y = med, ymin = lwr, ymax = upr, colour = Scenario,
     fill = Scenario)) +
     geom_ribbon(alpha = 0.2, colour = NA) +
-    facet_wrap(~Scenario, ncol = 2) +
+    facet_wrap(~Scenario, ncol = 3) +
     geom_ribbon(alpha = 0.2, mapping = aes(ymin = lwr2, ymax = upr2), colour = NA) +
     geom_line(alpha = 0.9, lwd = 1) +
     geom_point(
@@ -195,16 +216,15 @@ make_projection_plot <- function(models, cumulative = FALSE,
 .today <- lubridate::today()
 make_projection_plot(m)
 ggsave(paste0("figs/case-projections-", .today, ".png"),
-  width = 6, height = 8.5)
-make_projection_plot(m, cumulative = TRUE, ylim = c(0, 3500))
-ggsave(paste0("figs/cumulative-case-projections-", .today, ".png"),
-  width = 6, height = 8.5)
+  width = 8, height = 10)
+# make_projection_plot(m, cumulative = TRUE, ylim = c(0, 3500))
+# ggsave(paste0("figs/cumulative-case-projections-", .today, ".png"),
+#   width = 6, height = 9)
 
 
 # Theta plots ---------------------------------------------------------
 
 m2 <- m
-names(m2) <- c("f as estimated", "f projected 1.0", "Sampled 0.3;\nf as estimated", "Poisson", "f projected 0.6", "f projected 0.2")
 
 R0 <- purrr::map_df(m2, function(.x) {
   data.frame(theta = "R0", value = .x$post$R0, stringsAsFactors = FALSE)
@@ -228,7 +248,7 @@ ggplot(theta_df, aes(value)) +
   coord_cartesian(expand = FALSE, ylim = c(0, NA)) +
   ylab("")
 ggsave(paste0("figs/theta-posteriors", .today, ".png"),
-  width = 5, height = 7)
+  width = 5, height = 18)
 
 
 # --------------------------------------------------

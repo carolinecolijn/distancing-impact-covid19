@@ -5,27 +5,25 @@ wd <- getwd()
 setwd(here::here("selfIsolationModel", "stan"))
 source("fit_seeiqr.R")
 
-new_data <- readr::read_csv(here::here("nCoVDailyData/CaseCounts/BC Case counts.csv"))
-names(new_data)[names(new_data) == "BC"] <- "Cases"
-
-new_data$Date[71] <- "1/4/2020" # argh
-new_data$Date[72] <- "2/4/2020" # argh
-new_data$Date <- lubridate::dmy(new_data$Date)
-
-new_data$day <- seq_len(nrow(new_data))
-new_data$daily_diffs <- c(
-  new_data$Cases[2] - new_data$Cases[1],
-  diff(new_data$Cases)
+dat <- readr::read_csv(here::here("nCoVDailyData/CaseCounts/BC Case counts.csv"))
+names(dat)[names(dat) == "BC"] <- "Cases"
+dat$Date[71] <- "1/4/2020" # argh
+dat$Date[72] <- "2/4/2020" # argh
+dat$Date <- lubridate::dmy(dat$Date)
+dat$day <- seq_len(nrow(dat))
+dat$daily_diffs <- c(
+  dat$Cases[2] - dat$Cases[1],
+  diff(dat$Cases)
 )
 # TODO: fudge this for now to give same start date as bcdata
 # (which the initial conditions have been tuned to somewhat).
-new_data <- dplyr::filter(new_data, Date >= "2020-03-01")
-daily_diffs <- new_data$daily_diffs
+dat <- dplyr::filter(dat, Date >= "2020-03-01")
+daily_diffs <- dat$daily_diffs
 plot(daily_diffs)
 
 # Load in number of tests each day:
 # Crude for now - want to check how the numbers of cases (positive tests)
-# compare with the ones in new_data. Could scale them up perhaps.
+# compare with the ones in dat. Could scale them up perhaps.
 # load(paste0(here::here(),
 #   "/nCoVDailyData/Labdata/testsanonym.RData"))
 # # Only contains dataframe 'testsanonymized'
@@ -36,10 +34,10 @@ plot(daily_diffs)
 #   dplyr::group_by(results_date) %>%
 #   dplyr::count(name = "total_tests")
 # total_tests <- dplyr::filter(tests_by_day,
-#   results_date %in% unique(new_data$Date))$total_tests
+#   results_date %in% unique(dat$Date))$total_tests
 # length(daily_diffs)
 # length(total_tests)
-# diff(new_data$Date)
+# diff(dat$Date)
 # plot(total_tests)
 # plot(daily_diffs/total_tests)
 # total_tests <- c(total_tests, rep(total_tests[length(total_tests)], 25))
@@ -61,7 +59,7 @@ fits <- list()
 fits[[1]] <- fit_seeiqr(daily_diffs, seeiqr_model = seeiqr_model)
 fits[[2]] <- fit_seeiqr(daily_diffs, fixed_f_forecast = 1, seeiqr_model = seeiqr_model)
 fits[[3]] <- fit_seeiqr(daily_diffs, sampled_fraction2 = 0.3, sampled_fraction2 = 0.3,
-  seeiqr_model = seeiqr_model)
+  seeiqr_model = seeiqr_model, forecast_days = 90)
 
 # e.g.
 # print(fits[[1]], pars = c("R0", "f2", "phi"))

@@ -63,30 +63,30 @@ m[[5]] <- fit_seeiqr(
 # Load in number of tests each day:
 # Crude for now - want to check how the numbers of cases (positive tests)
 # compare with the ones in dat. Could scale them up perhaps.
-load(paste0(here::here(),
-  "/nCoVDailyData/Labdata/testsanonym.RData"))
-# Only contains dataframe 'testsanonymized'
-tests_anon <- dplyr::as_tibble(testsanonymized) %>%
-  type.convert() %>%
-  dplyr::mutate(results_date = lubridate::date(results_date))
-tests_by_day <- tests_anon %>%
-  dplyr::group_by(results_date) %>%
-  dplyr::count(name = "total_tests")
-total_tests <- dplyr::filter(tests_by_day,
-  results_date %in% unique(dat$Date))$total_tests
-length(daily_diffs)
-length(total_tests)
-diff(dat$Date)
-plot(total_tests)
-plot(daily_diffs/total_tests)
-total_tests <- c(total_tests, rep(total_tests[length(total_tests)], 60)) # 60 day forecast
-
-m[[6]] <- fit_seeiqr(
-  daily_diffs,
-  fixed_f_forecast = 0.6,
-  forecast_days = 60,
-  daily_tests = total_tests,
-  seeiqr_model = seeiqr_model)
+# load(paste0(here::here(),
+#   "/nCoVDailyData/Labdata/testsanonym.RData"))
+# # Only contains dataframe 'testsanonymized'
+# tests_anon <- dplyr::as_tibble(testsanonymized) %>%
+#   type.convert() %>%
+#   dplyr::mutate(results_date = lubridate::date(results_date))
+# tests_by_day <- tests_anon %>%
+#   dplyr::group_by(results_date) %>%
+#   dplyr::count(name = "total_tests")
+# total_tests <- dplyr::filter(tests_by_day,
+#   results_date %in% unique(dat$Date))$total_tests
+# length(daily_diffs)
+# length(total_tests)
+# diff(dat$Date)
+# plot(total_tests)
+# plot(daily_diffs/total_tests)
+# total_tests <- c(total_tests, rep(total_tests[length(total_tests)], 60)) # 60 day forecast
+#
+# m[[6]] <- fit_seeiqr(
+#   daily_diffs,
+#   fixed_f_forecast = 0.6,
+#   forecast_days = 60,
+#   daily_tests = total_tests,
+#   seeiqr_model = seeiqr_model)
 
 ## Andy's code, to be integrated...
 # TODO: setup-dates.R explains how Andy is setting up the dates (it's mostly

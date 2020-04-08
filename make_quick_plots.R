@@ -80,18 +80,21 @@ make_quick_plots <- function(obj, id = "", ext = ".pdf", first_date = "2020-03-0
     variable = names(obj$state_0),
     variable_num = seq_along(obj$state_0)
   )
-  ts_df <- dplyr::tibble(time = obj$time, time_num = seq_along(obj$time))
-  states <- reshape2::melt(post$y_hat) %>%
-    dplyr::rename(time_num = Var2, variable_num = Var3) %>%
-    dplyr::filter(iterations %in% draws) %>%
-    dplyr::left_join(variables_df, by = "variable_num") %>%
-    dplyr::left_join(ts_df, by = "time_num")
 
-  g <- ggplot(states, aes(time, value, group = iterations)) +
-    geom_line(alpha = 0.1) +
-    facet_wrap(~variable, scales = "free_y") +
-    geom_vline(xintercept = obj$last_day_obs, lty = 2, alpha = 0.6)
-  ggsave(paste0("figs/states", id, ext), width = 12, height = 7.5)
+  if ("y_hat" %in% names(post)) {
+    ts_df <- dplyr::tibble(time = obj$time, time_num = seq_along(obj$time))
+    states <- reshape2::melt(post$y_hat) %>%
+      dplyr::rename(time_num = Var2, variable_num = Var3) %>%
+      dplyr::filter(iterations %in% draws) %>%
+      dplyr::left_join(variables_df, by = "variable_num") %>%
+      dplyr::left_join(ts_df, by = "time_num")
+
+    g <- ggplot(states, aes(time, value, group = iterations)) +
+      geom_line(alpha = 0.1) +
+      facet_wrap(~variable, scales = "free_y") +
+      geom_vline(xintercept = obj$last_day_obs, lty = 2, alpha = 0.6)
+    ggsave(paste0("figs/states", id, ext), width = 12, height = 7.5)
+  }
 
   draws <- sample(seq_along(post$lambda_d[, 1]), 400L)
   g <- reshape2::melt(post$lambda_d) %>%

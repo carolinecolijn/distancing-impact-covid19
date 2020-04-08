@@ -1,24 +1,29 @@
 #' Fit the Stan SEEIQR model
 #'
 #' @param daily_cases A vector of daily new cases
-#' @param daily_tests An optional vector of daily test numbers.
-#'   Should include assumed tests for the forecast.
-#'   I.e. `length(daily_cases) + forecast_days = length(daily_cases)`
+#' @param daily_tests An optional vector of daily test numbers. Should include
+#'   assumed tests for the forecast. I.e. `length(daily_cases) + forecast_days =
+#'   length(daily_cases)`
 #' @param Model from `rstan::stan_model(seeiqr_model)`.
 #' @param obs_model Type of observation model
 #' @param forecast_days Number of days into the future to forecast
-#' @param time_increment Time increment for ODEs and Weibull delay-model integration
-#' @param days_back Number of days to go back for Weibull delay-model integration
+#' @param time_increment Time increment for ODEs and Weibull delay-model
+#'   integration
+#' @param days_back Number of days to go back for Weibull delay-model
+#'   integration
 #' @param R0_prior Lognormal log mean and SD for R0 prior
-#' @param phi_prior SD of `1/sqrt(phi) ~ Normal(0, SD)` prior,
-#'   where NB2(mu, phi) and `Var(Y) = mu + mu^2 / phi`.
+#' @param phi_prior SD of `1/sqrt(phi) ~ Normal(0, SD)` prior, where NB2(mu,
+#'   phi) and `Var(Y) = mu + mu^2 / phi`.
 #'   <https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations>
-#' @param f2_prior Beta mean and SD for `f2` parameter (fraction of infection force?)
+#' @param f2_prior Beta mean and SD for `f2` parameter (fraction of infection
+#'   force?)
 #' @param seed MCMC seed
 #' @param chains Number of MCMC chains
 #' @param iter MCMC iterations per chain
-#' @param sampled_fraction1 Fraction sampled before `sampled_fraction_day_change`
-#' @param sampled_fraction2 Fraction sampled at and after `sampled_fraction_day_change`
+#' @param sampled_fraction1 Fraction sampled before
+#'   `sampled_fraction_day_change`
+#' @param sampled_fraction2 Fraction sampled at and after
+#'   `sampled_fraction_day_change`
 #' @param sampled_fraction_day_change Date fraction sample changes
 #' @param fixed_f_forecast Optional fixed `f` for forecast.
 #' @param pars A named numeric vector of fixed parameter values
@@ -26,12 +31,14 @@
 #' @param fsi FIXME
 #' @param nsi FIXME
 #' @param state_0 Initial state: a named numeric vector
+#' @param save_state_predictions Include the state predictions? `y_hat`
+#'   Will make the resulting model object much larger.
 
 fit_seeiqr <- function(daily_cases,
                        daily_tests = NULL,
                        seeiqr_model,
                        obs_model = c("NB2", "Poisson"),
-                       forecast_days = 30,
+                       forecast_days = 60, # a bit faster if this is decreased
                        time_increment = 0.2,
                        days_back = 60,
                        R0_prior = c(log(2.6), 0.2),
@@ -39,7 +46,7 @@ fit_seeiqr <- function(daily_cases,
                        f2_prior = c(0.4, 0.15),
                        seed = 4,
                        chains = if (parallel::detectCores() > 8) 8 else 4,
-                       iter = if (chains == 8) 500 else 1000,
+                       iter = if (chains == 8) 400 else 800,
                        sampled_fraction1 = 0.35,
                        sampled_fraction2 = 0.70,
                        sampled_fraction_day_change = 14,
@@ -67,7 +74,8 @@ fit_seeiqr <- function(daily_cases,
                          Id = 0.5 * fsi * i0,
                          Qd = 0,
                          Rd = 0
-                       )) {
+                       ),
+                        save_state_predictions = FALSE) {
   obs_model <- match.arg(obs_model)
   obs_model <- if (obs_model == "NB2") 1L else 0L
   x_r <- pars
@@ -113,7 +121,8 @@ fit_seeiqr <- function(daily_cases,
   )
 
   sampFrac <- ifelse(seq_along(time) < time_day_id[sampled_fraction_day_change],
-    sampled_fraction1, sampled_fraction2)
+    sampled_fraction1, sampled_fraction2
+  )
 
   beta_sd <- f2_prior[2]
   beta_mean <- f2_prior[1]
@@ -163,6 +172,8 @@ fit_seeiqr <- function(daily_cases,
     }
     init
   }
+  pars_save <- c("R0", "f2", "phi", "lambda_d", "y_rep")
+  if (save_state_predictions) pars_save <- c(pars_save, "y_hat")
   fit <- sampling(
     seeiqr_model,
     data = stan_data,
@@ -170,7 +181,7 @@ fit_seeiqr <- function(daily_cases,
     chains = chains,
     init = function() initf(stan_data),
     seed = seed, # https://xkcd.com/221/
-    pars = c("R0", "f2", "phi", "lambda_d", "y_hat", "y_rep")
+    pars = pars_save
   )
   post <- rstan::extract(fit)
   list(fit = fit, post = post, phi_prior = phi_prior, R0_prior = R0_prior, f2_prior = f2_prior, obs_model = obs_model, sampFrac = sampFrac, state_0 = state_0, daily_cases = daily_cases, daily_tests = daily_tests, days = days, time = time, last_day_obs = last_day_obs, pars = x_r, f2_prior_beta_shape1 = beta_shape1, f2_prior_beta_shape2 = beta_shape2, stan_data = stan_data)

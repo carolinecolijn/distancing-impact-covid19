@@ -49,6 +49,52 @@ m[[6]] <- fit_seeiqr(
   daily_diffs,
   fixed_f_forecast = 0.2,
   seeiqr_model = seeiqr_model)
+m[[7]] <- fit_seeiqr(
+  daily_diffs,
+  sampled_fraction1 = 0.2,
+  sampled_fraction2 = 0.7,
+  sampled_fraction_day_change = 12,
+  seeiqr_model = seeiqr_model)
+m[[8]] <- fit_seeiqr(
+  daily_diffs,
+  sampled_fraction1 = 0.2,
+  sampled_fraction2 = 0.7,
+  sampled_fraction_day_change = 12,
+  pars = c(
+    N = 4.4e6, D = 4, k1 = 1 / 5,
+    k2 = 1, q = 0.05,
+    r = 1, ur = 0.2, f1 = 1.0,
+    start_decline = 15,
+    end_decline = 22
+  ),
+  seeiqr_model = seeiqr_model)
+m[[9]] <- fit_seeiqr(
+  daily_diffs,
+  sampled_fraction1 = 0.2,
+  sampled_fraction2 = 0.7,
+  sampled_fraction_day_change = 12,
+  pars = c(
+    N = 4.4e6, D = 4, k1 = 1 / 4,
+    k2 = 1, q = 0.05,
+    r = 1, ur = 0.2, f1 = 1.0,
+    start_decline = 15,
+    end_decline = 22
+  ),
+  seeiqr_model = seeiqr_model)
+m[[10]] <- fit_seeiqr(
+  daily_diffs,
+  sampled_fraction1 = 0.2,
+  sampled_fraction2 = 0.7,
+  sampled_fraction_day_change = 12,
+  pars = c(
+    N = 4.4e6, D = 4, k1 = 1 / 4,
+    k2 = 1, q = 0.05,
+    r = 1, ur = 0.2, f1 = 1.0,
+    start_decline = 15,
+    end_decline = 22
+  ),
+  delayScale = 9,
+  seeiqr_model = seeiqr_model)
 
 ignore <- lapply(seq_along(m), function(x) {
   saveRDS(m[[x]], file = paste0("models/stan-fit-", x, ".rds"))
@@ -59,7 +105,17 @@ f <- list.files("models", full.names = TRUE)
 m <- lapply(seq_along(f), function(x) {
   readRDS(paste0("models/stan-fit-", x, ".rds"))
 })
-names(m) <- c("f as estimated", "f projected 1.0", "Sampled 0.3; f as estimated", "Poisson", "f projected 0.6", "f projected 0.2")
+names(m) <- c(
+  "Strength of S.D.\nas estimated",
+  "Strength of S.D.\nprojected 1.0",
+  "Sampled 0.3;\nStrength of S.D.\nas estimated",
+  "Poisson",
+  "Strength of S.D.\nprojected 0.6",
+  "Strength of S.D.\nprojected 0.2",
+  "Sampling 0.2-0.7\non day 12",
+  "ur = 0.2; D = 4",
+  "ur = 0.2; D = 4; k = 1/4",
+  "ur = 0.2; D = 4; k = 1/4; delayScale = 9")
 
 # Check summary:
 # e.g.
@@ -110,10 +166,12 @@ make_projection_plot <- function(models, cumulative = FALSE,
     dat <- tibble(day = actual_dates[1:obj$last_day_obs],
       value = obj$daily_cases)
   }
+  cols <- RColorBrewer::brewer.pal(8, "Dark2")
+  cols <- rep(cols, 2)
   ggplot(out, aes(x = day, y = med, ymin = lwr, ymax = upr, colour = Scenario,
     fill = Scenario)) +
     geom_ribbon(alpha = 0.2, colour = NA) +
-    facet_wrap(~Scenario) +
+    facet_wrap(~Scenario, ncol = 2) +
     geom_ribbon(alpha = 0.2, mapping = aes(ymin = lwr2, ymax = upr2), colour = NA) +
     geom_line(alpha = 0.9, lwd = 1) +
     geom_point(
@@ -125,22 +183,53 @@ make_projection_plot <- function(models, cumulative = FALSE,
       col = "black", inherit.aes = FALSE, aes(x = day, y = value), lwd = 0.3,
       alpha = 0.8
     ) +
-    ylab("New cases") +
+    ylab(if (!cumulative) "New cases" else "Cumulative cases") +
     xlab("Day") +
     geom_vline(xintercept = actual_dates[obj$last_day_obs], lty = 2, alpha = 0.6) +
     coord_cartesian(expand = FALSE, ylim = ylim) +
-    scale_color_brewer(palette = "Dark2") +
-    scale_fill_brewer(palette = "Dark2") +
+    scale_color_manual(values = cols) +
+    scale_fill_manual(values = cols) +
     theme(legend.position = "none")
 }
 
 .today <- lubridate::today()
 make_projection_plot(m)
 ggsave(paste0("figs/case-projections-", .today, ".png"),
-  width = 8.5, height = 6)
+  width = 6, height = 8.5)
 make_projection_plot(m, cumulative = TRUE, ylim = c(0, 3500))
 ggsave(paste0("figs/cumulative-case-projections-", .today, ".png"),
-  width = 8.5, height = 6)
+  width = 6, height = 8.5)
+
+
+# Theta plots ---------------------------------------------------------
+
+m2 <- m
+names(m2) <- c("f as estimated", "f projected 1.0", "Sampled 0.3;\nf as estimated", "Poisson", "f projected 0.6", "f projected 0.2")
+
+R0 <- purrr::map_df(m2, function(.x) {
+  data.frame(theta = "R0", value = .x$post$R0, stringsAsFactors = FALSE)
+}, .id = "Scenario")
+phi <- purrr::map_df(m2, function(.x) {
+  if ("phi" %in% names(.x$post)) {
+    data.frame(theta = "phi", value = .x$post$phi[,1], stringsAsFactors = FALSE)
+  } else {
+    data.frame(theta = "phi", value = NA, stringsAsFactors = FALSE)
+  }
+}, .id = "Scenario")
+f2 <- purrr::map_df(m2, function(.x) {
+  data.frame(theta = "f2", value = .x$post$f2, stringsAsFactors = FALSE)
+}, .id = "Scenario")
+theta_df <- bind_rows(R0, f2) %>% as_tibble()
+
+# R0_prior <-
+ggplot(theta_df, aes(value)) +
+  facet_grid(Scenario~theta, scales = "free") +
+  geom_histogram(bins = 30, fill = "white", colour = "grey20") +
+  coord_cartesian(expand = FALSE, ylim = c(0, NA)) +
+  ylab("")
+ggsave(paste0("figs/theta-posteriors", .today, ".png"),
+  width = 5, height = 7)
+
 
 # --------------------------------------------------
 

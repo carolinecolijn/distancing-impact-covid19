@@ -75,7 +75,10 @@ fit_seeiqr <- function(daily_cases,
                          Qd = 0,
                          Rd = 0
                        ),
-                        save_state_predictions = FALSE) {
+                        save_state_predictions = FALSE,
+                        delayScale = 12.0529283,
+                        delayShape = 1.9720199
+  ) {
   obs_model <- match.arg(obs_model)
   obs_model <- if (obs_model == "NB2") 1L else 0L
   x_r <- pars
@@ -120,6 +123,7 @@ fit_seeiqr <- function(daily_cases,
     time = time, days_back = days_back
   )
 
+  # FIXME: simplify this!
   sampFrac <- ifelse(seq_along(time) < time_day_id[sampled_fraction_day_change],
     sampled_fraction1, sampled_fraction2
   )
@@ -139,8 +143,8 @@ fit_seeiqr <- function(daily_cases,
     t0 = min(time) - 1,
     time = time,
     x_r = x_r,
-    delayShape = 1.9720199,
-    delayScale = 12.0529283,
+    delayShape = delayScale,
+    delayScale = delayScale,
     sampFrac = sampFrac,
     time_day_id = time_day_id,
     time_day_id0 = time_day_id0,

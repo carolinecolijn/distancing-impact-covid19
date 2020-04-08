@@ -80,7 +80,8 @@ library(ggplot2)
 theme_set(ggsidekick::theme_sleek())
 
 make_projection_plot <- function(models, cumulative = FALSE,
-  first_date = "2020-03-01", ylim = c(0, 200), outer_quantile = c(0.025, 0.975)) {
+  first_date = "2020-03-01", ylim = c(0, 200), outer_quantile = c(0.025, 0.975),
+  facet = TRUE, ncol = 1) {
 
   obj <- models[[1]]
   actual_dates <- seq(lubridate::ymd(first_date),
@@ -119,10 +120,9 @@ make_projection_plot <- function(models, cumulative = FALSE,
   }
   cols <- RColorBrewer::brewer.pal(8, "Dark2")
   cols <- rep(cols, 5)
-  ggplot(out, aes(x = day, y = med, ymin = lwr, ymax = upr, colour = Scenario,
+  g <- ggplot(out, aes(x = day, y = med, ymin = lwr, ymax = upr, colour = Scenario,
     fill = Scenario)) +
     geom_ribbon(alpha = 0.2, colour = NA) +
-    facet_wrap(~Scenario, ncol = 2) +
     geom_ribbon(alpha = 0.2, mapping = aes(ymin = lwr2, ymax = upr2), colour = NA) +
     geom_line(alpha = 0.9, lwd = 1) +
     geom_point(
@@ -136,37 +136,63 @@ make_projection_plot <- function(models, cumulative = FALSE,
     ) +
     ylab(if (!cumulative) "New cases" else "Cumulative cases") +
     xlab("Day") +
+    xlim(lubridate::ymd("2020-03-01"), lubridate::ymd("2020-05-08")) +
     geom_vline(xintercept = actual_dates[obj$last_day_obs], lty = 2, alpha = 0.6) +
     coord_cartesian(expand = FALSE, ylim = ylim) +
     scale_color_manual(values = cols) +
-    scale_fill_manual(values = cols) +
-    theme(legend.position = "none")
+    scale_fill_manual(values = cols)
+
+  if (facet)
+    g <- g + facet_wrap(~Scenario, ncol = ncol) + theme(legend.position = "none")
+   g
 }
 
+nm <- list()
+nm[[1]] <- m[[1]]
+# nm[[2]] <- m[[6]]
+nm[[2]] <- m[[5]]
+nm[[3]] <- m[[2]]
+names(nm) <- names(m)[c(1, 5, 2)]
+
+names(nm) <- c("1. Strength of S.D. estimated", "2. Strength of S.D. = 0.6 in future", "3. Strength of S.D. = 1.0 in future")
+
 .today <- lubridate::today()
-make_projection_plot(m, ylim = c(0, 180))
+make_projection_plot(nm, ylim = c(0, 180), facet = FALSE)
+ggsave(paste0("figs/case-projections-one-panel-", .today, ".png"),
+  width = 8, height = 4.5)
+
+make_projection_plot(mm, ylim = c(0, 3200), facet = FALSE, cumulative = TRUE)
+ggsave(paste0("figs/cumulative-projections-one-panel-", .today, ".png"),
+  width = 8, height = 4.5)
+
+make_projection_plot(nm, ylim = c(0, 180), facet = TRUE)
 ggsave(paste0("figs/case-projections-", .today, ".png"),
-  width = 5, height = 8)
-make_projection_plot(m, cumulative = TRUE, ylim = c(0, 3200))
+  width = 5.5, height = 7.25)
+make_projection_plot(nm, cumulative = TRUE, ylim = c(0, 3200))
 ggsave(paste0("figs/cumulative-case-projections-", .today, ".png"),
-  width = 5, height = 8)
+  width = 5.5, height = 7.25)
+
+make_projection_plot(m, ylim = c(0, 180), facet = TRUE)
+ggsave(paste0("figs/case-projections2-", .today, ".png"),
+  width = 5.5, height = 10.25)
+make_projection_plot(m, cumulative = TRUE, ylim = c(0, 3200))
+ggsave(paste0("figs/cumulative-case-projections2-", .today, ".png"),
+  width = 5.5, height = 10.25)
 
 
 # Theta plots ---------------------------------------------------------
 
-m2 <- m
-
-R0 <- purrr::map_df(m2, function(.x) {
+R0 <- purrr::map_df(m, function(.x) {
   data.frame(theta = "R0", value = .x$post$R0, stringsAsFactors = FALSE)
 }, .id = "Scenario")
-phi <- purrr::map_df(m2, function(.x) {
+phi <- purrr::map_df(m, function(.x) {
   if ("phi" %in% names(.x$post)) {
     data.frame(theta = "phi", value = .x$post$phi[,1], stringsAsFactors = FALSE)
   } else {
     data.frame(theta = "phi", value = NA, stringsAsFactors = FALSE)
   }
 }, .id = "Scenario")
-f2 <- purrr::map_df(m2, function(.x) {
+f2 <- purrr::map_df(m, function(.x) {
   data.frame(theta = "f2", value = .x$post$f2, stringsAsFactors = FALSE)
 }, .id = "Scenario")
 theta_df <- bind_rows(R0, f2) %>% as_tibble()

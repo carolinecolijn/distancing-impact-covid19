@@ -73,7 +73,7 @@ data {
   real time[T];       // time increments
   int days[N];        // day increments
   int last_day_obs;   // last day of observed data; days after this are projections
-  int daily_diffs[last_day_obs]; // daily new case counts
+  int daily_cases[last_day_obs]; // daily new case counts
   real offset[N];      // offset in case counts (log(tests))
   real x_r[12];       // data for ODEs (real numbers)
   real sampFrac[T];   // fraction of cases sampled per time step
@@ -152,9 +152,9 @@ model {
   if (!priors_only) {
     for (n in 1:last_day_obs) {
       if (obs_model == 0) {
-        daily_diffs[n] ~ poisson_log(eta[n]);
+        daily_cases[n] ~ poisson_log(eta[n]);
       } else {
-        daily_diffs[n] ~ neg_binomial_2_log(eta[n], phi[1]);
+        daily_cases[n] ~ neg_binomial_2_log(eta[n], phi[1]);
       }
     }
   }
@@ -171,9 +171,9 @@ generated quantities{
   }
   // for (n in 1:last_day_obs) {
   //   if (obs_model == 0) {
-  //     log_lik[n] = poisson_log_lpmf(daily_diffs[n] | eta[n]);
+  //     log_lik[n] = poisson_log_lpmf(daily_cases[n] | eta[n]);
   //   } else {
-  //     log_lik[n] = neg_binomial_2_log_lpmf(daily_diffs[n] | eta[n], phi[1]);
+  //     log_lik[n] = neg_binomial_2_log_lpmf(daily_cases[n] | eta[n], phi[1]);
   //   }
   // }
 }

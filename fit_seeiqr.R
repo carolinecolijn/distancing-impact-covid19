@@ -10,8 +10,8 @@
 #' @param time_increment Time increment for ODEs and Weibull delay-model integration
 #' @param days_back Number of days to go back for Weibull delay-model integration
 #' @param R0_prior Lognormal log mean and SD for R0 prior
-#' @param phi_prior SD of Normal(0, SD) prior placed on 1/sqrt(phi),
-#'   where NB2(mu, phi).
+#' @param phi_prior SD of `1/sqrt(phi) ~ Normal(0, SD)` prior,
+#'   where NB2(mu, phi) and `Var(Y) = mu + mu^2 / phi`.
 #'   <https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations>
 #' @param f2_prior Beta mean and SD for `f2` parameter (fraction of infection force?)
 #' @param iter MCMC iterations per chain
@@ -91,7 +91,8 @@ fit_seeiqr <- function(daily_cases,
   last_day_obs <- length(daily_cases)
   time <- seq(-30, max(days) + forecast_days, time_increment)
   x_r <- c(x_r, if (!is.null(fixed_f_forecast)) fixed_f_forecast else 0)
-  x_r <- c(x_r, last_day_obs)
+  names(x_r)[length(x_r)] <- "fixed_f_forecast"
+  x_r <- c(x_r, c("last_day_obs" = last_day_obs))
 
   # find the equivalent time of each day (end):
   get_time_id <- function(day, time) max(which(time <= day))
@@ -146,18 +147,12 @@ fit_seeiqr <- function(daily_cases,
     seeiqr_model,
     data = stan_data
   )
-  # map_estimate$par["R0"]
-  # map_estimate$par["f2"]
-  # map_estimate$par["phi[1]"]
-
   initf <- function(stan_data) {
     R0 <- rlnorm(1, log(map_estimate$par[["R0"]]), 0.3)
     f2 <- rbeta(
       1,
       get_beta_params(map_estimate$par[["f2"]], 0.1)$alpha,
       get_beta_params(map_estimate$par[["f2"]], 0.1)$beta
-      # get_beta_params(f2_prior[1], f2_prior[2])$alpha,
-      # get_beta_params(f2_prior[1], f2_prior[2])$beta
     )
     init <- list(R0 = R0, f2 = f2)
     if (stan_data$est_phi) {
@@ -177,10 +172,8 @@ fit_seeiqr <- function(daily_cases,
     seed = seed, # https://xkcd.com/221/
     pars = c("R0", "f2", "phi", "lambda_d", "y_hat", "y_rep")
   )
-  # saveRDS(fit, file = "sir-fit.rds")
-  # print(fit, pars = c("R0", "f2", "phi"))
   post <- rstan::extract(fit)
-  list(fit = fit, post = post, phi_prior = phi_prior, R0_prior = R0_prior, f2_prior = f2_prior, obs_model = obs_model, sampFrac = sampFrac, state_0 = state_0, daily_cases = daily_cases, daily_tests = daily_tests, days = days, time = time, last_day_obs = last_day_obs, pars = x_r, f2_prior_beta_shape1 = beta_shape1, f2_prior_beta_shape2 = beta_shape2)
+  list(fit = fit, post = post, phi_prior = phi_prior, R0_prior = R0_prior, f2_prior = f2_prior, obs_model = obs_model, sampFrac = sampFrac, state_0 = state_0, daily_cases = daily_cases, daily_tests = daily_tests, days = days, time = time, last_day_obs = last_day_obs, pars = x_r, f2_prior_beta_shape1 = beta_shape1, f2_prior_beta_shape2 = beta_shape2, stan_data = stan_data)
 }
 
 get_beta_params <- function(mu, sd) {

@@ -22,8 +22,8 @@ plot(daily_diffs)
 
 seeiqr_model <- stan_model("seeiqr.stan")
 
-chains <- if (parallel::detectCores() > 8) 6 else 4
-iter <- if (chains == 6) 500 else 750
+chains <- if (parallel::detectCores() > 8) 8 else 4
+iter <- if (chains == 8) 500 else 1000
 
 m <- list()
 m[[1]] <- fit_seeiqr(
@@ -35,7 +35,7 @@ m[[1]] <- fit_seeiqr(
 m[[2]] <- fit_seeiqr(
   daily_diffs,
   fixed_f_forecast = 1,
-  forecast_days = 90,
+  forecast_days = 60,
   iter = iter,
   chains = chains,
   seeiqr_model = seeiqr_model)
@@ -53,6 +53,13 @@ m[[4]] <- fit_seeiqr(
   iter = iter,
   chains = chains,
   obs_model = "Poisson",
+  seeiqr_model = seeiqr_model)
+m[[5]] <- fit_seeiqr(
+  daily_diffs,
+  fixed_f_forecast = 0.6,
+  forecast_days = 60,
+  iter = iter,
+  chains = chains,
   seeiqr_model = seeiqr_model)
 
 # Check summary:

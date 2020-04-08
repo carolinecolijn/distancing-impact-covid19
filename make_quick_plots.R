@@ -108,7 +108,7 @@ make_quick_plots <- function(obj, id = "", ext = ".pdf", first_date = "2020-03-0
 
   # Posterior predictive checks:
 
-  draws <- sample(seq_along(post$y_rep[, 1]), 100L)
+  draws <- sample(seq_along(post$y_rep[, 1]), 50L)
   g <- post$y_rep %>%
     reshape2::melt() %>%
     dplyr::filter(iterations %in% draws) %>%

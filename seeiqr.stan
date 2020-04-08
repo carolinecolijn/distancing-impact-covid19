@@ -32,7 +32,7 @@ functions{
     real start_decline = x_r[9];
     real end_decline = x_r[10];
     real fixed_f_forecast = x_r[11];
-    real last_obs_time = x_r[12];
+    real last_day_obs = x_r[12];
 
     real dydt[12];
 
@@ -44,8 +44,8 @@ functions{
     } else {
       f = f2;
     }
-    if (t >= last_obs_time && fixed_f_forecast != 0) {
-      f = f * fixed_f_forecast;
+    if (t >= last_day_obs && fixed_f_forecast != 0) {
+      f = fixed_f_forecast;
     }
 
     dydt[1]  = -(R0/(D+1/k2)) * (I + E2 + f*(Id+E2d)) * S/N - r*S + ur*Sd;

@@ -2,7 +2,7 @@
 # some messy code. This could be cleaned up into something much shorter
 # in more elegant. -SA
 
-make_quick_plots <- function(obj, id = "", ext = ".png", first_date = "2020-03-01") {
+make_quick_plots <- function(obj, id = "", ext = ".pdf", first_date = "2020-03-01") {
   post <- obj$post
   fit <- obj$fit
 
@@ -11,16 +11,16 @@ make_quick_plots <- function(obj, id = "", ext = ".png", first_date = "2020-03-0
 
   fit_array <- as.array(fit)
   if ("phi" %in% names(post)) {
-    bayesplot::mcmc_trace(fit_array, pars = c("R0", "f2", "phi[1]"))
+    g <- bayesplot::mcmc_trace(fit_array, pars = c("R0", "f2", "phi[1]"))
   } else {
-    bayesplot::mcmc_trace(fit_array, pars = c("R0", "f2"))
+    g <- bayesplot::mcmc_trace(fit_array, pars = c("R0", "f2"))
   }
   ggsave(paste0("figs/traceplot", id, ext), width = 6, height = 3)
 
   R0 <- post$R0
   .x <- seq(2, 3.2, length.out = 200)
   breaks <- seq(min(.x), max(.x), 0.02)
-  ggplot(tibble(R0 = R0)) +
+  g1 <- ggplot(tibble(R0 = R0)) +
     geom_ribbon(
       data = tibble(R0 = .x,
         density = dlnorm(.x, obj$R0_prior[1], obj$R0_prior[2])),
@@ -32,14 +32,12 @@ make_quick_plots <- function(obj, id = "", ext = ".png", first_date = "2020-03-0
       fill = "blue", alpha = 0.5
     ) +
     coord_cartesian(xlim = range(.x), expand = FALSE)
-  ggsave(paste0("figs/R0", id, ext), width = 6, height = 4)
+  # ggsave(paste0("figs/R0", id, ext), width = 6, height = 4)
 
   f2 <- post$f2
   .x <- seq(0, 1, length.out = 200)
   breaks <- seq(min(.x), max(.x), 0.03)
-  beta_shape1 <-
-    beta_shape2 <-
-    ggplot(tibble(f2 = f2)) +
+  g2 <- ggplot(tibble(f2 = f2)) +
     geom_ribbon(
       data = tibble(f2 = .x,
         density = dbeta(.x, obj$f2_prior_beta_shape1, obj$f2_prior_beta_shape2)),
@@ -51,13 +49,13 @@ make_quick_plots <- function(obj, id = "", ext = ".png", first_date = "2020-03-0
       fill = "blue", alpha = 0.5
     ) +
     coord_cartesian(xlim = range(.x), expand = FALSE)
-  ggsave(paste0("figs/f2", id, ext), width = 6, height = 4)
+  # ggsave(paste0("figs/f2", id, ext), width = 6, height = 4)
 
   if ("phi" %in% names(post)) {
     phi_hat <- post$phi[, 1]
     .x <- seq(0.01, 100, length.out = 20000)
-    breaks <- seq(0, 5, 0.1)
-    ggplot(tibble(phi = phi_hat)) +
+    breaks <- seq(0, 5, 0.2)
+    g3 <- ggplot(tibble(phi = phi_hat)) +
       geom_ribbon(
         data = tibble(phi = 1/sqrt(.x),
           density = dnorm(.x, 0, obj$phi_prior)),
@@ -69,9 +67,15 @@ make_quick_plots <- function(obj, id = "", ext = ".png", first_date = "2020-03-0
         fill = "blue", alpha = 0.5
       ) +
       coord_cartesian(expand = FALSE, xlim = c(0, 5))
-    ggsave(paste0("figs/phi", id, ext), width = 6, height = 4)
+    # ggsave(paste0("figs/phi", id, ext), width = 6, height = 4)
+    cowplot::plot_grid(g1, g2, g3, ncol = 1)
+    ggsave(paste0("figs/theta", id, ext), width = 3.5, height = 6)
+  } else {
+    cowplot::plot_grid(g1, g2, ncol = 1)
+    ggsave(paste0("figs/theta", id, ext), width = 3.5, height = 4.5)
   }
 
+  cowplot::plot_grid(g1, g2, g3, ncol = 1)
   draws <- sample(seq_along(post$lambda_d[, 1]), 100L)
   variables_df <- dplyr::tibble(
     variable = names(obj$state_0),
@@ -84,14 +88,14 @@ make_quick_plots <- function(obj, id = "", ext = ".png", first_date = "2020-03-0
     dplyr::left_join(variables_df, by = "variable_num") %>%
     dplyr::left_join(ts_df, by = "time_num")
 
-  ggplot(states, aes(time, value, group = iterations)) +
+  g <- ggplot(states, aes(time, value, group = iterations)) +
     geom_line(alpha = 0.1) +
     facet_wrap(~variable, scales = "free_y") +
     geom_vline(xintercept = obj$last_day_obs, lty = 2, alpha = 0.6)
   ggsave(paste0("figs/states", id, ext), width = 12, height = 7.5)
 
   draws <- sample(seq_along(post$lambda_d[, 1]), 400L)
-  reshape2::melt(post$lambda_d) %>%
+  g <- reshape2::melt(post$lambda_d) %>%
     dplyr::rename(day = Var2) %>%
     dplyr::filter(iterations %in% draws) %>%
     ggplot(aes(day, value, group = iterations)) +
@@ -105,7 +109,7 @@ make_quick_plots <- function(obj, id = "", ext = ".png", first_date = "2020-03-0
   # Posterior predictive checks:
 
   draws <- sample(seq_along(post$y_rep[, 1]), 100L)
-  post$y_rep %>%
+  g <- post$y_rep %>%
     reshape2::melt() %>%
     dplyr::filter(iterations %in% draws) %>%
     dplyr::rename(day = Var2) %>%
@@ -119,7 +123,7 @@ make_quick_plots <- function(obj, id = "", ext = ".png", first_date = "2020-03-0
 
   set.seed(1929)
   draws <- sample(seq_along(post$y_rep[, 1]), 24L)
-  post$y_rep %>%
+  g <- post$y_rep %>%
     reshape2::melt() %>%
     dplyr::filter(iterations %in% draws) %>%
     dplyr::rename(day = Var2) %>%
@@ -138,7 +142,7 @@ make_quick_plots <- function(obj, id = "", ext = ".png", first_date = "2020-03-0
   ggsave(paste0("figs/posterior-predictive-case-diffs-facet", id, ext), width = 9, height = 6.25)
 
   dat <- tibble(day = actual_dates[1:obj$last_day_obs], value = obj$daily_cases)
-  post$y_rep %>%
+  g <- post$y_rep %>%
     reshape2::melt() %>%
     dplyr::rename(day = Var2) %>%
     dplyr::group_by(day) %>%
@@ -173,7 +177,7 @@ make_quick_plots <- function(obj, id = "", ext = ".png", first_date = "2020-03-0
 
   dat <- tibble(day = actual_dates[1:obj$last_day_obs], value = cumsum(obj$daily_cases))
 
-  post$y_rep %>%
+  g <- post$y_rep %>%
     reshape2::melt() %>%
     dplyr::rename(day = Var2) %>%
     dplyr::group_by(iterations) %>%

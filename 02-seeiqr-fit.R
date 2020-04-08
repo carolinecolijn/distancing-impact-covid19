@@ -14,8 +14,8 @@ dat$daily_diffs <- c(
   dat$Cases[2] - dat$Cases[1],
   diff(dat$Cases)
 )
-# TODO: fudge this for now to give same start date as `bcdata`
-# (which the initial conditions have been tuned to somewhat).
+# FIXME: Fudge this for now to give same start date as `bcdata`,
+# which the initial conditions have been tuned to.
 dat <- dplyr::filter(dat, Date >= "2020-03-01")
 daily_diffs <- dat$daily_diffs
 plot(daily_diffs)
@@ -46,7 +46,7 @@ m[[3]] <- fit_seeiqr(
   iter = iter,
   chains = chains,
   seeiqr_model = seeiqr_model,
-  forecast_days = 90)
+  forecast_days = 60)
 m[[4]] <- fit_seeiqr(
   daily_diffs,
   forecast_days = 90,
@@ -54,20 +54,16 @@ m[[4]] <- fit_seeiqr(
   chains = chains,
   obs_model = "Poisson",
   seeiqr_model = seeiqr_model)
-# m[[4]] <- fit_seeiqr(
-#   daily_diffs,
-#   sampled_fraction1 = 0.3,
-#   sampled_fraction2 = 0.3,
-#   fixed_f_forecast = 0.2,
-#   seeiqr_model = seeiqr_model,
-#   forecast_days = 90)
 
+# Check summary:
 # e.g.
 # print(m[[1]]$fit, pars = c("R0", "f2", "phi"))
-# print(m[[4]]$fit, pars = c("R0", "f2", "phi"))
+# print(m[[2]]$fit, pars = c("R0", "f2", "phi"))
+# print(m[[3]]$fit, pars = c("R0", "f2", "phi"))
 
 # --------------------------------------------------
 
+## Andy's code, to be integrated...
 # Load in number of tests each day:
 # Crude for now - want to check how the numbers of cases (positive tests)
 # compare with the ones in dat. Could scale them up perhaps.

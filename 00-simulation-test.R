@@ -4,16 +4,16 @@ source(paste0(my_path, "functions_sir.R"))
 
 pars <- list(
   N = 4.4e6, # population of BC
-  D = 5,
+  D = 4,
   R0 = 2.65,
-  k1 = 1 / 5,
+  k1 = 1 / 4,
   k2 = 1,
   q = 0.05,
   r = 1,
-  ur = 0.4,
+  ur = 0.2,
   f1 = 1.0,
   f2 = 0.4,
-  ratio = 2
+  ratio = 0.7/0.2 # 2nd stage sampFrac
 )
 fsi <- with(
   pars,
@@ -42,7 +42,7 @@ times <- seq(
   by = 0.1
 )
 
-sim_dat <- purrr::map(1:16, function(x) {
+sim_dat <- purrr::map(1:8, function(x) {
   example_simulation <- as.data.frame(deSolve::ode(
     y = state_0,
     times = times,

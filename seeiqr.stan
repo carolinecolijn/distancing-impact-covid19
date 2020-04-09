@@ -113,10 +113,10 @@ transformed parameters {
   y_hat = integrate_ode_rk45(seeiqr, y0, t0, time, theta, x_r, x_i);
 
   // FIXME: switch to Stan 1D integration function?
-  for (t in 1:T) {
-    ft[t] = 0; // initialize at 0 across the full 1:T
-  }
   for (n in 1:N) {
+    for (t in 1:T) {
+      ft[t] = 0; // initialize at 0 across the full 1:T
+    }
     for (t in time_day_id0[n]:time_day_id[n]) {
       k2 = x_r[4];
       E2 = y_hat[t,3];

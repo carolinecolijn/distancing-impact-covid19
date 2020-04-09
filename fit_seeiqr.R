@@ -77,7 +77,8 @@ fit_seeiqr <- function(daily_cases,
                        ),
                        save_state_predictions = FALSE,
                        delayScale = 9,
-                       delayShape = 1.9720199) {
+                       delayShape = 2,
+                       ...) {
   obs_model <- match.arg(obs_model)
   obs_model <- if (obs_model == "NB2") 1L else 0L
   x_r <- pars

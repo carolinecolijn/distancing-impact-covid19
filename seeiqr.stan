@@ -122,7 +122,7 @@ transformed parameters {
       E2 = y_hat[t,3];
       E2d = y_hat[t,9];
       ft[t] = sampFrac[t] * k2 * (E2 + E2d) *
-      exp(weibull_lpdf(days[n] - time[t] | delayShape, delayScale));
+      exp(weibull_lpdf(time[time_day_id[n]] - time[t] | delayShape, delayScale));
     }
     sum_ft_inner = 0;
     for (t in (time_day_id0[n] + 1):(time_day_id[n] - 1)) {

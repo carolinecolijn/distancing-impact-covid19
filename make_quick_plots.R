@@ -27,6 +27,7 @@ make_quick_plots <- function(obj, id = "", ext = ".pdf", first_date = "2020-03-0
       aes(x = R0, ymin = 0, ymax = density), alpha = 0.5, colour = "grey50",
       fill = "grey50"
     ) +
+    ylab("Probability density") +
     geom_histogram(
       breaks = breaks, aes(x = R0, y = ..density..),
       fill = "blue", alpha = 0.5
@@ -48,13 +49,16 @@ make_quick_plots <- function(obj, id = "", ext = ".pdf", first_date = "2020-03-0
       breaks = breaks, aes(x = f2, y = ..density..),
       fill = "blue", alpha = 0.5
     ) +
-    coord_cartesian(xlim = range(.x), expand = FALSE)
+    ylab("Probability density") +
+    coord_cartesian(xlim = range(.x), expand = FALSE) +
+    xlab("Social distancing effect") +
+    scale_x_continuous(breaks = seq(0, 1, 0.2))
   # ggsave(paste0("figs/f2", id, ext), width = 6, height = 4)
 
   if ("phi" %in% names(post)) {
     phi_hat <- post$phi[, 1]
-    .x <- seq(0.01, 100, length.out = 20000)
-    breaks <- seq(0, 5, 0.2)
+    .x <- seq(0.001, 100, length.out = 20000)
+    breaks <- seq(0, 9, 0.2)
     g3 <- ggplot(tibble(phi = phi_hat)) +
       geom_ribbon(
         data = tibble(phi = 1/sqrt(.x),
@@ -62,17 +66,18 @@ make_quick_plots <- function(obj, id = "", ext = ".pdf", first_date = "2020-03-0
         aes(x = phi, ymin = 0, ymax = density),
         alpha = 0.5, colour = "grey50", fill = "grey50"
       ) +
+      ylab("Probability density") +
       geom_histogram(
         breaks = breaks, aes(x = phi, y = ..density..),
         fill = "blue", alpha = 0.5
       ) +
-      coord_cartesian(expand = FALSE, xlim = c(0, 5))
+      coord_cartesian(expand = FALSE, xlim = c(0, 9))
     # ggsave(paste0("figs/phi", id, ext), width = 6, height = 4)
-    cowplot::plot_grid(g1, g2, g3, ncol = 1)
-    ggsave(paste0("figs/theta", id, ext), width = 3.5, height = 6)
+    cowplot::plot_grid(g1, g2, ncol = 1)
+    ggsave(paste0("figs/theta", id, ext), width = 4, height = 5.5)
   } else {
     cowplot::plot_grid(g1, g2, ncol = 1)
-    ggsave(paste0("figs/theta", id, ext), width = 3.5, height = 4.5)
+    ggsave(paste0("figs/theta", id, ext), width = 4, height = 5.5)
   }
 
   draws <- sample(seq_along(post$lambda_d[, 1]), 100L)

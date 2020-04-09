@@ -164,15 +164,15 @@ get_dat_output <- function(models, cumulative = FALSE, first_date = "2020-03-01"
       ) %>%
       mutate(forecast = day > obj$last_day_obs) %>%
       mutate(day = actual_dates[day]) %>%
-      dplyr::filter(day <= lubridate::ymd("2020-05-08"))
+      dplyr::filter(day <= lubridate::ymd("2020-06-08"))
   }, .id = "Scenario")
   out
 }
 
 get_dat_output(m) %>%
-  readr::write_csv(paste0("figs/case-projections-", .today, ".csv"))
+  readr::write_csv(paste0("figs/case-projections-60-", .today, ".csv"))
 get_dat_output(m, cumulative = TRUE) %>%
-  readr::write_csv(paste0("figs/cumulative-case-projections-", .today, ".csv"))
+  readr::write_csv(paste0("figs/cumulative-case-projections-60-", .today, ".csv"))
 
 # Theta plots -----------------------------------------------------------------
 

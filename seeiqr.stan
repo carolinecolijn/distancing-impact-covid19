@@ -74,7 +74,7 @@ data {
   int days[N];        // day increments
   int last_day_obs;   // last day of observed data; days after this are projections
   int daily_cases[last_day_obs]; // daily new case counts
-  real offset[N];      // offset in case counts (log(tests))
+  real offset[N];     // offset in case counts, e.g. (log(tests))
   real x_r[12];       // data for ODEs (real numbers)
   real sampFrac[T];   // fraction of cases sampled per time step
   real delayScale;    // Weibull parameter for delay in becoming a case count
@@ -93,7 +93,7 @@ transformed data {
   int x_i[0]; // empty; needed for ODE function
 }
 parameters {
- real R0;
+ real R0; // more efficient sampling if not bounded
  real<lower=0, upper=10> D;
  real<lower=0, upper=1> f2; // strength of social distancing
  real<lower=0> phi[est_phi]; // NB2 (inverse) dispersion; `est_phi` turns on/off

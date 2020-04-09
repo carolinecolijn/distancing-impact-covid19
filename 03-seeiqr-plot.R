@@ -179,17 +179,17 @@ get_dat_output(m, cumulative = TRUE) %>%
 source("make_quick_plots.R")
 make_quick_plots(m[[1]], id = paste0("-nb2-", .today), ext = ".png")
 
-R0 <- purrr::map_df(nm[1], function(.x) {
+R0 <- purrr::map_df(m[1], function(.x) {
   data.frame(theta = "R0", value = .x$post$R0, stringsAsFactors = FALSE)
 }, .id = "Scenario")
-phi <- purrr::map_df(nm[1], function(.x) {
+phi <- purrr::map_df(m[1], function(.x) {
   if ("phi" %in% names(.x$post)) {
     data.frame(theta = "phi", value = .x$post$phi[,1], stringsAsFactors = FALSE)
   } else {
     data.frame(theta = "phi", value = NA, stringsAsFactors = FALSE)
   }
 }, .id = "Scenario")
-f2 <- purrr::map_df(nm[1], function(.x) {
+f2 <- purrr::map_df(m[1], function(.x) {
   data.frame(theta = "f2", value = .x$post$f2, stringsAsFactors = FALSE)
 }, .id = "Scenario")
 theta_df <- bind_rows(R0, f2) %>% as_tibble()

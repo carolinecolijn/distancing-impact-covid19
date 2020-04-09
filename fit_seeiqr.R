@@ -38,12 +38,13 @@ fit_seeiqr <- function(daily_cases,
                        daily_tests = NULL,
                        seeiqr_model,
                        obs_model = c("NB2", "Poisson"),
-                       forecast_days = 60, # a bit faster if this is decreased
+                       forecast_days = 30, # a bit faster if this is decreased
                        time_increment = 0.2,
-                       days_back = 60,
+                       days_back = 50,
                        R0_prior = c(log(2.6), 0.2),
                        phi_prior = 1,
                        f2_prior = c(0.4, 0.15),
+                       D_prior = c(log(4), 0.05),
                        seed = 4,
                        chains = if (parallel::detectCores() > 8) 8 else 4,
                        iter = if (chains == 8) 1000 else 2000,
@@ -150,6 +151,7 @@ fit_seeiqr <- function(daily_cases,
     R0_prior = R0_prior,
     phi_prior = phi_prior,
     f2_prior = c(beta_shape1, beta_shape2),
+    D_prior = D_prior,
     priors_only = 0L,
     last_day_obs = last_day_obs,
     obs_model = obs_model,
@@ -161,6 +163,7 @@ fit_seeiqr <- function(daily_cases,
   )
   initf <- function(stan_data) {
     R0 <- rlnorm(1, log(map_estimate$par[["R0"]]), 0.3)
+    D <- rlnorm(1, log(map_estimate$par[["D"]]), 0.05)
     f2 <- rbeta(
       1,
       get_beta_params(map_estimate$par[["f2"]], 0.1)$alpha,
@@ -175,7 +178,7 @@ fit_seeiqr <- function(daily_cases,
     }
     init
   }
-  pars_save <- c("R0", "f2", "phi", "lambda_d", "y_rep")
+  pars_save <- c("R0", "f2", "D", "phi", "lambda_d", "y_rep")
   if (save_state_predictions) pars_save <- c(pars_save, "y_hat")
   fit <- sampling(
     seeiqr_model,
@@ -188,7 +191,7 @@ fit_seeiqr <- function(daily_cases,
   )
   post <- rstan::extract(fit)
   list(
-    fit = fit, post = post, phi_prior = phi_prior, R0_prior = R0_prior,
+    fit = fit, post = post, phi_prior = phi_prior, R0_prior = R0_prior, D_prior = D_prior,
     f2_prior = f2_prior, obs_model = obs_model, sampFrac = sampFrac, state_0 = state_0,
     daily_cases = daily_cases, daily_tests = daily_tests, days = days, time = time,
     last_day_obs = last_day_obs, pars = x_r, f2_prior_beta_shape1 = beta_shape1,

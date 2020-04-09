@@ -19,9 +19,10 @@ functions{
 
     real R0    = theta[1];
     real f2    = theta[2];
+    real D     = theta[3];
 
     real N     = x_r[1];
-    real D     = x_r[2];
+    // real D     = x_r[2];
     real k1    = x_r[3];
     real k2    = x_r[4];
     real q     = x_r[5];
@@ -83,6 +84,7 @@ data {
   real R0_prior[2];   // lognormal log mean and SD for R0 prior
   real phi_prior;     // SD of normal prior on 1/sqrt(phi) [NB2(mu, phi)]
   real f2_prior[2];   // lognormal log mean and SD for f2 prior
+  real D_prior[2];    // lognormal log mean and SD for D prior
   int<lower=0, upper=1> priors_only; // logical: include likelihood or just priors?
   int<lower=0, upper=1> est_phi; // estimate NB phi?
   int<lower=0, upper=1> obs_model; // observation model: 0 = Poisson, 1 = NB2
@@ -92,6 +94,7 @@ transformed data {
 }
 parameters {
  real R0;
+ real<lower=0, upper=10> D;
  real<lower=0, upper=1> f2; // strength of social distancing
  real<lower=0> phi[est_phi]; // NB2 (inverse) dispersion; `est_phi` turns on/off
 }
@@ -105,10 +108,11 @@ transformed parameters {
   real k2;
   real E2;
   real E2d;
-  real theta[2];
+  real theta[3];
   real y_hat[T,12];
   theta[1] = R0;
   theta[2] = f2;
+  theta[3] = D;
 
   y_hat = integrate_ode_rk45(seeiqr, y0, t0, time, theta, x_r, x_i);
 
@@ -145,6 +149,7 @@ model {
   }
   R0 ~ lognormal(R0_prior[1], R0_prior[2]);
   f2 ~ beta(f2_prior[1], f2_prior[2]);
+  D ~ lognormal(D_prior[1], D_prior[2]);
 
   // data likelihood:
   if (!priors_only) {

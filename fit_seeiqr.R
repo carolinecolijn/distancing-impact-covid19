@@ -155,22 +155,22 @@ fit_seeiqr <- function(daily_cases,
     obs_model = obs_model,
     est_phi = if (obs_model == 1L) 1L else 0L
   )
-  map_estimate <- optimizing(
-    seeiqr_model,
-    data = stan_data
-  )
+  # map_estimate <- optimizing(
+  #   seeiqr_model,
+  #   data = stan_data
+  # )
   initf <- function(stan_data) {
-    R0 <- rlnorm(1, log(map_estimate$par[["R0"]]), 0.2)
+    R0 <- rlnorm(1, log(R0_prior[1]), R0_prior[2])
     f2 <- rbeta(
       1,
-      get_beta_params(map_estimate$par[["f2"]], 0.1)$alpha,
-      get_beta_params(map_estimate$par[["f2"]], 0.1)$beta
+      get_beta_params(f2_prior[1], f2_prior[2])$alpha,
+      get_beta_params(f2_prior[1], f2_prior[2])$beta
     )
     init <- list(R0 = R0, f2 = f2)
     if (stan_data$est_phi) {
       init <- c(init, list(
         phi =
-          array(rlnorm(1, log(map_estimate$par[["phi[1]"]]), 0.1))
+          array(rlnorm(1, 2, 0.2))
       ))
     }
     init
@@ -184,7 +184,8 @@ fit_seeiqr <- function(daily_cases,
     chains = chains,
     init = function() initf(stan_data),
     seed = seed, # https://xkcd.com/221/
-    pars = pars_save
+    pars = pars_save,
+    ... = ...
   )
   post <- rstan::extract(fit)
   list(

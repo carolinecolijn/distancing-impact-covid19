@@ -1,10 +1,9 @@
 functions{
-  real[] seeiqr(real t,        // time
+  real[] seeiqr(real t,        // time (actual time; not an increment starting at 1)
                 real[] state,  // state
                 real[] theta,  // parameters
                 real[] x_r,    // data (real)
                 int[]  x_i) {  // data (integer)
-
     real S     = state[1];
     real E1    = state[2];
     real E2    = state[3];
@@ -85,16 +84,16 @@ data {
   real phi_prior;     // SD of normal prior on 1/sqrt(phi) [NB2(mu, phi)]
   real f2_prior[2];   // lognormal log mean and SD for f2 prior
   int<lower=0, upper=1> priors_only; // logical: include likelihood or just priors?
-  int<lower=0, upper=1> est_phi;
-  int<lower=0, upper=1> obs_model;
+  int<lower=0, upper=1> est_phi; // estimate NB phi?
+  int<lower=0, upper=1> obs_model; // observation model: 0 = Poisson, 1 = NB2
 }
 transformed data {
-  int  x_i[0];      // fake; needed for ODE function
+  int x_i[0]; // empty; needed for ODE function
 }
 parameters {
  real R0;
- real<lower=0, upper=1> f2;
- real<lower=0> phi[est_phi]; // NB(2) (inverse) dispersion; est_phi turns it on or off
+ real<lower=0, upper=1> f2; // strength of social distancing
+ real<lower=0> phi[est_phi]; // NB2 (inverse) dispersion; `est_phi` turns on/off
 }
 transformed parameters {
   real meanDelay = delayScale * tgamma(1 + 1 / delayShape);
@@ -106,18 +105,16 @@ transformed parameters {
   real k2;
   real E2;
   real E2d;
-
   real theta[2];
   real y_hat[T,12];
-
   theta[1] = R0;
   theta[2] = f2;
 
   y_hat = integrate_ode_rk45(seeiqr, y0, t0, time, theta, x_r, x_i);
 
-  // FIXME: switch to Stan 1D integration function:
+  // FIXME: switch to Stan 1D integration function?
   for (t in 1:T) {
-    ft[t] = 0; // initialize at 0, not technically needed
+    ft[t] = 0; // initialize at 0 across the full 1:T
   }
   for (n in 1:N) {
     for (t in time_day_id0[n]:time_day_id[n]) {
@@ -142,11 +139,9 @@ model {
   if (est_phi) {
     // https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations
     // http://andrewgelman.com/2018/04/03/justify-my-love/
-    1/sqrt(phi[1]) ~ normal(0, phi_prior);
     // D(expression(1/sqrt(x)), "x"); log(0.5 * x^-0.5/sqrt(x)^2
+    1/sqrt(phi[1]) ~ normal(0, phi_prior);
     target += log(0.5) - 1.5 * log(phi[1]); // Jacobian adjustment
-    // 1/phi[1] ~ normal(0, phi_prior);
-    // target += -2 * log(phi[1]); // Jacobian adjustment
   }
   R0 ~ lognormal(R0_prior[1], R0_prior[2]);
   f2 ~ beta(f2_prior[1], f2_prior[2]);
@@ -164,7 +159,6 @@ model {
 }
 generated quantities{
   int y_rep[N]; // posterior predictive replicates
-  // vector[last_day_obs] log_lik; // log_lik is for use with the loo package for LOOIC
   for (n in 1:N) {
     if (obs_model == 0) {
       y_rep[n] = poisson_log_rng(eta[n]);
@@ -172,11 +166,4 @@ generated quantities{
       y_rep[n] = neg_binomial_2_log_rng(eta[n], phi[1]);
     }
   }
-  // for (n in 1:last_day_obs) {
-  //   if (obs_model == 0) {
-  //     log_lik[n] = poisson_log_lpmf(daily_cases[n] | eta[n]);
-  //   } else {
-  //     log_lik[n] = neg_binomial_2_log_lpmf(daily_cases[n] | eta[n], phi[1]);
-  //   }
-  // }
 }

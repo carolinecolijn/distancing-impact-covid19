@@ -73,7 +73,7 @@ data {
   int days[N];        // day increments
   int last_day_obs;   // last day of observed data; days after this are projections
   int daily_cases[last_day_obs]; // daily new case counts
-  real offset[N];     // offset in case counts, e.g. (log(tests))
+  // real offset[N];     // offset in case counts, e.g. (log(tests))
   real x_r[12];       // data for ODEs (real numbers)
   real sampFrac[T];   // fraction of cases sampled per time step
   real delayScale;    // Weibull parameter for delay in becoming a case count
@@ -129,8 +129,8 @@ transformed parameters {
       sum_ft_inner += ft[t];
     }
     lambda_d[n] = 0.5 * dx *
-                 (time_day_id0[n] + 2 * sum_ft_inner + ft[time_day_id[n]]);
-    eta[n] = log(lambda_d[n]) + offset[n]; // offset is likely `log(tests)`
+                 (ft[time_day_id0[n]] + 2 * sum_ft_inner + ft[time_day_id[n]]);
+    eta[n] = log(lambda_d[n]);
   }
 
 }

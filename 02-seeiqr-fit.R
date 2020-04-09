@@ -15,31 +15,47 @@ dat$daily_diffs <- c(
   dat$Cases[2] - dat$Cases[1],
   diff(dat$Cases)
 )
-# FIXME: Fudge this for now to give same start date as `bcdata`,
-# which the initial conditions have been tuned to.
+# Give same start date as `bcdata`,
+# which the initial conditions have been tuned to:
 dat <- dplyr::filter(dat, Date >= "2020-03-01")
 daily_diffs <- dat$daily_diffs
 plot(daily_diffs)
 
 seeiqr_model <- stan_model("seeiqr.stan")
 
+# library(future)
+# plan(multisession, workers = parallel::detectCores()/2)
 # in progress!
-m <- list()
-m[[1]] <- fit_seeiqr(
+# m <- list()
+# m1 %<-% fit_seeiqr(
+#   daily_diffs,
+#   seeiqr_model = seeiqr_model)
+# m2 %<-% fit_seeiqr(
+#   daily_diffs,
+#   fixed_f_forecast = 0.6,
+#   seeiqr_model = seeiqr_model)
+# m3 %<-% fit_seeiqr(
+#   daily_diffs,
+#   fixed_f_forecast = 0.8,
+#   seeiqr_model = seeiqr_model)
+# m4 %<-% fit_seeiqr(
+#   daily_diffs,
+#   fixed_f_forecast = 1.0,
+#   seeiqr_model = seeiqr_model)
+# m <- list(m1, m2, m3, m4)
+
+m1 <- fit_seeiqr(
   daily_diffs,
   seeiqr_model = seeiqr_model)
-m[[2]] <- fit_seeiqr(
+m2 <- fit_seeiqr(
   daily_diffs,
   fixed_f_forecast = 0.6,
   seeiqr_model = seeiqr_model)
-m[[3]] <- fit_seeiqr(
-  daily_diffs,
-  fixed_f_forecast = 0.8,
-  seeiqr_model = seeiqr_model)
-m[[4]] <- fit_seeiqr(
+m3 <- fit_seeiqr(
   daily_diffs,
   fixed_f_forecast = 1.0,
   seeiqr_model = seeiqr_model)
+m <- list(m1, m2, m3)
 
 ignore <- lapply(seq_along(m), function(x) {
   saveRDS(m[[x]], file = paste0("models2/stan-fit-", x, ".rds"))
@@ -52,18 +68,12 @@ m <- lapply(seq_along(f), function(x) {
 })
 quantile(m[[1]]$post$f2, probs = c(0.05, 0.5, 0.95))
 
-names(m) <- c(
-  "1. Social distancing strength\nas estimated (0.22; 0.11-0.35 90% CI)",
-  "2. Social distancing strength\nprojected at 0.6",
-  "3. Social distancing strength\nprojected at 0.8",
-  "4. Social distancing strength\nprojected at 1.0"
-)
+purrr::walk(m, ~ print(.x$fit, pars = c("R0", "f2", "phi")))
 
-# Check summary:
-# e.g.
-# print(m[[1]]$fit, pars = c("R0", "f2", "phi"))
-# print(m[[2]]$fit, pars = c("R0", "f2", "phi"))
-# print(m[[3]]$fit, pars = c("R0", "f2", "phi"))
+
+
+
+
 
 # -----------------------------------------------------------------------------
 

@@ -40,13 +40,13 @@ fit_seeiqr <- function(daily_cases,
                        obs_model = c("NB2", "Poisson"),
                        forecast_days = 60, # a bit faster if this is decreased
                        time_increment = 0.2,
-                       days_back = 60,
+                       days_back = 45,
                        R0_prior = c(log(2.6), 0.2),
                        phi_prior = 1,
                        f2_prior = c(0.4, 0.15),
                        seed = 4,
-                       chains = if (parallel::detectCores() > 8) 8 else 4,
-                       iter = if (chains == 8) 1000 else 2000,
+                       chains = 8,
+                       iter = 500,
                        sampled_fraction1 = 0.2,
                        sampled_fraction2 = 0.7,
                        sampled_fraction_day_change = 12,
@@ -136,7 +136,7 @@ fit_seeiqr <- function(daily_cases,
     T = length(time),
     days = days,
     daily_cases = daily_cases,
-    offset = if (is.null(daily_tests)) rep(log(1), length(days)) else log(daily_tests),
+    # offset = if (is.null(daily_tests)) rep(log(1), length(days)) else log(daily_tests),
     N = length(days),
     y0 = state_0,
     t0 = min(time) - 1,
@@ -160,7 +160,7 @@ fit_seeiqr <- function(daily_cases,
     data = stan_data
   )
   initf <- function(stan_data) {
-    R0 <- rlnorm(1, log(map_estimate$par[["R0"]]), 0.3)
+    R0 <- rlnorm(1, log(map_estimate$par[["R0"]]), 0.2)
     f2 <- rbeta(
       1,
       get_beta_params(map_estimate$par[["f2"]], 0.1)$alpha,

@@ -36,11 +36,15 @@ functions{
     real dydt[12];
 
     real f;
+
+    f = f1;
     if (t < start_decline) {
       f = f1;
-    } else if (t >= start_decline && t < end_decline) {
+    }
+    if (t >= start_decline && t < end_decline) {
       f = f2 + (end_decline - t) * (f1 - f2) / (end_decline - start_decline);
-    } else {
+    }
+    if (t >= end_decline) {
       f = f2;
     }
     if (t >= last_day_obs && fixed_f_forecast != 0) {

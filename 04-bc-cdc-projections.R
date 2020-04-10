@@ -37,49 +37,51 @@ m_bccdc <- list(m1, m2, m3)
 sd_est <- sprintf("%.2f", round(quantile(1-m99$post$f2, c(0.05, 0.5, 0.95)), 2))
 sd_text <- paste0("(", sd_est[[2]], "; 90% CI: ", sd_est[1], "-", sd_est[3], ")")
 names(m_bccdc) <- c(
-  paste0("Social distancing strentch\nas estimated ", sd_text),
-  "Social distancing strength\nprojected at 0.4",
-  "Social distancing strength\nprojected at 0")
+  paste0("1. Social distancing strength\nas estimated ", sd_text),
+  "2. Social distancing strength\nprojected at 0.4",
+  "3. Social distancing strength\nprojected at 0")
 
 # Make combined plots ---------------------------------------------------------
 
-make_projection_plot(m, ylim = c(0, 180), facet = FALSE)
+ylim <- c(0, 140)
+ylim_c <- c(0, 3200)
+make_projection_plot(m_bccdc, ylim = ylim, facet = FALSE)
 ggsave(paste0("figs/case-projections-one-panel-", .today, ".png"),
   width = 8, height = 4.5)
 
-make_projection_plot(m, ylim = c(0, 3200), facet = FALSE, cumulative = TRUE)
+make_projection_plot(m_bccdc, ylim = ylim_c, facet = FALSE, cumulative = TRUE)
 ggsave(paste0("figs/cumulative-projections-one-panel-", .today, ".png"),
   width = 8, height = 4.5)
 
-make_projection_plot(m, ylim = c(0, 180), facet = TRUE, ncol = 2)
+make_projection_plot(m_bccdc, ylim = ylim, facet = TRUE, ncol = 2)
 ggsave(paste0("figs/case-projections-60days-", .today, ".png"),
   width = 5.5, height = 5.25)
-make_projection_plot(m, cumulative = TRUE, ylim = c(0, 3200), ncol = 2)
-ggsave(paste0("figs/cumulative-case-projections-60days", .today, ".png"),
+make_projection_plot(m_bccdc, cumulative = TRUE, ylim = ylim_c, ncol = 2)
+ggsave(paste0("figs/cumulative-case-projections-60days-", .today, ".png"),
   width = 5.5, height = 5.25)
 
-make_projection_plot(m, ylim = c(0, 180), facet = TRUE, ncol = 2) +
+make_projection_plot(m_bccdc, ylim = ylim, facet = TRUE, ncol = 2) +
   xlim(lubridate::ymd("2020-03-01"), lubridate::ymd("2020-05-08")) +
   theme(panel.spacing.x = unit(1, "lines"))
-ggsave(paste0("figs/case-projections-30days", .today, ".png"),
+ggsave(paste0("figs/case-projections-30days-", .today, ".png"),
   width = 5.5, height = 5.25)
-make_projection_plot(m, cumulative = TRUE, ylim = c(0, 3200), ncol = 2) +
+make_projection_plot(m_bccdc, cumulative = TRUE, ylim = ylim_c, ncol = 2) +
   xlim(lubridate::ymd("2020-03-01"), lubridate::ymd("2020-05-08"))
 ggsave(paste0("figs/cumulative-case-projections-30days-", .today, ".png"),
   width = 5.5, height = 5.25)
 
 # Split up into individual plots ----------------------------------------------
 
-cols <- RColorBrewer::brewer.pal(8, "Dark2")[seq_along(m)]
-purrr::walk(seq_along(m), function(i) {
-  make_projection_plot(m[i], cumulative = TRUE, ylim = c(0, 3200), ncol = 1, cols = cols[i]) +
+cols <- RColorBrewer::brewer.pal(8, "Dark2")[seq_along(m_bccdc)]
+purrr::walk(seq_along(m_bccdc), function(i) {
+  make_projection_plot(m_bccdc[i], cumulative = TRUE, ylim = ylim_c, ncol = 1, cols = cols[i]) +
     xlim(lubridate::ymd("2020-03-01"), lubridate::ymd("2020-05-08"))
   ggsave(paste0("figs/cumulative-case-projections-30days-", i, "-", .today, ".png"),
     width = 3.9, height = 3.25)
 })
 
-purrr::walk(seq_along(m), function(i) {
-  make_projection_plot(m[i], cumulative = FALSE, ylim = c(0, 180), ncol = 1, cols = cols[i]) +
+purrr::walk(seq_along(m_bccdc), function(i) {
+  make_projection_plot(m_bccdc[i], cumulative = FALSE, ylim = ylim, ncol = 1, cols = cols[i]) +
     xlim(lubridate::ymd("2020-03-01"), lubridate::ymd("2020-05-08"))
   ggsave(paste0("figs/case-projections-30days-", i, "-", .today, ".png"),
     width = 3.9, height = 3.25)
@@ -118,7 +120,7 @@ get_dat_output <- function(models, cumulative = FALSE, first_date = "2020-03-01"
   out
 }
 
-get_dat_output(m) %>%
+get_dat_output(m_bccdc) %>%
   readr::write_csv(paste0("figs/case-projections-60-", .today, ".csv"))
-get_dat_output(m, cumulative = TRUE) %>%
+get_dat_output(m_bccdc, cumulative = TRUE) %>%
   readr::write_csv(paste0("figs/cumulative-case-projections-60-", .today, ".csv"))

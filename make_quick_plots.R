@@ -122,7 +122,7 @@ make_quick_plots <- function(obj, id = "", ext = ".pdf", first_date = "2020-03-0
     ggsave(paste0("figs/states", id, ext), width = 12, height = 7.5)
   }
 
-  draws <- sample(seq_along(post$lambda_d[, 1]), 400L)
+  draws <- sample(seq_along(post$lambda_d[, 1]), 100L)
   g <- reshape2::melt(post$lambda_d) %>%
     dplyr::rename(day = Var2) %>%
     dplyr::filter(iterations %in% draws) %>%

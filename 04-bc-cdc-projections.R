@@ -22,14 +22,15 @@ seeiqr_model <- stan_model("seeiqr.stan")
 .today <- max(dat$Date)
 
 m1 %<-% fit_seeiqr(
-  daily_diffs, sampled_fraction1 = 0.1, sampled_fraction2 = 0.2,
-  seeiqr_model = seeiqr_model, chains = 8, cores = 800)
+  daily_diffs, sampled_fraction1 = 0.1, sampled_fraction2 = 0.3,
+  seeiqr_model = seeiqr_model, chains = 8, cores = 800,
+  save_state_predictions = TRUE)
 m2 %<-% fit_seeiqr(
-  daily_diffs, sampled_fraction1 = 0.1, sampled_fraction2 = 0.2,
+  daily_diffs, sampled_fraction1 = 0.1, sampled_fraction2 = 0.3,
   fixed_f_forecast = 0.6,
   seeiqr_model = seeiqr_model, chains = 8, cores = 800)
 m3 %<-% fit_seeiqr(
-  daily_diffs, sampled_fraction1 = 0.1, sampled_fraction2 = 0.2,
+  daily_diffs, sampled_fraction1 = 0.1, sampled_fraction2 = 0.3,
   fixed_f_forecast = 1.0,
   seeiqr_model = seeiqr_model, chains = 8, cores = 800)
 m_bccdc <- list(m1, m2, m3)
@@ -124,3 +125,39 @@ get_dat_output(m_bccdc) %>%
   readr::write_csv(paste0("figs/case-projections-60-", .today, ".csv"))
 get_dat_output(m_bccdc, cumulative = TRUE) %>%
   readr::write_csv(paste0("figs/cumulative-case-projections-60-", .today, ".csv"))
+
+# What is the delay between the peak prevalence (I+Id) and the peak in case counts? ---
+
+obj <- m1
+post <- m1$post
+variables_df <- dplyr::tibble(
+  variable = names(obj$state_0),
+  variable_num = seq_along(obj$state_0)
+)
+ts_df <- dplyr::tibble(time = obj$time, time_num = seq_along(obj$time))
+states <- reshape2::melt(post$y_hat) %>%
+  dplyr::rename(time_num = Var2, variable_num = Var3) %>%
+  dplyr::left_join(variables_df, by = "variable_num") %>%
+  dplyr::left_join(ts_df, by = "time_num") %>%
+  as_tibble() %>%
+  mutate(day = floor(time)) %>%
+  dplyr::filter(variable %in% c("I", "Id")) %>%
+  group_by(iterations, time) %>%
+  summarize(I = value[variable == "I"], Id = value[variable == "Id"],
+    prevalence = I + Id) %>%
+  group_by(iterations) %>%
+  dplyr::summarise(prevalence_peak = time[prevalence == max(prevalence)])
+
+lambdas <- obj$post$lambda_d %>%
+  reshape2::melt() %>%
+  dplyr::rename(day = Var2) %>% as_tibble() %>%
+  rename(case_count = value) %>%
+  group_by(iterations) %>%
+  dplyr::summarise(case_peak = day[case_count == max(case_count)])
+
+both <- left_join(states, lambdas) %>%
+  filter(case_peak != prevalence_peak) # one weird draw?
+ggplot(tibble(delay = both$case_peak - both$prevalence_peak), aes(delay)) +
+  geom_histogram(bins = 25)
+
+ggsave("figs/delay-peak-prevalence.png", width = 5, height = 3.5)

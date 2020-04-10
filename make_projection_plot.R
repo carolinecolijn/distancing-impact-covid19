@@ -1,5 +1,5 @@
 make_projection_plot <- function(models, cumulative = FALSE,
-  first_date = "2020-03-01", ylim = c(0, 200), outer_quantile = c(0.025, 0.975),
+  first_date = "2020-03-01", ylim = c(0, 200), outer_quantile = c(0.05, 0.95),
   facet = TRUE, ncol = 1, cols = NULL) {
 
   obj <- models[[1]]

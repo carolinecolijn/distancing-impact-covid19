@@ -89,7 +89,7 @@ make_projection_plot <- function(models, cumulative = FALSE,
   g
 }
 
-.today <- lubridate::today()
+.today <- max(dat$Date)
 make_projection_plot(m, ylim = c(0, 180), facet = FALSE)
 ggsave(paste0("figs/case-projections-one-panel-", .today, ".png"),
   width = 8, height = 4.5)

@@ -15,37 +15,12 @@ dat$daily_diffs <- c(
   dat$Cases[2] - dat$Cases[1],
   diff(dat$Cases)
 )
-# Give same start date as `bcdata`,
-# which the initial conditions have been tuned to:
 dat <- dplyr::filter(dat, Date >= "2020-03-01")
 daily_diffs <- dat$daily_diffs
 plot(daily_diffs)
 
 seeiqr_model <- stan_model("seeiqr.stan")
 
-# library(future)
-# plan(multisession, workers = parallel::detectCores()/2)
-# in progress!
-# m <- list()
-# m1 %<-% fit_seeiqr(
-#   daily_diffs,
-#   seeiqr_model = seeiqr_model)
-# m2 %<-% fit_seeiqr(
-#   daily_diffs,
-#   fixed_f_forecast = 0.6,
-#   seeiqr_model = seeiqr_model)
-# m3 %<-% fit_seeiqr(
-#   daily_diffs,
-#   fixed_f_forecast = 0.8,
-#   seeiqr_model = seeiqr_model)
-# m4 %<-% fit_seeiqr(
-#   daily_diffs,
-#   fixed_f_forecast = 1.0,
-#   seeiqr_model = seeiqr_model)
-# m <- list(m1, m2, m3, m4)
-
-m1 <- fit_seeiqr(
-  daily_diffs,
 # Look at sample fraction scenarios -------------------------------------------
 
 library(dplyr)
@@ -125,20 +100,9 @@ plot(sampled_fraction_vec)
 
 m4 <- fit_seeiqr(
   daily_diffs, chains = 6, iter = 300,
-  seeiqr_model = seeiqr_model, sampled_fraction_vec = sampled_fraction_vec)
+  seeiqr_model = seeiqr_model, sampled_fraction_vec = sampled_fraction_vec,
   seeiqr_model = seeiqr_model)
-m2 <- fit_seeiqr(
-  daily_diffs,
-  fixed_f_forecast = 0.6,
-  seeiqr_model = seeiqr_model)
-m3 <- fit_seeiqr(
-  daily_diffs,
-  fixed_f_forecast = 1.0,
-  seeiqr_model = seeiqr_model)
-m <- list(m1, m2, m3)
 
-ignore <- lapply(seq_along(m), function(x) {
-  saveRDS(m[[x]], file = paste0("models2/stan-fit-", x, ".rds"))
 library(future)
 fs <- seq(0.3, 1, 0.1)
 plan(multisession, workers = parallel::detectCores()/2)
@@ -148,14 +112,6 @@ m <- furrr::future_map(fs, function(.f) {
       seeiqr_model = seeiqr_model, fixed_f_forecast = .f)
 })
 plan(future::sequential)
-
-
-# or start here to avoid re-fitting:
-f <- list.files("models2", full.names = TRUE)
-m <- lapply(seq_along(f), function(x) {
-  readRDS(paste0("models2/stan-fit-", x, ".rds"))
-})
-quantile(m[[1]]$post$f2, probs = c(0.05, 0.5, 0.95))
 
 purrr::walk(m, ~ print(.x$fit, pars = c("R0", "f2", "phi", "sampFrac2")))
 

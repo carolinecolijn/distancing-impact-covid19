@@ -53,7 +53,28 @@ make_quick_plots <- function(obj, id = "", ext = ".pdf", first_date = "2020-03-0
     coord_cartesian(xlim = range(.x), expand = FALSE) +
     xlab("Social distancing effect") +
     scale_x_continuous(breaks = seq(0, 1, 0.2))
-  # ggsave(paste0("figs/f2", id, ext), width = 6, height = 4)
+
+  if (obj$stan_data$est_sampFrac2) {
+    sampFrac2 <- post$sampFrac2
+    .x <- seq(0, 1, length.out = 200)
+    breaks <- seq(min(.x), max(.x), 0.03)
+    g5 <- ggplot(tibble(sampFrac2 = sampFrac2)) +
+      geom_ribbon(
+        data = tibble(sampFrac2 = .x,
+          density = dbeta(.x, obj$stan_data$sampFrac2_prior[1], obj$stan_data$sampFrac2_prior[2])),
+        aes(x = sampFrac2, ymin = 0, ymax = density), alpha = 0.5, colour = "grey50",
+        fill = "grey50"
+      ) +
+      geom_histogram(
+        breaks = breaks, aes(x = sampFrac2, y = ..density..),
+        fill = "blue", alpha = 0.5
+      ) +
+      ylab("Probability density") +
+      coord_cartesian(xlim = range(.x), expand = FALSE) +
+      xlab("Fraction sampled") +
+      scale_x_continuous(breaks = seq(0, 1, 0.2))
+    ggsave(paste0("figs/sampFrac2", id, ext), width = 6, height = 4)
+  }
 
   if ("phi" %in% names(post)) {
     phi_hat <- post$phi[, 1]

@@ -43,13 +43,16 @@ fit_seeiqr <- function(daily_cases,
                        days_back = 45,
                        R0_prior = c(log(2.6), 0.2),
                        phi_prior = 1,
-                       f2_prior = c(0.4, 0.15),
+                       f2_prior = c(0.4, 0.2),
+                       sampFrac2_prior = c(0.4, 0.2),
+                       est_sampFrac2 = TRUE,
                        seed = 4,
                        chains = 8,
                        iter = 500,
                        sampled_fraction1 = 0.2,
                        sampled_fraction2 = 0.7,
                        sampled_fraction_day_change = 14,
+                       sampled_fraction_vec = NULL,
                        fixed_f_forecast = NULL,
                        pars = c(
                          N = 4.4e6, D = 4, k1 = 1 / 4,
@@ -123,13 +126,23 @@ fit_seeiqr <- function(daily_cases,
     time = time, days_back = days_back
   )
 
-  sampFrac <- ifelse(days < sampled_fraction_day_change,
-    sampled_fraction1, sampled_fraction2)
+  if (is.null(sampled_fraction_vec)) {
+    sampFrac <- ifelse(days < sampled_fraction_day_change,
+      sampled_fraction1, sampled_fraction2)
+  } else {
+    stopifnot(length(sampled_fraction_vec) == length(days))
+    sampFrac <- sampled_fraction_vec
+  }
 
   beta_sd <- f2_prior[2]
   beta_mean <- f2_prior[1]
   beta_shape1 <- get_beta_params(beta_mean, beta_sd)$alpha
   beta_shape2 <- get_beta_params(beta_mean, beta_sd)$beta
+
+  sampFrac2_beta_sd <- sampFrac2_prior[2]
+  sampFrac2_beta_mean <- sampFrac2_prior[1]
+  sampFrac2_beta_shape1 <- get_beta_params(sampFrac2_beta_mean, sampFrac2_beta_sd)$alpha
+  sampFrac2_beta_shape2 <- get_beta_params(sampFrac2_beta_mean, sampFrac2_beta_sd)$beta
 
   stan_data <- list(
     T = length(time),
@@ -149,6 +162,9 @@ fit_seeiqr <- function(daily_cases,
     R0_prior = R0_prior,
     phi_prior = phi_prior,
     f2_prior = c(beta_shape1, beta_shape2),
+    sampFrac2_prior = c(sampFrac2_beta_shape1, sampFrac2_beta_shape2),
+    day_inc_sampling = sampled_fraction_day_change,
+    est_sampFrac2 = as.integer(est_sampFrac2),
     priors_only = 0L,
     last_day_obs = last_day_obs,
     obs_model = obs_model,
@@ -174,7 +190,7 @@ fit_seeiqr <- function(daily_cases,
     }
     init
   }
-  pars_save <- c("R0", "f2", "phi", "lambda_d", "y_rep")
+  pars_save <- c("R0", "f2", "phi", "lambda_d", "y_rep", "sampFrac2")
   if (save_state_predictions) pars_save <- c(pars_save, "y_hat")
   fit <- sampling(
     seeiqr_model,

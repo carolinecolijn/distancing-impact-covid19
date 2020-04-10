@@ -68,9 +68,10 @@ m_rw <- fit_seeiqr(
   sampled_fraction1 = 0.1,
   sampFrac2_type = "rw",
   rw_sigma = 0.1,
-  sampFrac2_prior = c(0.4, 0.2),
-  fixed_f_forecast = 1.0,
-  seeiqr_model = seeiqr_model, chains = 6, cores = 400)
+  sampFrac2_prior = c(0.3, 0.3),
+  sampled_fraction_day_change = 5,
+  forecast_days = 30,
+  seeiqr_model = seeiqr_model, chains = 6, iter = 300)
 m_rw$post$sampFrac2 %>% reshape2::melt() %>% as_tibble() %>%
   rename(day = Var2) %>%
   group_by(day) %>%
@@ -83,8 +84,8 @@ m_rw$post$sampFrac2 %>% reshape2::melt() %>% as_tibble() %>%
   ) %>%
   ggplot(aes(day, med)) + geom_line() +
   geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2) +
-  geom_ribbon(aes(ymin = lwr2, ymax = upr2), alpha = 0.9) +
-  ylab("Sampled fraction") + xlab("Days after March 14")
+  geom_ribbon(aes(ymin = lwr2, ymax = upr2), alpha = 0.7) +
+  ylab("Sampled fraction") + xlab("Days after March 5")
 ggsave(paste0("figs/sampFrac2-rw.png"), width = 5, height = 4)
 
 # -----------------------------------------------------------------------------
@@ -208,13 +209,6 @@ ggsave("figs/joint-posterior-prevalence.png", width = 3.7, height = 3.5)
 # plot(daily_diffs/total_tests)
 # total_tests <- c(total_tests, rep(total_tests[length(total_tests)], 60)) # 60 day forecast
 #
-# m[[6]] <- fit_seeiqr(
-#   daily_diffs,
-#   fixed_f_forecast = 0.6,
-#   forecast_days = 60,
-#   daily_tests = total_tests,
-#   seeiqr_model = seeiqr_model)
-
 ## Andy's code, to be integrated...
 # TODO: setup-dates.R explains how Andy is setting up the dates (it's mostly
 # explanations that I didn't want to clutter up here).

@@ -75,7 +75,7 @@ data {
   int daily_cases[last_day_obs]; // daily new case counts
   // real offset[N];     // offset in case counts, e.g. (log(tests))
   real x_r[12];       // data for ODEs (real numbers)
-  real sampFrac[T];   // fraction of cases sampled per time step
+  real sampFrac[N];   // fraction of cases sampled per time step
   real delayScale;    // Weibull parameter for delay in becoming a case count
   real delayShape;    // Weibull parameter for delay in becoming a case count
   int time_day_id[N]; // last time increment associated with each day
@@ -107,6 +107,7 @@ transformed parameters {
   real E2d;
   real theta[2];
   real y_hat[T,12];
+  real this_samp;
   theta[1] = R0;
   theta[2] = f2;
 
@@ -114,14 +115,16 @@ transformed parameters {
 
   // FIXME: switch to Stan 1D integration function?
   for (n in 1:N) {
+    this_samp = sampFrac[n];
     for (t in 1:T) {
       ft[t] = 0; // initialize at 0 across the full 1:T
     }
-    for (t in time_day_id0[n]:time_day_id[n]) {
+    for (t in time_day_id0[n]:time_day_id[n]) { // t is an increment here starting at 1
       k2 = x_r[4];
       E2 = y_hat[t,3];
       E2d = y_hat[t,9];
-      ft[t] = sampFrac[t] * k2 * (E2 + E2d) *
+
+      ft[t] = this_samp * k2 * (E2 + E2d) *
       exp(weibull_lpdf(time[time_day_id[n]] - time[t] | delayShape, delayScale));
     }
     sum_ft_inner = 0;

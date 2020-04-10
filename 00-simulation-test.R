@@ -1,6 +1,6 @@
 setwd(here::here("selfIsolationModel/stan"))
 my_path <- paste0(here::here(), "/selfIsolationModel/")
-source(paste0(my_path, "functions_sir.R"))
+source("functions_sir.R")
 library(ggplot2)
 # devtools::install_github("seananderson/ggsidekick")
 theme_set(ggsidekick::theme_sleek())
@@ -38,15 +38,11 @@ state_0 <- c(
   Qd = 0,
   Rd = 0
 )
-
 times <- seq(
   from = -30,
   to = 100,
   by = 0.1
 )
-
-pars$f2 <- 0.4
-
 set.seed(128284)
 sim_dat <- purrr::map(1:8, function(x) {
   example_simulation <- as.data.frame(deSolve::ode(
@@ -56,6 +52,12 @@ sim_dat <- purrr::map(1:8, function(x) {
     parms = pars,
     sdtiming = sdtiming_gradual
   ))
+
+  # states <- reshape2::melt(example_simulation, id.vars = "time")
+  # ggplot(states, aes(time, value)) +
+  #   geom_line() +
+  #   facet_wrap(~variable, scales = "free_y")
+
   dat <- data.frame(
     Date = seq(lubridate::ymd("2020-03-01"),
       lubridate::ymd("2020-03-01") + max(times) + 1,
@@ -69,13 +71,17 @@ sim_dat <- purrr::map(1:8, function(x) {
   # plot(seq(1, max(example_simulation$time)), lambda_d)
   sim_dat <- data.frame(
     day = seq(1, max(times)),
-    lambda_d = lambda_d, obs = MASS::rnegbin(max(times), lambda_d, theta = 3)
+    lambda_d = lambda_d,
+    obs = MASS::rnegbin(max(times), lambda_d, theta = 5)
+    # obs = rpois(max(times), lambda_d)
   )
   sim_dat
 })
 
 plot(sim_dat[[1]]$lambda_d)
 plot(sim_dat[[1]]$obs)
+plot(sim_dat[[2]]$obs)
+plot(sim_dat[[3]]$obs)
 
 source("fit_seeiqr.R")
 library(future)
@@ -92,7 +98,7 @@ sim <- furrr::future_map(seq_along(sim_dat), function(x) {
     R0_prior = c(log(2.65), 0.2),
     f2_prior = c(0.4, 0.15),
     iter = 400,
-    chains = 2, cores = 1,
+    chains = 1, cores = 1,
     time_increment = 0.1
   )
 })
@@ -148,10 +154,10 @@ out <- purrr::map_df(sim, function(.x) {
 ggplot(out, aes(x = day, y = med, ymin = lwr2, ymax = upr2)) +
   geom_ribbon(alpha = 0.2, colour = NA) +
   geom_line(alpha = 0.9, lwd = 1) +
-  geom_point(
-    data = sim_dat[[1]],
-    col = "black", inherit.aes = FALSE, aes(x = day, y = obs),
-  ) +
+  # geom_point(
+  #   data = sim_dat[[1]],
+  #   col = "black", inherit.aes = FALSE, aes(x = day, y = obs),
+  # ) +
   facet_wrap(~simulation, ncol = 4) +
   geom_line(
     data = sim_dat[[1]],
@@ -168,7 +174,7 @@ check_sim_theta <- function(.par) {
   } else if (.par == "f2") {
     0.4
   } else if (.par == "phi") {
-    3
+    5
   }
   ggplot(out, aes_string("as.factor(sim)", "parameter")) +
     geom_boxplot() +

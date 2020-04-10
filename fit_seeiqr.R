@@ -111,7 +111,7 @@ fit_seeiqr <- function(daily_cases,
 
   get_time_day_id0 <- function(day, time, days_back) {
     # go back `days_back` or to beginning if that's negative time:
-    check <- time < (day - days_back)
+    check <- time <= (day - days_back)
     if (sum(check) == 0L) {
       1L
     } else {

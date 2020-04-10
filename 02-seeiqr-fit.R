@@ -139,7 +139,16 @@ m <- list(m1, m2, m3)
 
 ignore <- lapply(seq_along(m), function(x) {
   saveRDS(m[[x]], file = paste0("models2/stan-fit-", x, ".rds"))
+library(future)
+fs <- seq(0.3, 1, 0.1)
+plan(multisession, workers = parallel::detectCores()/2)
+m <- furrr::future_map(fs, function(.f) {
+  fit_seeiqr(
+    daily_diffs, iter = 300, chains = 1, save_state_predictions = TRUE,
+      seeiqr_model = seeiqr_model, fixed_f_forecast = .f)
 })
+plan(future::sequential)
+
 
 # or start here to avoid re-fitting:
 f <- list.files("models2", full.names = TRUE)
@@ -148,7 +157,7 @@ m <- lapply(seq_along(f), function(x) {
 })
 quantile(m[[1]]$post$f2, probs = c(0.05, 0.5, 0.95))
 
-purrr::walk(m, ~ print(.x$fit, pars = c("R0", "f2", "phi")))
+purrr::walk(m, ~ print(.x$fit, pars = c("R0", "f2", "phi", "sampFrac2")))
 
 # Identify the point at which prevalence slope goes to 0: ---------------------
 

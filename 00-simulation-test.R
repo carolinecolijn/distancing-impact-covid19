@@ -44,7 +44,7 @@ times <- seq(
   by = 0.1
 )
 set.seed(128284)
-sim_dat <- purrr::map(1:8, function(x) {
+sim_dat <- purrr::map(1:4, function(x) {
   example_simulation <- as.data.frame(deSolve::ode(
     y = state_0,
     times = times,
@@ -72,8 +72,8 @@ sim_dat <- purrr::map(1:8, function(x) {
   sim_dat <- data.frame(
     day = seq(1, max(times)),
     lambda_d = lambda_d,
-    obs = MASS::rnegbin(max(times), lambda_d, theta = 5)
-    # obs = rpois(max(times), lambda_d)
+    # obs = MASS::rnegbin(max(times), lambda_d, theta = 5)
+    obs = rpois(max(times), lambda_d)
   )
   sim_dat
 })
@@ -92,14 +92,14 @@ seeiqr_model <- stan_model("seeiqr.stan")
 plan(multisession, workers = parallel::detectCores()/2)
 sim <- furrr::future_map(seq_along(sim_dat), function(x) {
   fit_seeiqr(
-    daily_cases = sim_dat[[x]]$obs[1:40],
+    daily_cases = sim_dat[[x]]$obs,
     seeiqr_model = seeiqr_model,
     forecast_days = 60,
     sampFrac2_prior = c(0.7, 0.1),
-    sampFrac2_type = "est",
+    sampFrac2_type = "fixed",
     R0_prior = c(log(2.65), 0.2),
     f2_prior = c(0.4, 0.15),
-    iter = 400,
+    iter = 250, obs_model = "Poisson",
     chains = 1, cores = 1,
     time_increment = 0.1
   )

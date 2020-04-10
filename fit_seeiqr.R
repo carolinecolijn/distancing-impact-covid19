@@ -39,7 +39,7 @@ fit_seeiqr <- function(daily_cases,
                        seeiqr_model,
                        obs_model = c("NB2", "Poisson"),
                        forecast_days = 60, # a bit faster if this is decreased
-                       time_increment = 0.2,
+                       time_increment = 0.1,
                        days_back = 45,
                        R0_prior = c(log(2.6), 0.2),
                        phi_prior = 1,

@@ -100,7 +100,7 @@ fit_seeiqr <- function(daily_cases,
 
   days <- seq(1, length(daily_cases) + forecast_days)
   last_day_obs <- length(daily_cases)
-  time <- seq(-30, max(days) + forecast_days, time_increment)
+  time <- seq(-30, max(days), time_increment)
   x_r <- c(x_r, if (!is.null(fixed_f_forecast)) fixed_f_forecast else 0)
   names(x_r)[length(x_r)] <- "fixed_f_forecast"
   x_r <- c(x_r, c("last_day_obs" = last_day_obs))

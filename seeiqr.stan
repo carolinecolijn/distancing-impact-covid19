@@ -90,8 +90,9 @@ data {
   real sampFrac2_prior[2];   // beta prior for sampFrac2
   int<lower=0, upper=1> priors_only; // logical: include likelihood or just priors?
   int<lower=0, upper=1> est_phi; // estimate NB phi?
-  int<lower=0, upper=1> est_sampFrac2; // estimate sampFrac2?
+  int<lower=0, upper=N> n_sampFrac2; // number of sampFrac2
   int<lower=0, upper=1> obs_model; // observation model: 0 = Poisson, 1 = NB2
+  real<lower=0> rw_sigma;
 }
 transformed data {
   int x_i[0]; // empty; needed for ODE function
@@ -100,7 +101,7 @@ parameters {
  real R0; // Stan ODE solver seems to be more efficient without this bounded at > 0
  real<lower=0, upper=1> f2; // strength of social distancing
  real<lower=0> phi[est_phi]; // NB2 (inverse) dispersion; `est_phi` turns on/off
- real<lower=0, upper=1> sampFrac2[est_sampFrac2];
+ real<lower=0, upper=1> sampFrac2[n_sampFrac2];
 }
 transformed parameters {
   real meanDelay = delayScale * tgamma(1 + 1 / delayShape);
@@ -122,8 +123,16 @@ transformed parameters {
 
   for (n in 1:N) {
     this_samp = sampFrac[n];
-    if (n >= day_inc_sampling && est_sampFrac2) {
-      this_samp = sampFrac2[est_sampFrac2];
+    if (n_sampFrac2 > 1) {
+      if (n >= day_inc_sampling && n <= last_day_obs) {
+        this_samp = sampFrac2[n - day_inc_sampling + 1];
+      }
+      if (n >= day_inc_sampling && n > last_day_obs) {
+        this_samp = sampFrac2[n_sampFrac2]; // forecast with last value
+      }
+    }
+    if (n_sampFrac2 == 1) {
+      this_samp = sampFrac2[1];
     }
     for (t in 1:T) {
       ft[t] = 0; // initialize at 0 across the full 1:T
@@ -156,8 +165,13 @@ model {
   }
   R0 ~ lognormal(R0_prior[1], R0_prior[2]);
   f2 ~ beta(f2_prior[1], f2_prior[2]);
-  if (est_sampFrac2) {
+  if (n_sampFrac2 > 0) {
     sampFrac2[1] ~ beta(sampFrac2_prior[1], sampFrac2_prior[2]);
+    if (n_sampFrac2 > 1) {
+      for (n in 2:n_sampFrac2) {
+        sampFrac2[n] ~ normal(sampFrac2[n-1], rw_sigma); // RW
+      }
+    }
   }
 
   // data likelihood:

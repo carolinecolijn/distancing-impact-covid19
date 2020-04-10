@@ -54,7 +54,7 @@ make_quick_plots <- function(obj, id = "", ext = ".pdf", first_date = "2020-03-0
     xlab("Social distancing effect") +
     scale_x_continuous(breaks = seq(0, 1, 0.2))
 
-  if (obj$stan_data$est_sampFrac2) {
+  if (obj$stan_data$n_sampFrac2 == 1) {
     sampFrac2 <- post$sampFrac2
     .x <- seq(0, 1, length.out = 200)
     breaks <- seq(min(.x), max(.x), 0.03)

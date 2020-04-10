@@ -45,7 +45,8 @@ fit_seeiqr <- function(daily_cases,
                        phi_prior = 1,
                        f2_prior = c(0.4, 0.2),
                        sampFrac2_prior = c(0.4, 0.2),
-                       est_sampFrac2 = TRUE,
+                       sampFrac2_type = c("fixed", "estimated", "rw"),
+                       rw_sigma = 0.1,
                        seed = 4,
                        chains = 8,
                        iter = 500,
@@ -85,6 +86,16 @@ fit_seeiqr <- function(daily_cases,
   obs_model <- match.arg(obs_model)
   obs_model <- if (obs_model == "NB2") 1L else 0L
   x_r <- pars
+
+  sampFrac2_type <- match.arg(sampFrac2_type)
+  n_sampFrac2 <-
+    if (sampFrac2_type == "fixed") {
+      0L
+    } else if (sampFrac2_type == "estimated") {
+      1L
+    } else { # random walk:
+      length(daily_cases) - sampled_fraction_day_change + 1L
+    }
 
   if (!is.null(daily_tests)) {
     stopifnot(length(daily_cases) + forecast_days == length(daily_tests))
@@ -164,7 +175,8 @@ fit_seeiqr <- function(daily_cases,
     f2_prior = c(beta_shape1, beta_shape2),
     sampFrac2_prior = c(sampFrac2_beta_shape1, sampFrac2_beta_shape2),
     day_inc_sampling = sampled_fraction_day_change,
-    est_sampFrac2 = as.integer(est_sampFrac2),
+    n_sampFrac2 = n_sampFrac2,
+    rw_sigma = rw_sigma,
     priors_only = 0L,
     last_day_obs = last_day_obs,
     obs_model = obs_model,
@@ -182,6 +194,9 @@ fit_seeiqr <- function(daily_cases,
       get_beta_params(f2_prior[1], f2_prior[2])$beta
     )
     init <- list(R0 = R0, f2 = f2)
+    # if (n_sampFrac2 > 0) {
+    #   init <- c(init, sampFrac2 = array(rlnorm(n_sampFrac2, log(0.4), 0.1)))
+    # }
     if (stan_data$est_phi) {
       init <- c(init, list(
         phi =

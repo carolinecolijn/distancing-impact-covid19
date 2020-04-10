@@ -77,7 +77,6 @@ data {
   int days[N];        // day increments
   int last_day_obs;   // last day of observed data; days after this are projections
   int daily_cases[last_day_obs]; // daily new case counts
-  // real offset[N];     // offset in case counts, e.g. (log(tests))
   real x_r[12];       // data for ODEs (real numbers)
   real sampFrac[N];   // fraction of cases sampled per time step
   real delayScale;    // Weibull parameter for delay in becoming a case count
@@ -95,7 +94,7 @@ transformed data {
   int x_i[0]; // empty; needed for ODE function
 }
 parameters {
- real R0;
+ real R0; // Stan ODE solver seems to be more efficient without this bounded at > 0
  real<lower=0, upper=1> f2; // strength of social distancing
  real<lower=0> phi[est_phi]; // NB2 (inverse) dispersion; `est_phi` turns on/off
 }
@@ -117,7 +116,6 @@ transformed parameters {
 
   y_hat = integrate_ode_rk45(seeiqr, y0, t0, time, theta, x_r, x_i);
 
-  // FIXME: switch to Stan 1D integration function?
   for (n in 1:N) {
     this_samp = sampFrac[n];
     for (t in 1:T) {
@@ -145,7 +143,6 @@ model {
   // priors:
   if (est_phi) {
     // https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations
-    // http://andrewgelman.com/2018/04/03/justify-my-love/
     // D(expression(1/sqrt(x)), "x"); log(0.5 * x^-0.5/sqrt(x)^2
     1/sqrt(phi[1]) ~ normal(0, phi_prior);
     target += log(0.5) - 1.5 * log(phi[1]); // Jacobian adjustment
@@ -174,3 +171,4 @@ generated quantities{
     }
   }
 }
+

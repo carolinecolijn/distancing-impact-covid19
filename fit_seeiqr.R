@@ -123,10 +123,8 @@ fit_seeiqr <- function(daily_cases,
     time = time, days_back = days_back
   )
 
-  # FIXME: simplify this!
-  sampFrac <- ifelse(seq_along(time) < time_day_id[sampled_fraction_day_change],
-    sampled_fraction1, sampled_fraction2
-  )
+  sampFrac <- ifelse(days < sampled_fraction_day_change,
+    sampled_fraction1, sampled_fraction2)
 
   beta_sd <- f2_prior[2]
   beta_mean <- f2_prior[1]

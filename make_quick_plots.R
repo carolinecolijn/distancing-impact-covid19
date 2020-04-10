@@ -118,7 +118,8 @@ make_quick_plots <- function(obj, id = "", ext = ".pdf", first_date = "2020-03-0
     g <- ggplot(states, aes(time, value, group = iterations)) +
       geom_line(alpha = 0.1) +
       facet_wrap(~variable, scales = "free_y") +
-      geom_vline(xintercept = obj$last_day_obs, lty = 2, alpha = 0.6)
+      geom_vline(xintercept = obj$last_day_obs, lty = 2, alpha = 0.6) +
+      scale_x_continuous(breaks = seq(-30, 150, 10))
     ggsave(paste0("figs/states", id, ext), width = 12, height = 7.5)
   }
 

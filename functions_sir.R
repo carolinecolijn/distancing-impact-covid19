@@ -24,7 +24,7 @@ getlambd <- function(out,
   incoming <- with(pars, {
     k2 * (out$E2[ii] + out$E2d[ii])
   })
-  march15_modelform <- data$day[which(data$Date == as.Date("2020-03-12"))]
+  march15_modelform <- data$day[which(data$Date == as.Date("2020-03-14"))]
   thisSamp <- ifelse(day < march15_modelform,
     sampFrac,
     sampFrac * pars$ratio

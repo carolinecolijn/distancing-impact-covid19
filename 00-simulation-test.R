@@ -95,6 +95,8 @@ sim <- furrr::future_map(seq_along(sim_dat), function(x) {
     daily_cases = sim_dat[[x]]$obs[1:40],
     seeiqr_model = seeiqr_model,
     forecast_days = 60,
+    sampFrac2_prior = c(0.7, 0.1),
+    sampFrac2_type = "est",
     R0_prior = c(log(2.65), 0.2),
     f2_prior = c(0.4, 0.15),
     iter = 400,
@@ -103,7 +105,7 @@ sim <- furrr::future_map(seq_along(sim_dat), function(x) {
   )
 })
 plan(sequential)
-purrr::walk(sim, ~ print(.x$fit, pars = c("R0", "f2", "phi")))
+purrr::walk(sim, ~ print(.x$fit, pars = c("R0", "f2", "phi", "sampFrac2")))
 
 # Compare posterior predictions to truth: -------------------------------------
 

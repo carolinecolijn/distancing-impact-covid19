@@ -1,0 +1,124 @@
+# Fits for BC CDC
+
+library(rstan)
+options(mc.cores = parallel::detectCores())
+library(ggplot2)
+library(dplyr)
+theme_set(ggsidekick::theme_sleek()) # devtools::install_github("seananderson/ggsidekick")
+
+setwd(here::here("selfIsolationModel", "stan"))
+source("fit_seeiqr.R")
+source("make_projection_plot.R")
+dat <- readr::read_csv(here::here("nCoVDailyData/CaseCounts/BC Case counts.csv"))
+names(dat)[names(dat) == "BC"] <- "Cases"
+dat$Date[71] <- "1/4/2020" # argh
+dat$Date[72] <- "2/4/2020" # argh
+dat$Date <- lubridate::dmy(dat$Date)
+dat$day <- seq_len(nrow(dat))
+dat$daily_diffs <- c(dat$Cases[2] - dat$Cases[1], diff(dat$Cases))
+dat <- dplyr::filter(dat, Date >= "2020-03-01")
+daily_diffs <- dat$daily_diffs
+seeiqr_model <- stan_model("seeiqr.stan")
+.today <- max(dat$Date)
+
+m1 %<-% fit_seeiqr(
+  daily_diffs, sampled_fraction1 = 0.1, sampled_fraction2 = 0.2,
+  seeiqr_model = seeiqr_model, chains = 8, cores = 800)
+m2 %<-% fit_seeiqr(
+  daily_diffs, sampled_fraction1 = 0.1, sampled_fraction2 = 0.2,
+  fixed_f_forecast = 0.6,
+  seeiqr_model = seeiqr_model, chains = 8, cores = 800)
+m3 %<-% fit_seeiqr(
+  daily_diffs, sampled_fraction1 = 0.1, sampled_fraction2 = 0.2,
+  fixed_f_forecast = 1.0,
+  seeiqr_model = seeiqr_model, chains = 8, cores = 800)
+m_bccdc <- list(m1, m2, m3)
+
+sd_est <- sprintf("%.2f", round(quantile(1-m99$post$f2, c(0.05, 0.5, 0.95)), 2))
+sd_text <- paste0("(", sd_est[[2]], "; 90% CI: ", sd_est[1], "-", sd_est[3], ")")
+names(m_bccdc) <- c(
+  paste0("Social distancing strentch\nas estimated ", sd_text),
+  "Social distancing strength\nprojected at 0.4",
+  "Social distancing strength\nprojected at 0")
+
+# Make combined plots ---------------------------------------------------------
+
+make_projection_plot(m, ylim = c(0, 180), facet = FALSE)
+ggsave(paste0("figs/case-projections-one-panel-", .today, ".png"),
+  width = 8, height = 4.5)
+
+make_projection_plot(m, ylim = c(0, 3200), facet = FALSE, cumulative = TRUE)
+ggsave(paste0("figs/cumulative-projections-one-panel-", .today, ".png"),
+  width = 8, height = 4.5)
+
+make_projection_plot(m, ylim = c(0, 180), facet = TRUE, ncol = 2)
+ggsave(paste0("figs/case-projections-60days-", .today, ".png"),
+  width = 5.5, height = 5.25)
+make_projection_plot(m, cumulative = TRUE, ylim = c(0, 3200), ncol = 2)
+ggsave(paste0("figs/cumulative-case-projections-60days", .today, ".png"),
+  width = 5.5, height = 5.25)
+
+make_projection_plot(m, ylim = c(0, 180), facet = TRUE, ncol = 2) +
+  xlim(lubridate::ymd("2020-03-01"), lubridate::ymd("2020-05-08")) +
+  theme(panel.spacing.x = unit(1, "lines"))
+ggsave(paste0("figs/case-projections-30days", .today, ".png"),
+  width = 5.5, height = 5.25)
+make_projection_plot(m, cumulative = TRUE, ylim = c(0, 3200), ncol = 2) +
+  xlim(lubridate::ymd("2020-03-01"), lubridate::ymd("2020-05-08"))
+ggsave(paste0("figs/cumulative-case-projections-30days-", .today, ".png"),
+  width = 5.5, height = 5.25)
+
+# Split up into individual plots ----------------------------------------------
+
+cols <- RColorBrewer::brewer.pal(8, "Dark2")[seq_along(m)]
+purrr::walk(seq_along(m), function(i) {
+  make_projection_plot(m[i], cumulative = TRUE, ylim = c(0, 3200), ncol = 1, cols = cols[i]) +
+    xlim(lubridate::ymd("2020-03-01"), lubridate::ymd("2020-05-08"))
+  ggsave(paste0("figs/cumulative-case-projections-30days-", i, "-", .today, ".png"),
+    width = 3.9, height = 3.25)
+})
+
+purrr::walk(seq_along(m), function(i) {
+  make_projection_plot(m[i], cumulative = FALSE, ylim = c(0, 180), ncol = 1, cols = cols[i]) +
+    xlim(lubridate::ymd("2020-03-01"), lubridate::ymd("2020-05-08"))
+  ggsave(paste0("figs/case-projections-30days-", i, "-", .today, ".png"),
+    width = 3.9, height = 3.25)
+})
+
+# CSV output ------------------------------------------------------------------
+
+get_dat_output <- function(models, cumulative = FALSE, first_date = "2020-03-01") {
+  obj <- models[[1]]
+  actual_dates <- seq(lubridate::ymd(first_date),
+    lubridate::ymd(first_date) + max(obj$days), by = "1 day")
+  out <- purrr::map_df(models, function(.x) {
+    temp <- .x$post$y_rep %>%
+      reshape2::melt() %>%
+      dplyr::rename(day = Var2)
+    if (cumulative) {
+      temp <- temp %>%
+        group_by(iterations) %>%
+        mutate(value = cumsum(value)) %>%
+        ungroup()
+    }
+    temp %>%
+      group_by(day) %>%
+      summarise(
+        q0.05 = round(quantile(value, probs = 0.05)),
+        q0.25 = round(quantile(value, probs = 0.25)),
+        q0.5 = round(quantile(value, probs = 0.5)),
+        q0.75 = round(quantile(value, probs = 0.75)),
+        q0.95 = round(quantile(value, probs = 0.95)),
+        mean = sprintf("%.1f", round(mean(value), 1))
+      ) %>%
+      mutate(forecast = day > obj$last_day_obs) %>%
+      mutate(day = actual_dates[day]) %>%
+      dplyr::filter(day <= lubridate::ymd("2020-06-08"))
+  }, .id = "Scenario")
+  out
+}
+
+get_dat_output(m) %>%
+  readr::write_csv(paste0("figs/case-projections-60-", .today, ".csv"))
+get_dat_output(m, cumulative = TRUE) %>%
+  readr::write_csv(paste0("figs/cumulative-case-projections-60-", .today, ".csv"))

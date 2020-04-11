@@ -33,25 +33,12 @@ m_bccdc <- purrr::map(sd_strength, ~ {
     sampFrac2_type = "fixed",
     fixed_f_forecast = .x,
     delayScale = 11,
-    seeiqr_model = seeiqr_model, chains = 8, iter = 800
+    seeiqr_model = seeiqr_model, chains = 6, iter = 600
   )
 })
 
-# With estimated f2:
-m_bccdc_est <- fit_seeiqr(
-  daily_diffs,
-  sampled_fraction1 = 0.1,
-  sampled_fraction2 = 0.3,
-  f2_prior = c(0.4, 0.2),
-  R0_prior = c(log(2.6), 0.2),
-  sampFrac2_type = "fixed",
-  fixed_f_forecast = NULL,
-  delayScale = 11,
-  seeiqr_model = seeiqr_model, chains = 8, iter = 800
-)
-
 # With estimated f2 + 2 more days:
-m_bccdc_est2 <- fit_seeiqr(
+m_bccdc_est <- fit_seeiqr(
   c(daily_diffs, 34, 40),
   sampled_fraction1 = 0.1,
   sampled_fraction2 = 0.3,
@@ -60,7 +47,7 @@ m_bccdc_est2 <- fit_seeiqr(
   sampFrac2_type = "fixed",
   fixed_f_forecast = NULL,
   delayScale = 12,
-  seeiqr_model = seeiqr_model, chains = 8, iter = 800
+  seeiqr_model = seeiqr_model, chains = 6, iter = 600
 )
 
 # saveRDS(m_bccdc, file = "models2/m_bccdc.rds")
@@ -68,10 +55,6 @@ m_bccdc_est2 <- fit_seeiqr(
 # m_bccdc <- readRDS("models2/m_bccdc.rds")
 
 sd_est <- sprintf("%.2f", round(quantile(m_bccdc_est$post$f2, c(0.05, 0.5, 0.95)), 2))
-sd_text <- paste0("(", sd_est[[2]], "; 90% CI: ", sd_est[1], "-", sd_est[3], ")")
-sd_text
-
-sd_est <- sprintf("%.2f", round(quantile(m_bccdc_est2$post$f2, c(0.05, 0.5, 0.95)), 2))
 sd_text <- paste0("(", sd_est[[2]], "; 90% CI: ", sd_est[1], "-", sd_est[3], ")")
 sd_text
 
@@ -83,8 +66,7 @@ ylim <- c(0, 130)
 ylim_c <- c(0, 3400)
 names(m_bccdc) <- paste0("Contact fraction: ", sprintf("%.1f", sd_strength))
 cols <- rep(RColorBrewer::brewer.pal(5, "Blues")[4], 6)
-make_projection_plot(list(m_bccdc_est), ylim = ylim, facet = TRUE, ncol = 2, cols = cols)
-make_projection_plot(list("Plus 2 days from globalnews.ca" = m_bccdc_est2), ylim = ylim, facet = TRUE, ncol = 2, cols = cols)
+make_projection_plot(list("Plus 2 days from globalnews.ca" = m_bccdc_est), ylim = ylim, facet = TRUE, ncol = 2, cols = cols)
 make_projection_plot(m_bccdc, ylim = ylim, facet = TRUE, ncol = 2, cols = cols)
 make_projection_plot(m_bccdc, ylim = ylim_c, facet = TRUE, ncol = 2, cols = cols,
   cumulative = TRUE)

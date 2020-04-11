@@ -2,6 +2,7 @@
 
 library(rstan)
 options(mc.cores = parallel::detectCores())
+rstan_options(auto_write = TRUE)
 library(ggplot2)
 library(dplyr)
 theme_set(ggsidekick::theme_sleek()) # devtools::install_github("seananderson/ggsidekick")

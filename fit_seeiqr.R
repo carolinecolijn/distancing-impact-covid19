@@ -3,10 +3,12 @@
 #' @param daily_cases A vector of daily new cases
 #' @param daily_tests An optional vector of daily test numbers. Should include
 #'   assumed tests for the forecast. I.e. `length(daily_cases) + forecast_days =
-#'   length(daily_cases)`
+#'   length(daily_tests)`. Only used in the case of the beta-binomial (which
+#'   isn't working very well).
 #' @param Model from `rstan::stan_model(seeiqr_model)`.
 #' @param obs_model Type of observation model
-#' @param forecast_days Number of days into the future to forecast
+#' @param forecast_days Number of days into the future to forecast. The model
+#'   will run slightly faster with fewer forecasted days.
 #' @param time_increment Time increment for ODEs and Weibull delay-model
 #'   integration
 #' @param days_back Number of days to go back for Weibull delay-model
@@ -31,6 +33,8 @@
 #' @param sampled_fraction2 Fraction sampled at and after
 #'   `sampled_fraction_day_change`
 #' @param sampled_fraction_day_change Date fraction sample changes
+#' @param sampled_fraction_vec An optional vector of sampled fractions. Should
+#'   be of length: `length(daily_cases) + forecast_days`.
 #' @param fixed_f_forecast Optional fixed `f` for forecast.
 #' @param pars A named numeric vector of fixed parameter values
 #' @param i0 A scaling factor FIXME
@@ -49,7 +53,7 @@ fit_seeiqr <- function(daily_cases,
                        daily_tests = NULL,
                        seeiqr_model,
                        obs_model = c("NB2", "Poisson", "beta-binomial"),
-                       forecast_days = 60, # a bit faster if this is decreased
+                       forecast_days = 60,
                        time_increment = 0.1,
                        days_back = 45,
                        R0_prior = c(log(2.6), 0.2),
@@ -215,15 +219,6 @@ fit_seeiqr <- function(daily_cases,
       get_beta_params(f2_prior[1], f2_prior[2])$beta
     )
     init <- list(R0 = R0, f2 = f2)
-    # if (n_sampFrac2 > 0) {
-    #   init <- c(init, sampFrac2 = array(rlnorm(n_sampFrac2, log(0.4), 0.1)))
-    # }
-    # if (stan_data$est_phi) {
-    #   init <- c(init, list(
-    #     phi =
-    #       array(rlnorm(1, 2, 0.2))
-    #   ))
-    # }
     init
   }
   pars_save <- c("R0", "f2", "phi", "lambda_d", "y_rep", "sampFrac2")

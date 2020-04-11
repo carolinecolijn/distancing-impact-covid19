@@ -21,6 +21,35 @@ plot(daily_diffs)
 
 seeiqr_model <- stan_model("seeiqr.stan")
 
+load(paste0(here::here(),
+  "/nCoVDailyData/Labdata/testsanonym.RData"))
+# Only contains dataframe 'testsanonymized'
+tests_anon <- dplyr::as_tibble(testsanonymized) %>%
+  type.convert() %>%
+  dplyr::mutate(results_date = lubridate::date(results_date))
+tests_by_day <- tests_anon %>%
+  dplyr::group_by(results_date) %>%
+  dplyr::count(name = "total_tests") %>%
+  rename(Date = results_date)
+
+dat <- left_join(dat, tests_by_day)
+dat$daily_diffs
+dat$total_tests[is.na(dat$total_tests)] <- 1
+dat$total_tests
+stopifnot(all(dat$daily_diffs < dat$total_tests))
+
+length(dat$total_tests)
+length(dat$daily_diffs)
+
+daily_tests <- c(dat$total_tests, rep(586, 5))
+plot(daily_tests)
+plot(daily_diffs)
+
+mm <- fit_seeiqr(
+  daily_diffs, chains = 1, iter = 300, forecast_days = 5,
+  # ode_control = c(1e-6, 1e-4, 1e6),
+  seeiqr_model = seeiqr_model, obs_model = "NB2", phi_prior = 1)
+
 # Look at sample fraction scenarios -------------------------------------------
 
 library(dplyr)
@@ -85,7 +114,7 @@ m_rw$post$sampFrac2 %>% reshape2::melt() %>% as_tibble() %>%
   ggplot(aes(day, med)) + geom_line() +
   geom_ribbon(aes(ymin = lwr, ymax = upr), alpha = 0.2) +
   geom_ribbon(aes(ymin = lwr2, ymax = upr2), alpha = 0.7) +
-  ylab("Sampled fraction") + xlab("Days after March 5")
+  ylab("Sampled fraction") + xlab("Days after March 4")
 ggsave(paste0("figs/sampFrac2-rw.png"), width = 5, height = 4)
 
 # -----------------------------------------------------------------------------

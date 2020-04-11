@@ -1,7 +1,8 @@
 make_projection_plot <- function(models, cumulative = FALSE,
   first_date = "2020-03-01", ylim = c(0, 200), outer_quantile = c(0.05, 0.95),
-  facet = TRUE, ncol = 1, cols = NULL) {
+  facet = TRUE, ncol = 1, cols = NULL, linetype = c("mu", "obs")) {
 
+  linetype <- match.arg(linetype)
   obj <- models[[1]]
   actual_dates <- seq(lubridate::ymd(first_date),
     lubridate::ymd(first_date) + max(obj$days), by = "1 day")
@@ -64,27 +65,34 @@ make_projection_plot <- function(models, cumulative = FALSE,
   }
   g <- ggplot(out, aes(x = day, y = med, ymin = lwr, ymax = upr, colour = Scenario,
     fill = Scenario)) +
+    annotate("rect", xmin = actual_dates[obj$last_day_obs], xmax = max(out$day), ymin = 0, ymax = ylim[2], fill = "grey95") +
+    coord_cartesian(expand = FALSE, ylim = ylim, xlim = range(out$day)) +
     geom_ribbon(alpha = 0.2, colour = NA) +
-    geom_ribbon(alpha = 0.2, mapping = aes(ymin = lwr2, ymax = upr2), colour = NA) +
-    # geom_line(alpha = 0.9, lwd = 1) +
-    geom_line(data = lambdas, aes(x = day, y = med, colour = Scenario), alpha = 1, lwd = 1, inherit.aes = FALSE) +
+    geom_ribbon(alpha = 0.2, mapping = aes(ymin = lwr2, ymax = upr2), colour = NA)
+
+  if (linetype == "obs")
+    g <- g + geom_line(alpha = 1, lwd = 1)
+  if (linetype == "mu")
+    g <- g + geom_line(data = lambdas, aes(x = day, y = med, colour = Scenario), alpha = 1, lwd = 1, inherit.aes = FALSE)
+
+  g <- g +
+    geom_line(
+      data = dat,a
+      col = "black", inherit.aes = FALSE, aes(x = day, y = value), lwd = 0.35,
+      alpha = 0.9
+    ) +
     geom_point(
       data = dat,
-      col = "black", inherit.aes = FALSE, aes(x = day, y = value),
+      col = "grey30", inherit.aes = FALSE, aes(x = day, y = value), pch = 21, fill = "grey95"
     ) +
-    geom_line(
-      data = dat,
-      col = "black", inherit.aes = FALSE, aes(x = day, y = value), lwd = 0.3,
-      alpha = 0.8
-    ) +
-    ylab(if (!cumulative) "Cases" else "Cumulative cases") +
+    ylab(if (!cumulative) "Recorded cases" else "Cumulative recorded cases") +
     xlab("Day") +
     xlim(lubridate::ymd("2020-03-01"), lubridate::ymd("2020-06-08")) +
-    geom_vline(xintercept = actual_dates[obj$last_day_obs], lty = 2, alpha = 0.6) +
-    coord_cartesian(expand = FALSE, ylim = ylim) +
+    # geom_vline(xintercept = actual_dates[obj$last_day_obs], lty = 2, alpha = 0.6) +
     scale_color_manual(values = cols) +
     scale_fill_manual(values = cols) +
-    labs(colour = "Projection scenario", fill = "Projection scenario")
+    labs(colour = "Projection scenario", fill = "Projection scenario") +
+    theme(axis.title.x = element_blank())
 
   if (facet)
     g <- g + facet_wrap(~Scenario, ncol = ncol) + theme(legend.position = "none")

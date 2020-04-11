@@ -21,31 +21,72 @@ daily_diffs <- dat$daily_diffs
 seeiqr_model <- stan_model("seeiqr.stan")
 .today <- max(dat$Date)
 
-m1 %<-% fit_seeiqr(
-  daily_diffs, sampled_fraction1 = 0.1, sampled_fraction2 = 0.3,
-  seeiqr_model = seeiqr_model, chains = 8, cores = 800,
-  save_state_predictions = TRUE)
-m2 %<-% fit_seeiqr(
-  daily_diffs, sampled_fraction1 = 0.1, sampled_fraction2 = 0.3,
-  fixed_f_forecast = 0.6,
-  seeiqr_model = seeiqr_model, chains = 8, cores = 800)
-m3 %<-% fit_seeiqr(
-  daily_diffs, sampled_fraction1 = 0.1, sampled_fraction2 = 0.3,
-  fixed_f_forecast = 1.0,
-  seeiqr_model = seeiqr_model, chains = 8, cores = 800)
-m_bccdc <- list(m1, m2, m3)
+sd_strength <- seq(0, 1, 0.2) %>% purrr::set_names()
+m_bccdc <- purrr::map(sd_strength, ~ {
+  fit_seeiqr(
+    daily_diffs,
+    sampled_fraction1 = 0.1,
+    sampled_fraction2 = 0.3,
+    f2_prior = c(0.4, 0.2),
+    R0_prior = c(log(2.6), 0.2),
+    sampFrac2_type = "fixed",
+    fixed_f_forecast = .x,
+    seeiqr_model = seeiqr_model, chains = 8, iter = 800
+  )
+})
+m_bccdc_est <- fit_seeiqr(
+  daily_diffs,
+  sampled_fraction1 = 0.1,
+  sampled_fraction2 = 0.3,
+  f2_prior = c(0.4, 0.2),
+  R0_prior = c(log(2.6), 0.2),
+  sampFrac2_type = "fixed",
+  fixed_f_forecast = NULL,
+  seeiqr_model = seeiqr_model, chains = 8, iter = 800
+)
 
-sd_est <- sprintf("%.2f", round(quantile(1-m99$post$f2, c(0.05, 0.5, 0.95)), 2))
+m_bccdc_est2 <- fit_seeiqr(
+  c(daily_diffs, 34, 40),
+  sampled_fraction1 = 0.1,
+  sampled_fraction2 = 0.3,
+  f2_prior = c(0.4, 0.2),
+  R0_prior = c(log(2.6), 0.2),
+  sampFrac2_type = "fixed",
+  fixed_f_forecast = NULL,
+  seeiqr_model = seeiqr_model, chains = 8, iter = 800
+)
+
+saveRDS(m_bccdc, file = "models2/m_bccdc.rds")
+saveRDS(m_bccdc_est, file = "models2/m_bccdc_est.rds")
+
+m_bccdc <- readRDS("models2/m_bccdc.rds")
+
+sd_est <- sprintf("%.2f", round(quantile(m_bccdc_est$post$f2, c(0.05, 0.5, 0.95)), 2))
 sd_text <- paste0("(", sd_est[[2]], "; 90% CI: ", sd_est[1], "-", sd_est[3], ")")
-names(m_bccdc) <- c(
-  paste0("1. Social distancing strength\nas estimated ", sd_text),
-  "2. Social distancing strength\nprojected at 0.4",
-  "3. Social distancing strength\nprojected at 0")
+sd_text
+
+sd_est <- sprintf("%.2f", round(quantile(m_bccdc_est2$post$f2, c(0.05, 0.5, 0.95)), 2))
+sd_text <- paste0("(", sd_est[[2]], "; 90% CI: ", sd_est[1], "-", sd_est[3], ")")
+sd_text
 
 # Make combined plots ---------------------------------------------------------
 
-ylim <- c(0, 140)
-ylim_c <- c(0, 3200)
+# Experimental:
+
+ylim <- c(0, 130)
+ylim_c <- c(0, 3400)
+names(m_bccdc) <- paste0("Contact fraction: ", sprintf("%.1f", sd_strength))
+cols <- rep(RColorBrewer::brewer.pal(5, "Blues")[4], 6)
+make_projection_plot(list(m_bccdc_est), ylim = ylim, facet = TRUE, ncol = 2, cols = cols)
+make_projection_plot(list("Plus 2 days from globalnews.ca" = m_bccdc_est2), ylim = ylim, facet = TRUE, ncol = 2, cols = cols)
+make_projection_plot(m_bccdc, ylim = ylim, facet = TRUE, ncol = 2, cols = cols)
+make_projection_plot(m_bccdc, ylim = ylim_c, facet = TRUE, ncol = 2, cols = cols,
+  cumulative = TRUE)
+
+# -----------------------------------------------------------------------------
+
+# Previous:
+
 make_projection_plot(m_bccdc, ylim = ylim, facet = FALSE)
 ggsave(paste0("figs/case-projections-one-panel-", .today, ".png"),
   width = 8, height = 4.5)
@@ -126,10 +167,18 @@ get_dat_output(m_bccdc) %>%
 get_dat_output(m_bccdc, cumulative = TRUE) %>%
   readr::write_csv(paste0("figs/cumulative-case-projections-60-", .today, ".csv"))
 
-# What is the delay between the peak prevalence (I+Id) and the peak in case counts? ---
+# -----------------------------------------------------------------------------
+# What is the delay between the peak prevalence (I+Id) and the peak in case counts?
 
-obj <- m1
-post <- m1$post
+x <- seq(0, 25, length.out = 200);plot(x, dweibull(x, shape = 2, scale = 11), type = "l")
+x <- seq(0, 25, length.out = 200);plot(x, dweibull(x, shape = 2, scale = 11), type = "l")
+m_peak <- fit_seeiqr(
+  daily_diffs, sampled_fraction1 = 0.1, sampled_fraction2 = 0.3,
+  seeiqr_model = seeiqr_model, chains = 8, iter = 600,
+  delayScale = 11,
+  save_state_predictions = TRUE)
+obj <- m_peak
+post <- obj$post
 variables_df <- dplyr::tibble(
   variable = names(obj$state_0),
   variable_num = seq_along(obj$state_0)
@@ -158,6 +207,10 @@ lambdas <- obj$post$lambda_d %>%
 both <- left_join(states, lambdas) %>%
   filter(case_peak != prevalence_peak) # one weird draw?
 ggplot(tibble(delay = both$case_peak - both$prevalence_peak), aes(delay)) +
-  geom_histogram(bins = 25)
-
+  geom_histogram(bins = 20)
 ggsave("figs/delay-peak-prevalence.png", width = 5, height = 3.5)
+
+states_timing <- states %>% mutate(start_decline = obj$stan_data$x_r[['start_decline']],
+  end_decline = obj$stan_data$x_r[['end_decline']])
+ggplot(states_timing, aes(prevalence_peak - start_decline)) + geom_histogram()
+ggplot(states_timing, aes(prevalence_peak - end_decline)) + geom_histogram()

@@ -80,7 +80,7 @@ fit_seeiqr <- function(daily_cases,
                          Rd = 0
                        ),
                        save_state_predictions = FALSE,
-                       delayScale = 11,
+                       delayScale = 12,
                        delayShape = 2,
                        ode_control = c(1e-6, 1e-6, 1e6),
                        ...) {

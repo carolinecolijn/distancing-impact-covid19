@@ -15,8 +15,14 @@
 #' @param phi_prior SD of `1/sqrt(phi) ~ Normal(0, SD)` prior, where NB2(mu,
 #'   phi) and `Var(Y) = mu + mu^2 / phi`.
 #'   <https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations>
-#' @param f2_prior Beta mean and SD for `f2` parameter (fraction of infection
-#'   force?)
+#' @param f2_prior Beta mean and SD for `f2` parameter
+#' @param sampFrac2_prior `sampFrac` prior starting on
+#'   `sampled_fraction_day_change` if `sampFrac2_type` is "estimated" or "rw".
+#'   In the case of the random walk, this specifies the initial state prior. The
+#'   two values correspond to the mean and SD of a Beta distribution.
+#' @param sampFrac2_type How to treat the sample fraction. Fixed, estimated, or
+#'   a constrained random walk.
+#' @param rw_sigma The standard deviation on the sampFrac2 random walk.
 #' @param seed MCMC seed
 #' @param chains Number of MCMC chains
 #' @param iter MCMC iterations per chain
@@ -31,8 +37,13 @@
 #' @param fsi FIXME
 #' @param nsi FIXME
 #' @param state_0 Initial state: a named numeric vector
-#' @param save_state_predictions Include the state predictions? `y_hat`
-#'   Will make the resulting model object much larger.
+#' @param save_state_predictions Include the state predictions? `y_hat` Will
+#'   make the resulting model object much larger.
+#' @param delayScale Weibull scale parameter for the delay in reporting.
+#' @param delayShape Weibull shape parameter for the delay in reporting.
+#' @param ode_control Control options for the Stan ODE solver. First is relative
+#'   difference, that absolute difference, and then maximum iterations. The
+#'   values here are the Stan defaults.
 
 fit_seeiqr <- function(daily_cases,
                        daily_tests = NULL,

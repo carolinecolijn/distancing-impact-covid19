@@ -59,7 +59,7 @@ m_bccdc_est2 <- fit_seeiqr(
   R0_prior = c(log(2.6), 0.2),
   sampFrac2_type = "fixed",
   fixed_f_forecast = NULL,
-  delayScale = 11,
+  delayScale = 12,
   seeiqr_model = seeiqr_model, chains = 8, iter = 800
 )
 

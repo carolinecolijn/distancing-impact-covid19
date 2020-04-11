@@ -77,7 +77,7 @@ make_projection_plot <- function(models, cumulative = FALSE,
 
   g <- g +
     geom_line(
-      data = dat,a
+      data = dat,
       col = "black", inherit.aes = FALSE, aes(x = day, y = value), lwd = 0.35,
       alpha = 0.9
     ) +

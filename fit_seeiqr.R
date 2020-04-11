@@ -37,7 +37,7 @@
 fit_seeiqr <- function(daily_cases,
                        daily_tests = NULL,
                        seeiqr_model,
-                       obs_model = c("NB2", "Poisson"),
+                       obs_model = c("NB2", "Poisson", "beta-binomial"),
                        forecast_days = 60, # a bit faster if this is decreased
                        time_increment = 0.1,
                        days_back = 45,
@@ -80,11 +80,19 @@ fit_seeiqr <- function(daily_cases,
                          Rd = 0
                        ),
                        save_state_predictions = FALSE,
-                       delayScale = 9,
+                       delayScale = 11,
                        delayShape = 2,
+                       ode_control = c(1e-6, 1e-6, 1e6),
                        ...) {
   obs_model <- match.arg(obs_model)
-  obs_model <- if (obs_model == "NB2") 1L else 0L
+  obs_model <-
+    if (obs_model == "Poisson") {
+      0L
+    } else if (obs_model == "NB2") {
+      1L
+    } else {
+      2L
+    }
   x_r <- pars
 
   sampFrac2_type <- match.arg(sampFrac2_type)
@@ -160,6 +168,7 @@ fit_seeiqr <- function(daily_cases,
     days = days,
     daily_cases = daily_cases,
     # offset = if (is.null(daily_tests)) rep(log(1), length(days)) else log(daily_tests),
+    tests = if (is.null(daily_tests)) rep(log(1), length(days)) else daily_tests,
     N = length(days),
     y0 = state_0,
     t0 = min(time) - 0.000001,
@@ -180,7 +189,8 @@ fit_seeiqr <- function(daily_cases,
     priors_only = 0L,
     last_day_obs = last_day_obs,
     obs_model = obs_model,
-    est_phi = if (obs_model == 1L) 1L else 0L
+    ode_control = ode_control,
+    est_phi = if (obs_model %in% c(1L, 2L)) 1L else 0L
   )
   # map_estimate <- optimizing(
   #   seeiqr_model,
@@ -197,12 +207,12 @@ fit_seeiqr <- function(daily_cases,
     # if (n_sampFrac2 > 0) {
     #   init <- c(init, sampFrac2 = array(rlnorm(n_sampFrac2, log(0.4), 0.1)))
     # }
-    if (stan_data$est_phi) {
-      init <- c(init, list(
-        phi =
-          array(rlnorm(1, 2, 0.2))
-      ))
-    }
+    # if (stan_data$est_phi) {
+    #   init <- c(init, list(
+    #     phi =
+    #       array(rlnorm(1, 2, 0.2))
+    #   ))
+    # }
     init
   }
   pars_save <- c("R0", "f2", "phi", "lambda_d", "y_rep", "sampFrac2")

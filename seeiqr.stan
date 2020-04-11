@@ -91,8 +91,10 @@ data {
   int<lower=0, upper=1> priors_only; // logical: include likelihood or just priors?
   int<lower=0, upper=1> est_phi; // estimate NB phi?
   int<lower=0, upper=N> n_sampFrac2; // number of sampFrac2
-  int<lower=0, upper=1> obs_model; // observation model: 0 = Poisson, 1 = NB2
+  int<lower=0, upper=2> obs_model; // observation model: 0 = Poisson, 1 = NB2
   real<lower=0> rw_sigma;
+  int tests[N];
+  real ode_control[3];
 }
 transformed data {
   int x_i[0]; // empty; needed for ODE function
@@ -116,10 +118,12 @@ transformed parameters {
   real theta[2];
   real y_hat[T,12];
   real this_samp;
+  real<lower=0> alpha[N]; // 1st shape parameter for the beta distribution
+  real<lower=0> beta[N]; // 2nd shape parameter for the beta distribution
   theta[1] = R0;
   theta[2] = f2;
 
-  y_hat = integrate_ode_rk45(seeiqr, y0, t0, time, theta, x_r, x_i);
+  y_hat = integrate_ode_rk45(seeiqr, y0, t0, time, theta, x_r, x_i, ode_control[1], ode_control[2], ode_control[3]);
 
   for (n in 1:N) {
     this_samp = sampFrac[n];
@@ -154,14 +158,30 @@ transformed parameters {
     eta[n] = log(lambda_d[n]);
   }
 
+  if (obs_model == 2) { // Beta-Binomial
+    for (n in 1:N) {
+      eta[n] = inv_logit(exp(eta[n]));
+      alpha[n] = eta[n] * phi[1];
+      beta[n] = (1 - eta[n]) * phi[1];
+    }
+  } else {
+    for (n in 1:N) {
+      alpha[n] = 0;
+      beta[n] = 0;
+    }
+  }
+
 }
 model {
   // priors:
-  if (est_phi) {
+  if (est_phi && obs_model == 1) { // NB2
     // https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations
     // D(expression(1/sqrt(x)), "x"); log(0.5 * x^-0.5/sqrt(x)^2
     1/sqrt(phi[1]) ~ normal(0, phi_prior);
     target += log(0.5) - 1.5 * log(phi[1]); // Jacobian adjustment
+  }
+  if (est_phi && obs_model == 2) { // Beta-Binomial
+    phi[1] ~ normal(0, phi_prior);
   }
   R0 ~ lognormal(R0_prior[1], R0_prior[2]);
   f2 ~ beta(f2_prior[1], f2_prior[2]);
@@ -176,13 +196,15 @@ model {
 
   // data likelihood:
   if (!priors_only) {
-    for (n in 1:last_day_obs) {
+    // for (n in 1:last_day_obs) {
       if (obs_model == 0) {
-        daily_cases[n] ~ poisson_log(eta[n]);
+        daily_cases[1:last_day_obs] ~ poisson_log(eta[1:last_day_obs]);
+      } else if (obs_model == 1) {
+        daily_cases[1:last_day_obs] ~ neg_binomial_2_log(eta[1:last_day_obs], phi[1]);
       } else {
-        daily_cases[n] ~ neg_binomial_2_log(eta[n], phi[1]);
+        daily_cases[1:last_day_obs] ~ beta_binomial(tests[1:last_day_obs], alpha[1:last_day_obs], beta[1:last_day_obs]);
       }
-    }
+    // }
   }
 }
 generated quantities{
@@ -190,8 +212,10 @@ generated quantities{
   for (n in 1:N) {
     if (obs_model == 0) {
       y_rep[n] = poisson_log_rng(eta[n]);
-    } else {
+    } else if (obs_model == 1) {
       y_rep[n] = neg_binomial_2_log_rng(eta[n], phi[1]);
+    } else {
+      y_rep[n] = beta_binomial_rng(tests[n], alpha[n], beta[n]);
     }
   }
 }

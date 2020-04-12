@@ -95,8 +95,8 @@ fit_seeiqr <- function(daily_cases,
                          Rd = 0
                        ),
                        save_state_predictions = FALSE,
-                       delayScale = 12,
-                       delayShape = 2,
+                       delayScale = 9.85,
+                       delayShape = 1.73,
                        ode_control = c(1e-6, 1e-6, 1e6),
                        ...) {
   obs_model <- match.arg(obs_model)

@@ -1,6 +1,7 @@
 make_projection_plot <- function(models, cumulative = FALSE,
   first_date = "2020-03-01", ylim = c(0, 200), outer_quantile = c(0.05, 0.95),
-  facet = TRUE, ncol = 1, cols = NULL, linetype = c("mu", "obs")) {
+  facet = TRUE, ncol = 1, cols = NULL, linetype = c("mu", "obs"),
+  omitted_days = NULL) {
 
   linetype <- match.arg(linetype)
   obj <- models[[1]]
@@ -80,11 +81,26 @@ make_projection_plot <- function(models, cumulative = FALSE,
       data = dat,
       col = "black", inherit.aes = FALSE, aes(x = day, y = value), lwd = 0.35,
       alpha = 0.9
-    ) +
-    geom_point(
-      data = dat,
-      col = "grey30", inherit.aes = FALSE, aes(x = day, y = value), pch = 21, fill = "grey95"
-    ) +
+    )
+
+  if (!is.null(omitted_days)) {
+    g <- g +
+      geom_point(
+        data = dat[omitted_days,,drop=FALSE],
+        col = "grey30", inherit.aes = FALSE, aes(x = day, y = value), pch = 4, fill = "grey95"
+      ) +
+      geom_point(
+        data = dat[-omitted_days, ,drop=FALSE],
+        col = "grey30", inherit.aes = FALSE, aes(x = day, y = value), pch = 21, fill = "grey95"
+      )
+  } else {
+    g <- g + geom_point(
+        data = dat,
+        col = "grey30", inherit.aes = FALSE, aes(x = day, y = value), pch = 21, fill = "grey95"
+      )
+  }
+
+  g <- g +
     ylab(if (!cumulative) "Recorded cases" else "Cumulative recorded cases") +
     xlab("Day") +
     xlim(lubridate::ymd("2020-03-01"), lubridate::ymd("2020-06-08")) +

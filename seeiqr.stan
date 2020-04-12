@@ -95,6 +95,8 @@ data {
   real<lower=0> rw_sigma;
   int tests[N];
   real ode_control[3];
+  int<lower=1> N_lik; // number of days in the likelihood
+  int dat_in_lik[N_lik]; // vector of data to include in the likelihood
 }
 transformed data {
   int x_i[0]; // empty; needed for ODE function
@@ -196,15 +198,13 @@ model {
 
   // data likelihood:
   if (!priors_only) {
-    // for (n in 1:last_day_obs) {
-      if (obs_model == 0) {
-        daily_cases[1:last_day_obs] ~ poisson_log(eta[1:last_day_obs]);
-      } else if (obs_model == 1) {
-        daily_cases[1:last_day_obs] ~ neg_binomial_2_log(eta[1:last_day_obs], phi[1]);
-      } else {
-        daily_cases[1:last_day_obs] ~ beta_binomial(tests[1:last_day_obs], alpha[1:last_day_obs], beta[1:last_day_obs]);
-      }
-    // }
+    if (obs_model == 0) {
+      daily_cases[dat_in_lik] ~ poisson_log(eta[dat_in_lik]);
+    } else if (obs_model == 1) {
+      daily_cases[dat_in_lik] ~ neg_binomial_2_log(eta[dat_in_lik], phi[1]);
+    } else {
+      daily_cases[dat_in_lik] ~ beta_binomial(tests[dat_in_lik], alpha[dat_in_lik], beta[dat_in_lik]);
+    }
   }
 }
 generated quantities{

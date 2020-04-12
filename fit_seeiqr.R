@@ -48,6 +48,8 @@
 #' @param ode_control Control options for the Stan ODE solver. First is relative
 #'   difference, that absolute difference, and then maximum iterations. The
 #'   values here are the Stan defaults.
+#' @param daily_cases_omit An optional vector of days to omit from the data likelihood.
+#' @param ... Other arguments to pass to [rstan::sampling()].
 
 fit_seeiqr <- function(daily_cases,
                        daily_tests = NULL,
@@ -98,6 +100,7 @@ fit_seeiqr <- function(daily_cases,
                        delayScale = 9.85,
                        delayShape = 1.73,
                        ode_control = c(1e-6, 1e-6, 1e6),
+                       daily_cases_omit = NULL,
                        ...) {
   obs_model <- match.arg(obs_model)
   obs_model <-
@@ -178,6 +181,10 @@ fit_seeiqr <- function(daily_cases,
   sampFrac2_beta_shape1 <- get_beta_params(sampFrac2_beta_mean, sampFrac2_beta_sd)$alpha
   sampFrac2_beta_shape2 <- get_beta_params(sampFrac2_beta_mean, sampFrac2_beta_sd)$beta
 
+  dat_in_lik <- seq(1, last_day_obs)
+  if (!is.null(daily_cases_omit)) {
+    dat_in_lik <- dat_in_lik[-daily_cases_omit]
+  }
   stan_data <- list(
     T = length(time),
     days = days,
@@ -205,7 +212,9 @@ fit_seeiqr <- function(daily_cases,
     last_day_obs = last_day_obs,
     obs_model = obs_model,
     ode_control = ode_control,
-    est_phi = if (obs_model %in% c(1L, 2L)) 1L else 0L
+    est_phi = if (obs_model %in% c(1L, 2L)) 1L else 0L,
+    dat_in_lik = dat_in_lik,
+    N_lik = length(dat_in_lik)
   )
   # map_estimate <- optimizing(
   #   seeiqr_model,

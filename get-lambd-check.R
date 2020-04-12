@@ -1,7 +1,8 @@
+library(Rcpp)
+library(rstan)
 setwd(here::here("selfIsolationModel/stan"))
 my_path <- paste0(here::here(), "/selfIsolationModel/")
 source("functions_sir.R")
-
 pars <- list(
   N = 4.4e6, # population of BC
   D = 4,
@@ -49,10 +50,11 @@ example_simulation <- as.data.frame(deSolve::ode(
   sdtiming = sdtiming_gradual))
 
 source("fit_seeiqr.R")
-library(rstan)
 seeiqr_model <- stan_model("seeiqr.stan")
 m <- fit_seeiqr(
-  daily_cases = sim_dat[[x]]$obs,
+  daily_cases = c(0, 0, 1, 3, 1, 8, 0, 6, 5, 0, 7, 7, 18, 9, 22, 38, 53, 45,
+    40, 77, 76, 48, 67, 78, 42, 66, 67, 92, 16, 70, 43, 53, 55, 53,
+    29, 26, 37, 25, 45, 34, 40, 35),
   seeiqr_model = seeiqr_model,
   forecast_days = 1,
   R0_prior = c(log(2.65), 0.2),
@@ -63,8 +65,8 @@ m <- fit_seeiqr(
 )
 
 getlambd_stan <- function(time, E2, E2d, time_day_id0, time_day_id, sampFrac,
-                          k2 = 1, delayScale = 9,
-                          delayShape = 2) {
+  k2 = 1, delayScale = 9,
+  delayShape = 2) {
   .T <- length(time)
   N <- max(time)
   ft <- vector("numeric", length = .T)
@@ -77,7 +79,7 @@ getlambd_stan <- function(time, E2, E2d, time_day_id0, time_day_id, sampFrac,
     thisSamp <- sampFrac[.n]
     for (.t in time_day_id0[.n]:time_day_id[.n]) {
       ft[.t] <- thisSamp * k2 * (E2 + E2d) *
-        exp(dweibull(time[time_day_id[.n]] - time[.t], delayShape, delayScale, log = TRUE))
+        dweibull(time[time_day_id[.n]] - time[.t], delayShape, delayScale)
     }
     sum_ft_inner <- 0
     for (.t in (time_day_id0[.n] + 1):(time_day_id[.n] - 1)) {
@@ -89,12 +91,12 @@ getlambd_stan <- function(time, E2, E2d, time_day_id0, time_day_id, sampFrac,
 }
 
 getlambd_R <- function(time,
-                       E2, E2d, k2 = 1,
-                       ratio,
-                       day,
-                       sampFrac = 0.2,
-                       delayShape = 2,
-                       delayScale = 9) {
+  E2, E2d, k2 = 1,
+  ratio,
+  day,
+  sampFrac = 0.2,
+  delayShape = 2,
+  delayScale = 9) {
   meanDelay <- delayScale * gamma(1 + 1 / delayShape)
   ii <- which(time > day - 999 & time <= day)
   dx <- time[2] - time[1]
@@ -111,17 +113,75 @@ getlambd_R <- function(time,
   0.5 * (dx) * (ft[1] + 2 * sum(ft[2:(length(ft) - 1)]) + ft[length(ft)])
 }
 
-
-getlambd_stan(
+.stan <- getlambd_stan(
   time = m$time, E2 = 300, E2d = 20,
   time_day_id0 = m$stan_data$time_day_id0,
   time_day_id = m$stan_data$time_day_id,
-  sampFrac = c(rep(0.2, 11), rep(0.7, 19)),
+  sampFrac = c(rep(0.2, 11), rep(0.7, 99)),
   # sampFrac = m$stan_data$sampFrac,
   k2 = 1, delayScale = 9, delayShape = 2
 )
 
-sapply(1:30, function(i) {
+.R <- sapply(1:max(m$time), function(i) {
   getlambd_R(day = i, time = m$time, E2 = 300,
     E2d = 20, k2 = 1, sampFrac = 0.2, ratio = 0.7 / 0.2)
 })
+
+Rcpp::sourceCpp('get_lambd.cpp')
+# Rcpp::sourceCpp('get_lambd_R.cpp')
+.Cpp <- get_lambd_cpp(
+  time = m$time,
+  k2 = 1,
+  E2 = rep(300, length(m$time)),
+  E2d = rep(20, length(m$time)),
+  delayShape = 2,
+  delayScale = 9,
+  N = max(m$time),
+  T = length(m$time),
+  sampFrac = c(rep(0.2, 11), rep(0.7, 99)),
+  time_day_id0 = m$stan_data$time_day_id0 - 1,
+  time_day_id = m$stan_data$time_day_id - 1)
+
+stopifnot(identical(round(.R, 9), round(.stan, 9)))
+stopifnot(identical(round(.Cpp, 9), round(.stan, 9)))
+stopifnot(identical(round(.Cpp, 9), round(.R, 9)))
+
+b <- bench::mark(
+  .Cpp = get_lambd_cpp(
+    time = m$time,
+    k2 = 1,
+    E2 = 300,
+    E2d = 20,
+    delayShape = 2,
+    delayScale = 9,
+    N = max(m$time),
+    T = length(m$time),
+    sampFrac = c(rep(0.2, 11), rep(0.7, 99)),
+    time_day_id0 = m$stan_data$time_day_id0 - 1,
+    time_day_id = m$stan_data$time_day_id - 1),
+  R = sapply(1:max(m$time), function(i) {
+    getlambd_R(day = i, time = m$time, E2 = 300,
+      E2d = 20, k2 = 1, sampFrac = 0.2, ratio = 0.7 / 0.2)
+  }),
+  check = FALSE
+)
+b
+
+mu <- get_lambd_cpp(
+  time = m$time,
+  k2 = 1,
+  E2 = 300,
+  E2d = 20,
+  delayShape = 2,
+  delayScale = 9,
+  N = max(m$time),
+  T = length(m$time),
+  sampFrac = c(rep(0.2, 11), rep(0.7, 99)),
+  time_day_id0 = m$stan_data$time_day_id0 - 1,
+  time_day_id = m$stan_data$time_day_id - 1)
+
+reps <- 10
+d <- data.frame(mu = rep(mu, reps), samp = rep(seq_len(reps),
+  each = length(mu)), day = rep(seq_along(mu), reps))
+d$y_rep <- rnbinom(nrow(d), mu = d$mu, size = 3)
+ggplot(d, aes(day, y_rep, group = samp)) + geom_line()

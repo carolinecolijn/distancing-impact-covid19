@@ -1,3 +1,4 @@
+setwd(here::here("selfIsolationModel/stan"))
 source("data-model-prep.R")
 dir.create("figs-cdc", showWarnings = FALSE)
 
@@ -113,4 +114,6 @@ get_dat_output(.m_fs) %>%
 get_dat_output(.m_fs, cumulative = TRUE) %>%
   readr::write_csv(paste0("figs-cdc/proj-cumulative-60-", .today, ".csv"))
 
-system("cp -r figs-cdc/ ~/Dropbox/bc-cdc/")
+if (Sys.info()[["user"]] == "seananderson") {
+  system("cp -r figs-cdc/ ~/Dropbox/bc-cdc/")
+}

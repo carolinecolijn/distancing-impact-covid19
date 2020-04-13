@@ -1,11 +1,10 @@
 library(future)
 source("data-model-prep.R")
-seeiqr_model <- stan_model("seeiqr.stan")
-source("functions_sir.R")
-dir.create("data-generated", showWarnings = FALSE)
+
 m <- fit_seeiqr(daily_diffs, seeiqr_model = seeiqr_model, iter = 1000, chains = 8)
 print(m$fit, pars = c("R0", "f2", "phi"))
 saveRDS(m, file = "data-generated/main-fit.rds")
+m <- readRDS("data-generated/main-fit.rds")
 
 .last_day <- m$last_day_obs
 .last_day
@@ -65,7 +64,7 @@ pred_3x3 <- readRDS("data-generated/pred_3x3.rds")
 # re-sample obs. model for smoother plots:
 pred_3x3 <- purrr::map_dfr(1:5, function(i) {
   pred_3x3$y_rep <- MASS::rnegbin(length(pred_3x3$y_rep),
-    pred_4x4$lambda_d, theta = pred_3x3$phi)
+    pred_3x3$lambda_d, theta = pred_3x3$phi)
   pred_3x3
 })
 
@@ -95,10 +94,10 @@ prep_dat <- function(.dat, Scenario = "") {
   list(y_rep = y_rep, mu = lambdas)
 }
 
-x1 <- prep_dat(pred_4x4)
-.max <- max(x1$y_rep$upr) * 1.04
-g1 <- make_projection_plot(models = list(m), mu_dat = x1$mu,
-  y_rep_dat = x1$y_rep, ylim = c(0, .max)) +
+x <- prep_dat(pred_4x4)
+.max <- max(x$y_rep$upr) * 1.04
+g1 <- make_projection_plot(models = list(m), mu_dat = x$mu,
+  y_rep_dat = x$y_rep, ylim = c(0, .max), points_size = 1.25) +
   theme(plot.margin = margin(11/2,11, 11/2, 11/2))
 for (i in seq(1, 4, 2)) {
   .inc <- 7 * 4
@@ -108,9 +107,9 @@ for (i in seq(1, 4, 2)) {
     ymin = 0, ymax = Inf, fill = "#00000012")
 }
 
-x2 <- prep_dat(pred_3x3)
-g2 <- make_projection_plot(models = list(m), mu_dat = x2$mu,
-  y_rep_dat = x2$y_rep, ylim = c(0, .max)) +
+x <- prep_dat(pred_3x3)
+g2 <- make_projection_plot(models = list(m), mu_dat = x$mu,
+  y_rep_dat = x$y_rep, ylim = c(0, .max), points_size = 1.25) +
   theme(plot.margin = margin(11/2,11, 11/2, 11/2))
 for (i in seq(1, 6, 2)) {
   .inc <- 7 * 3
@@ -120,5 +119,6 @@ for (i in seq(1, 6, 2)) {
     ymin = 0, ymax = Inf, fill = "#00000012")
 }
 
-cowplot::plot_grid(g1, g2, ncol = 1)
-ggsave("figs/f2-cycling.pdf", width = 6, height = 6)
+cowplot::plot_grid(g1, g2, ncol = 1, labels = "AUTO")
+ggsave("figs-ms1/f2-cycling.pdf", width = 4.5, height = 5, dpi = 300)
+# system("optipng -strip all figs-ms1/f2-cycling.png")

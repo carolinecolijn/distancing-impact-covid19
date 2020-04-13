@@ -1,57 +1,61 @@
 make_projection_plot <- function(models, cumulative = FALSE,
   first_date = "2020-03-01", ylim = c(0, 200), outer_quantile = c(0.05, 0.95),
   facet = TRUE, ncol = 1, cols = NULL, linetype = c("mu", "obs"),
-  omitted_days = NULL) {
+  omitted_days = NULL, y_rep_dat = NULL, mu_dat = NULL) {
 
   linetype <- match.arg(linetype)
   obj <- models[[1]]
   actual_dates <- seq(lubridate::ymd(first_date),
     lubridate::ymd(first_date) + max(obj$days), by = "1 day")
 
-  out <- purrr::map_df(models, function(.x) {
-    temp <- .x$post$y_rep %>%
-      reshape2::melt() %>%
-      dplyr::rename(day = Var2)
+  if (is.null(y_rep_dat) || is.null(mu_dat)) {
+    out <- purrr::map_df(models, function(.x) {
+      temp <- .x$post$y_rep %>%
+        reshape2::melt() %>%
+        dplyr::rename(day = Var2)
 
-    if (cumulative) {
-      temp <- temp %>%
-        group_by(iterations) %>%
-        mutate(value = cumsum(value)) %>%
-        ungroup()
-    }
+      if (cumulative) {
+        temp <- temp %>%
+          group_by(iterations) %>%
+          mutate(value = cumsum(value)) %>%
+          ungroup()
+      }
 
-    temp %>%
-      group_by(day) %>%
-      summarise(
-        lwr = quantile(value, probs = outer_quantile[1]),
-        lwr2 = quantile(value, probs = 0.25),
-        upr = quantile(value, probs = outer_quantile[2]),
-        upr2 = quantile(value, probs = 0.75),
-        med = median(value)
-      ) %>%
-      mutate(day = actual_dates[day])
-  }, .id = "Scenario")
+      temp %>%
+        group_by(day) %>%
+        summarise(
+          lwr = quantile(value, probs = outer_quantile[1]),
+          lwr2 = quantile(value, probs = 0.25),
+          upr = quantile(value, probs = outer_quantile[2]),
+          upr2 = quantile(value, probs = 0.75),
+          med = median(value)
+        ) %>%
+        mutate(day = actual_dates[day])
+    }, .id = "Scenario")
 
-  lambdas <- purrr::map_df(models, function(.x) {
-    temp <- .x$post$lambda_d %>%
-      reshape2::melt() %>%
-      dplyr::rename(day = Var2) %>% as_tibble()
+    lambdas <- purrr::map_df(models, function(.x) {
+      temp <- .x$post$lambda_d %>%
+        reshape2::melt() %>%
+        dplyr::rename(day = Var2) %>% as_tibble()
 
-    if (cumulative) {
-      temp <- temp %>%
-        group_by(iterations) %>%
-        mutate(value = cumsum(value)) %>%
-        ungroup()
-    }
+      if (cumulative) {
+        temp <- temp %>%
+          group_by(iterations) %>%
+          mutate(value = cumsum(value)) %>%
+          ungroup()
+      }
 
-    temp %>%
-      group_by(day) %>%
-      summarise(
-        med = median(value)
-      ) %>%
-      mutate(day = actual_dates[day])
-  }, .id = "Scenario")
-
+      temp %>%
+        group_by(day) %>%
+        summarise(
+          med = median(value)
+        ) %>%
+        mutate(day = actual_dates[day])
+    }, .id = "Scenario")
+  } else {
+    out <- y_rep_dat
+    lambdas <- mu_dat
+  }
 
   if (cumulative) {
     dat <- tibble(day = actual_dates[1:obj$last_day_obs],
@@ -61,8 +65,9 @@ make_projection_plot <- function(models, cumulative = FALSE,
       value = obj$daily_cases)
   }
   if (is.null(cols)) {
-    cols <- RColorBrewer::brewer.pal(8, "Dark2")
-    cols <- rep(cols, 5)
+    # cols <- RColorBrewer::brewer.pal(8, "Dark2")
+    # cols <- rep(cols, 5)
+    cols <- rep("#3182BD", 99)
   }
   g <- ggplot(out, aes(x = day, y = med, ymin = lwr, ymax = upr, colour = Scenario,
     fill = Scenario)) +
@@ -103,7 +108,7 @@ make_projection_plot <- function(models, cumulative = FALSE,
   g <- g +
     ylab(if (!cumulative) "Recorded cases" else "Cumulative recorded cases") +
     xlab("Day") +
-    xlim(lubridate::ymd("2020-03-01"), lubridate::ymd("2020-06-08")) +
+    # xlim(lubridate::ymd("2020-03-01"), lubridate::ymd("2020-06-08")) +
     # geom_vline(xintercept = actual_dates[obj$last_day_obs], lty = 2, alpha = 0.6) +
     scale_color_manual(values = cols) +
     scale_fill_manual(values = cols) +

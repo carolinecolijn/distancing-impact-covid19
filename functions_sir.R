@@ -4,9 +4,9 @@ getlambd <- function(out,
                      pars,
                      day,
                      data = bcdata,
-                     sampFrac = 0.2,
-                     delayShape = 2,
-                     delayScale = 9) {
+                     sampFrac = 0.1,
+                     delayShape = 1.73,
+                     delayScale = 9.85) {
   meanDelay <- delayScale * gamma(1 + 1 / delayShape)
   try(if (var(diff(out$time)) > 0.005) {
     stop("approx integral assumes equal time steps")
@@ -18,7 +18,7 @@ getlambd <- function(out,
     stop("we need an earlier start time for the model")
   })
   # relevant times to identify new cases
-  ii <- which(out$time > -999 & out$time <= day)
+  ii <- which(out$time > day - 60 & out$time <= day)
   dx <- out$time[ii[2]] - out$time[ii[1]] # assumes equal time intervals
   # all new cases arising at each of those times
   incoming <- with(pars, {

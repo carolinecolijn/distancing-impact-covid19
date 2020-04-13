@@ -72,6 +72,7 @@ fit_seeiqr <- function(daily_cases,
                        sampled_fraction_day_change = 14,
                        sampled_fraction_vec = NULL,
                        fixed_f_forecast = NULL,
+                       day_start_fixed_f_forecast = length(daily_cases) + 1,
                        pars = c(
                          N = 4.4e6, D = 4, k1 = 1 / 4,
                          k2 = 1, q = 0.05,
@@ -144,6 +145,7 @@ fit_seeiqr <- function(daily_cases,
   x_r <- c(x_r, if (!is.null(fixed_f_forecast)) fixed_f_forecast else 0)
   names(x_r)[length(x_r)] <- "fixed_f_forecast"
   x_r <- c(x_r, c("last_day_obs" = last_day_obs))
+  x_r <- c(x_r, c("day_start_fixed_f_forecast" = day_start_fixed_f_forecast))
 
   # find the equivalent time of each day (end):
   get_time_id <- function(day, time) max(which(time <= day))

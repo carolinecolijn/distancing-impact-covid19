@@ -1,54 +1,26 @@
-library(rstan)
-rstan_options(auto_write = TRUE)
-options(mc.cores = parallel::detectCores())
-setwd(here::here("selfIsolationModel", "stan"))
-source("fit_seeiqr.R")
-dir.create("models2", showWarnings = FALSE)
+source("data-model-prep.R")
 
-dat <- readr::read_csv(here::here("nCoVDailyData/CaseCounts/BC Case counts.csv"))
-names(dat)[names(dat) == "BC"] <- "Cases"
-dat$Date[71] <- "1/4/2020" # argh
-dat$Date[72] <- "2/4/2020" # argh
-dat$Date <- lubridate::dmy(dat$Date)
-dat$day <- seq_len(nrow(dat))
-dat$daily_diffs <- c(
-  dat$Cases[2] - dat$Cases[1],
-  diff(dat$Cases)
-)
-dat <- dplyr::filter(dat, Date >= "2020-03-01")
-daily_diffs <- dat$daily_diffs
-plot(daily_diffs)
+m <- fit_seeiqr(
+  daily_diffs,
+  seeiqr_model = seeiqr_model,
+  iter = 400, chains = 7)
 
-seeiqr_model <- stan_model("seeiqr.stan")
+make_projection_plot(list(m))
 
-load(paste0(here::here(),
-  "/nCoVDailyData/Labdata/testsanonym.RData"))
-# Only contains dataframe 'testsanonymized'
-tests_anon <- dplyr::as_tibble(testsanonymized) %>%
-  type.convert() %>%
-  dplyr::mutate(results_date = lubridate::date(results_date))
-tests_by_day <- tests_anon %>%
-  dplyr::group_by(results_date) %>%
-  dplyr::count(name = "total_tests") %>%
-  rename(Date = results_date)
-
-dat <- left_join(dat, tests_by_day)
-dat$daily_diffs
-dat$total_tests[is.na(dat$total_tests)] <- 1
-dat$total_tests
-stopifnot(all(dat$daily_diffs < dat$total_tests))
-
-length(dat$total_tests)
-length(dat$daily_diffs)
-
-daily_tests <- c(dat$total_tests, rep(586, 5))
-plot(daily_tests)
-plot(daily_diffs)
-
-mm <- fit_seeiqr(
-  daily_diffs, chains = 1, iter = 300, forecast_days = 5,
-  # ode_control = c(1e-6, 1e-4, 1e6),
-  seeiqr_model = seeiqr_model, obs_model = "NB2", phi_prior = 1)
+# sd_strength <- seq(0, 1, 0.2) %>% purrr::set_names()
+# m_bccdc <- purrr::map(sd_strength, ~ {
+#   fit_seeiqr(
+#     daily_diffs,
+#     sampled_fraction1 = 0.1,
+#     sampled_fraction2 = 0.3,
+#     f2_prior = c(0.4, 0.2),
+#     R0_prior = c(log(2.6), 0.2),
+#     sampFrac2_type = "fixed",
+#     fixed_f_forecast = .x,
+#     delayScale = 11,
+#     seeiqr_model = seeiqr_model, chains = 6, iter = 600
+#   )
+# })
 
 # Look at sample fraction scenarios -------------------------------------------
 
@@ -194,10 +166,10 @@ ggplot(slopes, aes(f, slope)) +
   xlab("Social distancing strength")
 ggsave("figs/f-threshold.png", width = 3.7, height = 3.5)
 
-# Make joint posterior plot with prevalence colouring: ------------------------
+# Joint posterior plot with prevalence colouring: -----------------------------
 
 m_yhat <- fit_seeiqr(
-  daily_diffs, iter = 300, chains = 8, save_state_predictions = TRUE,
+  daily_diffs, iter = 200, chains = 8, save_state_predictions = TRUE,
   seeiqr_model = seeiqr_model)
 
 joint_post <- tibble(R0 = m_yhat$post$R0, f2 = m_yhat$post$f2, iterations = seq_along(f2))
@@ -213,38 +185,3 @@ ggplot(joint_post2, aes(R0, f2, colour = -perc_change)) +
   theme(legend.position = c(0.81, 0.78)) +
   theme(legend.key.size = unit(11, units = "points"))
 ggsave("figs/joint-posterior-prevalence.png", width = 3.7, height = 3.5)
-
-# -----------------------------------------------------------------------------
-
-## Andy's code, to be integrated...
-# Load in number of tests each day:
-# Crude for now - want to check how the numbers of cases (positive tests)
-# compare with the ones in dat. Could scale them up perhaps.
-# load(paste0(here::here(),
-#   "/nCoVDailyData/Labdata/testsanonym.RData"))
-# # Only contains dataframe 'testsanonymized'
-# tests_anon <- dplyr::as_tibble(testsanonymized) %>%
-#   type.convert() %>%
-#   dplyr::mutate(results_date = lubridate::date(results_date))
-# tests_by_day <- tests_anon %>%
-#   dplyr::group_by(results_date) %>%
-#   dplyr::count(name = "total_tests")
-# total_tests <- dplyr::filter(tests_by_day,
-#   results_date %in% unique(dat$Date))$total_tests
-# length(daily_diffs)
-# length(total_tests)
-# diff(dat$Date)
-# plot(total_tests)
-# plot(daily_diffs/total_tests)
-# total_tests <- c(total_tests, rep(total_tests[length(total_tests)], 60)) # 60 day forecast
-#
-## Andy's code, to be integrated...
-# TODO: setup-dates.R explains how Andy is setting up the dates (it's mostly
-# explanations that I didn't want to clutter up here).
-# Load in the detailed case data of estimated times between people's onset of
-# symptoms and their test becoming a 'reported case'. Create delay_data tibble(),
-# where for the negative binomial model you want the time_to_report column (may
-# need as.numeric() as they are in days).
-# source(here::here("/selfIsolationModel/SIR-functionalised/funcs.R"))
-# # Just need the one function:
-# delay_data <- load_tidy_delay_data()[["delay_data"]]

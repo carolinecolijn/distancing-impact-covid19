@@ -79,13 +79,3 @@ ggsave(paste0("figs/sampFrac-grid-theta-posteriors.png"),
 #   seeiqr_model = seeiqr_model)
 #
 # library(future)
-# fs <- seq(0.3, 1, 0.1)
-# plan(multisession, workers = parallel::detectCores()/2)
-# m <- furrr::future_map(fs, function(.f) {
-#   fit_seeiqr(
-#     daily_diffs, iter = 300, chains = 1, save_state_predictions = TRUE,
-#       seeiqr_model = seeiqr_model, fixed_f_forecast = .f)
-# })
-# plan(future::sequential)
-#
-# purrr::walk(m, ~ print(.x$fit, pars = c("R0", "f2", "phi", "sampFrac2")))

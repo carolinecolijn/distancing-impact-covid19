@@ -5,6 +5,11 @@ print(m$fit, pars = c("R0", "f2", "phi"))
 saveRDS(m, file = "data-generated/main-fit-2000.rds")
 m <- readRDS("data-generated/main-fit-2000.rds")
 
+source("make_quick_plots.R")
+make_quick_plots(m, id = "-ms-main", ext = ".png")
+file.copy("figs/traceplot-ms-main.png", "figs-ms/traceplots.png")
+file.copy("figs/posterior-predictive-case-diffs-facet-ms-main.png", "figs-ms/post-pred-reps.png")
+
 # fewer samples for plot:
 m500 <- fit_seeiqr(daily_diffs, seeiqr_model = seeiqr_model, iter = 500, chains = 8,
   save_state_predictions = TRUE)

@@ -32,6 +32,7 @@ functions{
     real end_decline = x_r[10];
     real fixed_f_forecast = x_r[11];
     real last_day_obs = x_r[12];
+    real day_start_fixed_f_forecast = x_r[13];
 
     real dydt[12];
 
@@ -47,7 +48,7 @@ functions{
     if (t >= end_decline) {
       f = f2;
     }
-    if (t >= last_day_obs && fixed_f_forecast != 0) {
+    if (t >= day_start_fixed_f_forecast && fixed_f_forecast != 0) {
       f = fixed_f_forecast;
     }
 
@@ -77,7 +78,7 @@ data {
   int days[N];        // day increments
   int last_day_obs;   // last day of observed data; days after this are projections
   int daily_cases[last_day_obs]; // daily new case counts
-  real x_r[12];       // data for ODEs (real numbers)
+  real x_r[13];       // data for ODEs (real numbers)
   real sampFrac[N];   // fraction of cases sampled per time step
   real delayScale;    // Weibull parameter for delay in becoming a case count
   real delayShape;    // Weibull parameter for delay in becoming a case count

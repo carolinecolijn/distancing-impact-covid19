@@ -9,13 +9,10 @@ m_fs <- purrr::map(sd_strength, ~ {
   )
 })
 saveRDS(m_fs, "data-generated/f-proj-fits.rds")
-purrr::walk(m_fs, ~ print(.x$fit, pars = c("R0", "f2", "phi", "sampFrac2")))
 
 # If coming back:
 m_fs <- readRDS("data-generated/f-proj-fits.rds")
-
-# names(m_bccdc) <- paste0("Contact fraction: ", sprintf("%.1f", sd_strength))
-make_projection_plot(m_fs, facet = TRUE, ncol = 2, ylim = c(0, 130))
+purrr::walk(m_fs, ~ print(.x$fit, pars = c("R0", "f2", "phi")))
 
 # Fewer iterations because just plotting 250 draws:
 sd_strength2 <- seq(0.6, 1, 0.2) %>% purrr::set_names()
@@ -24,10 +21,11 @@ m_fs2 <- furrr::future_map(sd_strength2, ~ {
   fit_seeiqr(
     daily_diffs, seed = 1,
     fixed_f_forecast = .x, save_state_predictions = TRUE,
-    seeiqr_model = seeiqr_model, chains = 1, iter = 600
+    seeiqr_model = seeiqr_model, chains = 1, iter = 500
   )
 })
 future::plan(future::sequential)
+purrr::walk(m_fs2, ~ print(.x$fit, pars = c("R0", "f2", "phi")))
 
 # .N <- 20
 # select_fs <- c("0.6", "0.8", "1") %>% purrr::set_names()
@@ -66,48 +64,94 @@ future::plan(future::sequential)
 # }, .id = "scenario")
 # future::plan(future::sequential)
 
-# TODO: was here.
-obj <- m500
-post <- obj$post
-draws <- 1:250
-ts_df <- dplyr::tibble(time = obj$time, time_num = seq_along(obj$time))
-variables_df <- dplyr::tibble(
-  variable = names(obj$state_0),
-  variable_num = seq_along(obj$state_0)
+get_prevalence <- function(obj, draws = 1:250,
+  .start = lubridate::ymd_hms("2020-03-01 00:00:00")) {
+  post <- obj$post
+  ts_df <- dplyr::tibble(time = obj$time, time_num = seq_along(obj$time))
+  variables_df <- dplyr::tibble(
+    variable = names(obj$state_0),
+    variable_num = seq_along(obj$state_0)
+  )
+  ts_df <- dplyr::tibble(time = obj$time, time_num = seq_along(obj$time))
+  states <- reshape2::melt(post$y_hat) %>%
+    dplyr::rename(time_num = Var2, variable_num = Var3) %>%
+    dplyr::filter(iterations %in% draws) %>%
+    dplyr::left_join(variables_df, by = "variable_num") %>%
+    dplyr::left_join(ts_df, by = "time_num")
+  prevalence <- states %>%
+    dplyr::filter(variable %in% c("I", "Id")) %>%
+    group_by(iterations, time) %>%
+    summarize(I = value[variable == "I"], Id = value[variable == "Id"],
+      prevalence = I + Id) %>%
+    mutate(day = .start + lubridate::ddays(time), start = .start)
+  prevalence
+}
+
+# m <- readRDS("data-generated/main-fit-500.rds")
+prevalence <- purrr::map_dfr(m_fs2, get_prevalence, .id = "scenario")
+# prevalence <- purrr::map_dfr(list(m), get_prevalence, .id = "scenario")
+
+# make_projection_plot(m_fs2, ylim = c(0, 200))
+
+# Plots -----------------------------------------------------------------------
+
+# Case count predictions:
+
+.theme <- theme(title = element_text(size = rel(0.9))) +
+  theme(strip.text.x = element_text(angle = 0, hjust = 0)) +
+  theme(axis.title.x = element_blank())
+.coord <- coord_cartesian(
+  expand = FALSE, ylim = c(0, 150),
+  xlim = c(lubridate::ymd("2020-03-01"), lubridate::ymd("2020-06-10"))
 )
-ts_df <- dplyr::tibble(time = obj$time, time_num = seq_along(obj$time))
-states <- reshape2::melt(post$y_hat) %>%
-  dplyr::rename(time_num = Var2, variable_num = Var3) %>%
-  dplyr::filter(iterations %in% draws) %>%
-  dplyr::left_join(variables_df, by = "variable_num") %>%
-  dplyr::left_join(ts_df, by = "time_num")
 
-.start <- lubridate::ymd_hms("2020-03-01 00:00:00")
-prevalence <- states %>%
-  dplyr::filter(variable %in% c("I", "Id")) %>%
-  group_by(iterations, time) %>%
-  summarize(I = value[variable == "I"], Id = value[variable == "Id"],
-    prevalence = I + Id) %>%
-  mutate(day = .start + lubridate::ddays(time))
+.m_fs <- m_fs
 
-# .start <- lubridate::ymd_hms("2020-03-01 00:00:00")
-#
-# prevalence <- d_ode %>%a
-#   mutate(prevalence = I + Id) %>%
-#   mutate(day = .start + lubridate::ddays(time)) %>%
-#   as_tibble()
+names(.m_fs) <- paste0("Physical distancing: ", sprintf("%.0f", (1 - sd_strength) * 100), "%")
+names(.m_fs)
 
-obj <- m_fs[[1]] # just for last_day_obs
+.m_fs <- .m_fs[c(4, 5, 6)]
+
+names(.m_fs) <- paste0("(", LETTERS[1:3], ") ", names(.m_fs) )
+names(.m_fs)
+sc_order <- names(.m_fs)
+g1 <- make_projection_plot(.m_fs, facet = TRUE, ncol = 3, sc_order = sc_order) +
+  .theme + .coord #+ theme(axis.text.x.bottom = element_blank())
+
+# names(m_bccdc) <- paste0("Contact fraction: ", sprintf("%.1f", sd_strength))
+
+# Prevalence predictions:
+
+prevalence$scenario2 <- paste0("Physical distancing: ", sprintf("%.0f", (1 - as.numeric(prevalence$scenario)) * 100), "%")
+unique(prevalence$scenario2)
+
+prevalence$scenario2 <- gsub("Physical distancing: 40%", "(D) Physical distancing: 40%", prevalence$scenario2)
+prevalence$scenario2 <- gsub("Physical distancing: 20%", "(E) Physical distancing: 20%", prevalence$scenario2)
+prevalence$scenario2 <- gsub("Physical distancing: 0%", "(F) Physical distancing: 0%", prevalence$scenario2)
+
+# prevalence$scenario2 <- factor(prevalence$scenario2, levels = sc_order)
+unique(prevalence$scenario2)
+
+.coord_prev <- coord_cartesian(
+  expand = FALSE, ylim = c(0, 2200),
+  xlim = c(lubridate::ymd_hms("2020-03-01 00:00:00"), lubridate::ymd_hms("2020-06-10 23:59:00"))
+)
+
+obj <- m_fs2[[1]] # just for last_day_obs
+.start <- prevalence$start[1]
 g_prev <- prevalence %>%
   ggplot(aes(day, prevalence, group = iterations)) +
   annotate("rect", xmin = .start + lubridate::ddays(obj$last_day_obs),
-    xmax = .start + lubridate::ddays(obj$last_day_obs + 60),
+    xmax = .start + lubridate::ddays(obj$last_day_obs + 65),
     ymin = 0, ymax = Inf, fill = "grey95") +
   geom_line(alpha = 0.05, col = .hist_blue) +
   ylab("Prevalence") +
-  facet_wrap(~scenario) +
-  coord_cartesian(expand = FALSE,
-    xlim = c(.start, .start + lubridate::ddays(obj$last_day_obs + 60)),
-    ylim = c(0, max(prevalence$prevalence) * 1.04)) +
-  xlab("")
-g_prev
+  facet_wrap(~scenario2) +
+  # coord_cartesian(expand = FALSE,
+  #   xlim = c(.start, .start + lubridate::ddays(obj$last_day_obs + 60)),
+  #   ylim = c(0, 2500)) +
+  .theme + .coord_prev
+# g_prev
+
+gg <- cowplot::plot_grid(g1, g_prev, nrow = 2, align = "hv")
+ggsave("figs-ms/f-projections.png", width = 7, height = 4)

@@ -109,3 +109,38 @@ sdtiming_gradual <- function(t,
     return(f2)
   }
 }
+
+reproject_fits <- function(.R0, .f2, .phi, .i, obj, .sdfunc = sdtiming_gradual,
+  .time = NULL) {
+  .pars <- pars
+  .pars$R0 <- .R0
+  .pars$f2 <- .f2
+  if (is.null(.time)) {
+    .time <- obj$time
+  }
+  max_day <- max(.time)
+  .d <- as.data.frame(deSolve::ode(
+    y = obj$state_0,
+    times = .time,
+    func = socdistmodel,
+    parms = .pars,
+    method = "rk4",
+    sdtiming = .sdfunc))
+  dat <- data.frame(
+    Date = seq(lubridate::ymd("2020-03-01"),
+      lubridate::ymd("2020-03-01") + max_day,
+      by = "day"
+    )
+  )
+  dat$day <- seq_along(dat$Date)
+  mu <- purrr::map_dbl(seq(1, max_day), function(x) {
+    getlambd(.d, pars = .pars, data = dat, day = x)
+  })
+  data.frame(
+    day = seq(1, max_day),
+    lambda_d = mu,
+    y_rep = MASS::rnegbin(max_day, mu, theta = .phi),
+    iterations = .i,
+    R0 = .R0, f2 = .f2, phi = .phi
+  )
+}

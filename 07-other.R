@@ -1,6 +1,16 @@
 source("data-model-prep.R")
-
+library(future)
 # Identify the point at which prevalence slope goes to 0: ---------------------
+
+fs <- seq(0.3, 1, 0.1)
+plan(multisession, workers = parallel::detectCores()/2)
+
+m <- furrr::future_map(fs, function(.f) {
+  fit_seeiqr(
+    daily_diffs, iter = 500, chains = 1, save_state_predictions = TRUE,
+      seeiqr_model = seeiqr_model, fixed_f_forecast = .f)
+})
+plan(future::sequential)
 
 get_prevalence_slope <- function(obj, f_val) {
   post <- obj$post
@@ -60,7 +70,7 @@ ggplot(joint_post2, aes(R0, f2, colour = -perc_change)) +
   geom_point(alpha = 0.15, size = 2) +
   geom_point(alpha = 0.5, size = 2, pch = 21) +
   scale_colour_viridis_c(option = "D", direction = -1) +
-  labs(colour = "Percent decline\nper day", y = "Social distancing strength",
+  labs(colour = "Percent decline\nper day", y = "Physical distancing strength",
     x = expression(R[0])) +
   theme(legend.position = c(0.81, 0.78)) +
   theme(legend.key.size = unit(11, units = "points"))

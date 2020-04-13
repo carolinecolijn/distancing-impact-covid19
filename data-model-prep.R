@@ -11,7 +11,7 @@ theme_set(ggsidekick::theme_sleek()) # devtools::install_github("seananderson/gg
 setwd(here::here("selfIsolationModel", "stan"))
 source("fit_seeiqr.R")
 dir.create("models2", showWarnings = FALSE)
-dat <- readr::read_csv(here::here("nCoVDailyData/CaseCounts/BC Case counts.csv"))
+dat <- readr::read_csv(here::here("nCoVDailyData/CaseCounts/BC Case Counts_09.04.2020.csv"))
 names(dat)[names(dat) == "BC"] <- "Cases"
 dat$Date[71] <- "1/4/2020" # argh
 dat$Date[72] <- "2/4/2020" # argh

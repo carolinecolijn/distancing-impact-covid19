@@ -25,23 +25,39 @@ names(m_fs)
 ylim <- c(0, 160)
 ylim_c <- c(0, 4500)
 
-.coord <- coord_cartesian(expand = FALSE, ylim = ylim, xlim = c(lubridate::ymd("2020-03-01"), lubridate::ymd("2020-05-13")))
-.coord_c <- coord_cartesian(expand = FALSE, ylim = ylim_c, xlim = c(lubridate::ymd("2020-03-01"), lubridate::ymd("2020-05-13")))
+.coord <- coord_cartesian(
+  expand = FALSE, ylim = ylim,
+  xlim = c(lubridate::ymd("2020-03-01"), lubridate::ymd("2020-05-13"))
+)
+.coord_c <- coord_cartesian(
+  expand = FALSE, ylim = ylim_c,
+  xlim = c(lubridate::ymd("2020-03-01"), lubridate::ymd("2020-05-13"))
+)
 .theme <- theme(title = element_text(size = rel(0.9))) +
   theme(strip.text.x = element_text(angle = 0, hjust = 0))
 
 .today
 .m_fs <- m_fs
-names(.m_fs) <- paste0("Physical distancing: ", sprintf("%.0f", (1 - sd_strength) * 100), "%")
+names(.m_fs) <- paste0("Physical distancing: ", sprintf(
+  "%.0f",
+  (1 - sd_strength) * 100
+), "%")
 names(.m_fs)
-sc_order = names(.m_fs)
+sc_order <- names(.m_fs)
 
 g <- make_projection_plot(.m_fs, facet = TRUE, ncol = 2, sc_order = sc_order) +
-   .theme + .coord
-ggsave(paste0("figs-cdc/proj-facet-", .today, ".png"), width = 6, height = 6, dpi = 450)
+  .theme + .coord
+ggsave(paste0("figs-cdc/proj-facet-", .today, ".png"),
+  width = 6, height = 6, dpi = 450
+)
 
-g <- make_projection_plot(.m_fs, ylim = ylim_c, facet = TRUE, ncol = 2, cumulative = TRUE, sc_order = sc_order) + .theme + .coord_c
-ggsave(paste0("figs-cdc/proj-cumulative-facet-", .today, ".png"), width = 6, height = 6, dpi = 450)
+g <- make_projection_plot(.m_fs,
+  ylim = ylim_c, facet = TRUE, ncol = 2,
+  cumulative = TRUE, sc_order = sc_order
+) + .theme + .coord_c
+ggsave(paste0("figs-cdc/proj-cumulative-facet-", .today, ".png"),
+  width = 6, height = 6, dpi = 450
+)
 
 make_one_panel <- function(obj, title) {
   make_projection_plot(list(obj), ylim = ylim, points_size = 1.6) +
@@ -49,7 +65,8 @@ make_one_panel <- function(obj, title) {
     .coord + .theme
   file_name <- gsub("%", "", gsub("[a-zA-Z :]", "", title))
   ggsave(paste0("figs-cdc/proj-", file_name, "-", .today, ".png"),
-    width = 5, height = 3.25, dpi = 450)
+    width = 5, height = 3.25, dpi = 450
+  )
 }
 make_one_panel_cumulative <- function(obj, title) {
   make_projection_plot(list(obj), ylim = ylim_c, points_size = 1.6, cumulative = TRUE) +
@@ -57,13 +74,17 @@ make_one_panel_cumulative <- function(obj, title) {
     .coord_c + .theme
   file_name <- gsub("%", "", gsub("[a-zA-Z :]", "", title))
   ggsave(paste0("figs-cdc/proj-cumulative-", file_name, "-", .today, ".png"),
-    width = 5, height = 3.25, dpi = 450)
+    width = 5, height = 3.25, dpi = 450
+  )
 }
-purrr::walk(seq_along(.m_fs), ~make_one_panel(.m_fs[[.x]], names(.m_fs)[.x]))
-purrr::walk(seq_along(.m_fs), ~make_one_panel_cumulative(.m_fs[[.x]], names(.m_fs)[.x]))
+purrr::walk(seq_along(.m_fs), ~ make_one_panel(.m_fs[[.x]], names(.m_fs)[.x]))
+purrr::walk(seq_along(.m_fs), ~ make_one_panel_cumulative(.m_fs[[.x]], names(.m_fs)[.x]))
 
 sd_est <- sprintf("%.0f", 100 * (1 - round(quantile(m$post$f2, c(0.05, 0.5, 0.95)), 2)))
-sd_text <- paste0("Physical distancing: ", sd_est[[2]], "% (90% CI: ", sd_est[3], "–", sd_est[1], "%)")
+sd_text <- paste0(
+  "Physical distancing: ",
+  sd_est[[2]], "% (90% CI: ", sd_est[3], "–", sd_est[1], "%)"
+)
 sd_text
 
 make_projection_plot(list(m), points_size = 1.6, ylim = ylim) +
@@ -74,14 +95,18 @@ ggsave(paste0("figs-cdc/est-proj-", .today, ".png"), width = 5, height = 3.25, d
 make_projection_plot(list(m), ylim = ylim_c, points_size = 1.6, cumulative = TRUE) +
   ggtitle(sd_text) +
   .coord_c + .theme
-ggsave(paste0("figs-cdc/est-proj-cumulative-", .today, ".png"), width = 5, height = 3.25, dpi = 450)
+ggsave(paste0("figs-cdc/est-proj-cumulative-", .today, ".png"),
+  width = 5, height = 3.25, dpi = 450
+)
 
 # CSV output ------------------------------------------------------------------
 
 get_dat_output <- function(models, cumulative = FALSE, first_date = "2020-03-01") {
   obj <- models[[1]]
   actual_dates <- seq(lubridate::ymd(first_date),
-    lubridate::ymd(first_date) + max(obj$days), by = "1 day")
+    lubridate::ymd(first_date) + max(obj$days),
+    by = "1 day"
+  )
   out <- purrr::map_df(models, function(.x) {
     temp <- .x$post$y_rep %>%
       reshape2::melt() %>%

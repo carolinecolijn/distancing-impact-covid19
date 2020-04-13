@@ -8,7 +8,7 @@ theme_set(ggsidekick::theme_sleek())
 pars <- list(
   N = 4.4e6, # population of BC
   D = 4,
-  R0 = 2.65,
+  R0 = 2.6,
   k1 = 1 / 4,
   k2 = 1,
   q = 0.05,
@@ -16,7 +16,7 @@ pars <- list(
   ur = 0.2,
   f1 = 1.0,
   f2 = 0.4,
-  ratio = 0.7/0.2 # 2nd stage sampFrac
+  ratio = 0.3/0.1 # 2nd stage sampFrac
 )
 fsi <- with(
   pars,
@@ -40,11 +40,12 @@ state_0 <- c(
 )
 times <- seq(
   from = -30,
-  to = 100,
+  to = 45,
   by = 0.1
 )
 set.seed(128284)
-sim_dat <- purrr::map(1:4, function(x) {
+
+sim_dat <- purrr::map(1:6, function(x) {
   example_simulation <- as.data.frame(deSolve::ode(
     y = state_0,
     times = times,
@@ -72,8 +73,8 @@ sim_dat <- purrr::map(1:4, function(x) {
   sim_dat <- data.frame(
     day = seq(1, max(times)),
     lambda_d = lambda_d,
-    # obs = MASS::rnegbin(max(times), lambda_d, theta = 5)
-    obs = rpois(max(times), lambda_d)
+    obs = MASS::rnegbin(max(times), lambda_d, theta = 4)
+    # obs = rpois(max(times), lambda_d)
   )
   sim_dat
 })
@@ -89,19 +90,18 @@ library(rstan)
 library(dplyr)
 library(ggplot2)
 seeiqr_model <- stan_model("seeiqr.stan")
-plan(multisession, workers = parallel::detectCores()/2)
+plan(multisession)
 sim <- furrr::future_map(seq_along(sim_dat), function(x) {
   fit_seeiqr(
     daily_cases = sim_dat[[x]]$obs,
     seeiqr_model = seeiqr_model,
-    forecast_days = 60,
-    sampFrac2_prior = c(0.7, 0.1),
+    forecast_days = 1,
+    # sampFrac2_prior = c(0.7, 0.1),
     sampFrac2_type = "fixed",
-    R0_prior = c(log(2.65), 0.2),
-    f2_prior = c(0.4, 0.15),
-    iter = 250, obs_model = "Poisson",
-    chains = 1, cores = 1,
-    time_increment = 0.1
+    sampled_fraction1 = 0.1,
+    sampled_fraction2 = 0.3,
+    iter = 300, # obs_model = "Poisson",
+    chains = 1, cores = 1
   )
 })
 plan(sequential)
@@ -123,9 +123,23 @@ out <- purrr::map_df(sim, function(.x) {
   temp
 }, .id = "simulation")
 
+out_lambd <- purrr::map_df(sim, function(.x) {
+  temp <- .x$post$lambda_d %>%
+    reshape2::melt() %>%
+    dplyr::rename(day = Var2)
+  temp <- temp %>%
+    group_by(day) %>%
+    summarise(
+      lwr2 = quantile(value, probs = 0.75),
+      upr2 = quantile(value, probs = 0.25),
+      med = median(value)
+    )
+  temp
+}, .id = "simulation")
+
 ggplot(out, aes(x = day, y = med, ymin = lwr2, ymax = upr2)) +
   geom_ribbon(alpha = 0.2, colour = NA) +
-  geom_line(alpha = 0.9, lwd = 1) +
+  geom_line(data = out_lambd, alpha = 0.9, lwd = 1) +
   geom_point(
     data = sim_dat[[1]],
     col = "black", inherit.aes = FALSE, aes(x = day, y = obs),
@@ -172,7 +186,7 @@ check_sim_theta <- function(.par) {
     data.frame(sim = x, parameter = sim[[x]]$post[[.par]])
   })
   .hline <- if (.par == "R0") {
-    2.65
+    2.6
   } else if (.par == "f2") {
     0.4
   } else if (.par == "phi") {
@@ -209,7 +223,7 @@ plot(daily_diffs)
 fit <- fit_seeiqr(
   daily_diffs,
   chains = 1,
-  iter = 600,
+  iter = 300,
   seed = 129438239,
   forecast_days = 60,
   seeiqr_model = seeiqr_model
@@ -217,8 +231,8 @@ fit <- fit_seeiqr(
 print(fit$fit, pars = c("R0", "f2", "phi"))
 fit$post$y_rep[1, ]
 
-plan(multisession, workers = parallel::detectCores()/2)
-ppd_sim <- furrr::future_map(1:8, function(x) {
+plan(multisession)
+ppd_sim <- furrr::future_map(1:16, function(x) {
   fit_seeiqr(
     daily_cases = fit$post$y_rep[x, 1:40],
     chains = 1,

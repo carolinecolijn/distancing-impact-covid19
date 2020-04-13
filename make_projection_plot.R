@@ -1,7 +1,8 @@
 make_projection_plot <- function(models, cumulative = FALSE,
   first_date = "2020-03-01", ylim = c(0, max(out$upr) * 1.03), outer_quantile = c(0.05, 0.95),
   facet = TRUE, ncol = 1, cols = NULL, linetype = c("mu", "obs"),
-  omitted_days = NULL, y_rep_dat = NULL, mu_dat = NULL, points_size = 1.25) {
+  omitted_days = NULL, y_rep_dat = NULL, mu_dat = NULL, points_size = 1.25,
+  sc_order = NULL) {
 
   linetype <- match.arg(linetype)
   obj <- models[[1]]
@@ -69,6 +70,11 @@ make_projection_plot <- function(models, cumulative = FALSE,
     # cols <- rep(cols, 5)
     cols <- rep("#3182BD", 99)
   }
+
+  if (!is.null(sc_order)) {
+    out$Scenario <- factor(out$Scenario, levels = sc_order)
+    lambdas$Scenario <- factor(lambdas$Scenario, levels = sc_order)
+  }
   g <- ggplot(out, aes(x = day, y = med, ymin = lwr, ymax = upr, colour = Scenario,
     fill = Scenario)) +
     annotate("rect", xmin = actual_dates[obj$last_day_obs], xmax = max(out$day), ymin = 0, ymax = ylim[2], fill = "grey95") +
@@ -106,7 +112,7 @@ make_projection_plot <- function(models, cumulative = FALSE,
   }
 
   g <- g +
-    ylab(if (!cumulative) "Recorded cases" else "Cumulative recorded cases") +
+    ylab(if (!cumulative) "Reported cases" else "Cumulative reported cases") +
     xlab("Day") +
     # xlim(lubridate::ymd("2020-03-01"), lubridate::ymd("2020-06-08")) +
     # geom_vline(xintercept = actual_dates[obj$last_day_obs], lty = 2, alpha = 0.6) +

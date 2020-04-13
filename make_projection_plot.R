@@ -1,7 +1,7 @@
 make_projection_plot <- function(models, cumulative = FALSE,
-  first_date = "2020-03-01", ylim = c(0, 200), outer_quantile = c(0.05, 0.95),
+  first_date = "2020-03-01", ylim = c(0, max(out$upr) * 1.03), outer_quantile = c(0.05, 0.95),
   facet = TRUE, ncol = 1, cols = NULL, linetype = c("mu", "obs"),
-  omitted_days = NULL, y_rep_dat = NULL, mu_dat = NULL) {
+  omitted_days = NULL, y_rep_dat = NULL, mu_dat = NULL, points_size = 1.25) {
 
   linetype <- match.arg(linetype)
   obj <- models[[1]]
@@ -92,16 +92,16 @@ make_projection_plot <- function(models, cumulative = FALSE,
     g <- g +
       geom_point(
         data = dat[omitted_days,,drop=FALSE],
-        col = "grey30", inherit.aes = FALSE, aes(x = day, y = value), pch = 4, fill = "grey95"
+        col = "grey30", inherit.aes = FALSE, aes(x = day, y = value), pch = 4, fill = "grey95",  size = points_size
       ) +
       geom_point(
         data = dat[-omitted_days, ,drop=FALSE],
-        col = "grey30", inherit.aes = FALSE, aes(x = day, y = value), pch = 21, fill = "grey95"
+        col = "grey30", inherit.aes = FALSE, aes(x = day, y = value), pch = 21, fill = "grey95",  size = points_size
       )
   } else {
     g <- g + geom_point(
         data = dat,
-        col = "grey30", inherit.aes = FALSE, aes(x = day, y = value), pch = 21, fill = "grey95"
+        col = "grey30", inherit.aes = FALSE, aes(x = day, y = value), pch = 21, fill = "grey95", size = points_size
       )
   }
 
@@ -115,7 +115,11 @@ make_projection_plot <- function(models, cumulative = FALSE,
     labs(colour = "Projection scenario", fill = "Projection scenario") +
     theme(axis.title.x = element_blank())
 
-  if (facet)
+  if (facet && length(unique(out$Scenario)) > 1)
     g <- g + facet_wrap(~Scenario, ncol = ncol) + theme(legend.position = "none")
+
+  if (length(unique(out$Scenario)) == 1) {
+    g <- g + guides(fill = FALSE, colour = FALSE)
+  }
   g
 }

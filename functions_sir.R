@@ -105,13 +105,25 @@ sdtiming_gradual <- function(t,
   if (t >= start_decline & t < end_decline) {
     return(f2 + (end_decline - t) * (f1 - f2) / (end_decline - start_decline))
   }
-  if (t >= end_decline) {
+  if (t >= end_decline)  {
     return(f2)
   }
 }
 
 reproject_fits <- function(.R0, .f2, .phi, .i, obj, .sdfunc = sdtiming_gradual,
-  .time = NULL) {
+  .time = NULL, pars = list(
+    N = 4.4e6,
+    D = 4,
+    R0 = 2.6,
+    k1 = 1 / 4,
+    k2 = 1,
+    q = 0.05,
+    r = 1,
+    ur = 0.2,
+    f1 = 1.0,
+    f2 = 0.4,
+    ratio = 0.3/0.1 # 2nd stage sampFrac
+  )) {
   .pars <- pars
   .pars$R0 <- .R0
   .pars$f2 <- .f2

@@ -15,7 +15,7 @@ m500 <- fit_seeiqr(daily_diffs, seeiqr_model = seeiqr_model, iter = 500, chains 
   save_state_predictions = TRUE)
 print(m500$fit, pars = c("R0", "f2", "phi"))
 saveRDS(m500, file = "data-generated/main-fit-500.rds")
-# m500 <- readRDS("data-generated/main-fit-500.rds")
+m500 <- readRDS("data-generated/main-fit-500.rds")
 
 proj <- make_projection_plot(list(m))
 
@@ -94,6 +94,7 @@ g_prev <- ggplot(prevalence, aes(day, prevalence, group = iterations)) +
   xlab("")
 g_prev
 
+# label_fontface = "plain", label_size = 12, label_x = 0.20, label_y = 0.94
 g <- cowplot::plot_grid(proj, R0_hist, g_prev, f2_hist, align = "hv", labels = "AUTO") +   theme(plot.margin = margin(11/2,11, 11/2, 11/2))
 ggsave(paste0("figs-ms/fig1.png"), width = 6, height = 4.5)
 

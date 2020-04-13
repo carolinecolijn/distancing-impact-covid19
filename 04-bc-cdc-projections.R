@@ -1,24 +1,24 @@
 source("data-model-prep.R")
 dir.create("figs-cdc", showWarnings = FALSE)
 
-# m <- fit_seeiqr(daily_diffs, seeiqr_model = seeiqr_model, iter = 2000, chains = 8)
-# saveRDS(m, file = "data-generated/main-fit-2000.rds")
+m <- fit_seeiqr(daily_diffs, seeiqr_model = seeiqr_model, iter = 2000, chains = 8)
+saveRDS(m, file = "data-generated/main-fit-2000.rds")
 m <- readRDS("data-generated/main-fit-2000.rds")
 print(m$fit, pars = c("R0", "f2", "phi"))
 
 sd_strength <- seq(0, 1, 0.2) %>% purrr::set_names()
-# m_fs <- purrr::map(sd_strength, ~ {
-#   fit_seeiqr(
-#     daily_diffs,
-#     fixed_f_forecast = .x,
-#     seeiqr_model = seeiqr_model, chains = 8, iter = 2000
-#   )
-# })
-# saveRDS(m_fs, "data-generated/f-proj-fits.rds")
+m_fs <- purrr::map(sd_strength, ~ {
+  fit_seeiqr(
+    daily_diffs,
+    fixed_f_forecast = .x,
+    seeiqr_model = seeiqr_model, chains = 8, iter = 2000
+  )
+})
+saveRDS(m_fs, "data-generated/f-proj-fits.rds")
 
 # If coming back:
 m_fs <- readRDS("data-generated/f-proj-fits.rds")
-# purrr::walk(m_fs, ~ print(.x$fit, pars = c("R0", "f2", "phi", "sampFrac2")))
+purrr::walk(m_fs, ~ print(.x$fit, pars = c("R0", "f2", "phi", "sampFrac2")))
 names(m_fs)
 
 ylim <- c(0, 160)

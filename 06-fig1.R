@@ -23,8 +23,6 @@ obj <- m
 post <- m$post
 R0 <- post$R0
 
-.hist_blue <- RColorBrewer::brewer.pal(6, "Blues")[5]
-
 .x <- seq(2.1, 2.9, length.out = 300)
 breaks <- seq(min(.x), max(.x), 0.016)
 R0_hist <- ggplot(tibble(R0 = R0)) +

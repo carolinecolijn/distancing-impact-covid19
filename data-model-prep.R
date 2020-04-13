@@ -1,6 +1,7 @@
 library(rstan)
 library(dplyr)
 library(ggplot2)
+library(future)
 rstan_options(auto_write = TRUE)
 dir.create("data-generated", showWarnings = FALSE)
 dir.create("figs", showWarnings = FALSE)
@@ -33,3 +34,4 @@ source("functions_sir.R")
 source("make_projection_plot.R")
 
 .blue <- "#3182BD"
+.hist_blue <- RColorBrewer::brewer.pal(6, "Blues")[5]

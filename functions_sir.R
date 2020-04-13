@@ -111,7 +111,7 @@ sdtiming_gradual <- function(t,
 }
 
 reproject_fits <- function(.R0, .f2, .phi, .i, obj, .sdfunc = sdtiming_gradual,
-  .time = NULL, pars = list(
+  .time = NULL, return_ode_dat = FALSE, pars = list(
     N = 4.4e6,
     D = 4,
     R0 = 2.6,
@@ -148,11 +148,15 @@ reproject_fits <- function(.R0, .f2, .phi, .i, obj, .sdfunc = sdtiming_gradual,
   mu <- purrr::map_dbl(seq(1, max_day), function(x) {
     getlambd(.d, pars = .pars, data = dat, day = x)
   })
-  data.frame(
+  out <- data.frame(
     day = seq(1, max_day),
     lambda_d = mu,
     y_rep = MASS::rnegbin(max_day, mu, theta = .phi),
     iterations = .i,
     R0 = .R0, f2 = .f2, phi = .phi
   )
+  if (return_ode_dat)
+    return(dplyr::mutate(.d, iterations = .i))
+  else
+    return(out)
 }

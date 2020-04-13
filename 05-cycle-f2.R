@@ -1,14 +1,19 @@
 library(future)
-plan(multisession)
 source("data-model-prep.R")
-m <- fit_seeiqr(daily_diffs, iter = 1000, chains = 8)
+seeiqr_model <- stan_model("seeiqr.stan")
+source("functions_sir.R")
+dir.create("data-generated", showWarnings = FALSE)
+m <- fit_seeiqr(daily_diffs, seeiqr_model = seeiqr_model, iter = 1000, chains = 8)
 print(m$fit, pars = c("R0", "f2", "phi"))
+saveRDS(m, file = "data-generated/main-fit.rds")
 
 .last_day <- m$last_day_obs
+.last_day
+.f2_now <- round(mean(m$post$f2), 2)
 
 sdtiming_cycle_4x4 <- function(
-  t, start_decline = 15, end_decline = 22,
-  f_vec = c(rep(NA, .last_day), rep(c(rep(0.8, 7 * 4), rep(0.35, 7 * 4)), 12)),
+  t, start_decline = 15, end_decline = 22, last_obs = .last_day,
+  f_vec = c(rep(NA, last_obs), rep(c(rep(0.8, 7 * 4), rep(.f2_now, 7 * 4)), 12)),
   f1 = pars$f1,
   f2 = pars$f2) {
   if (t < start_decline) {
@@ -17,44 +22,103 @@ sdtiming_cycle_4x4 <- function(
   if (t >= start_decline & t < end_decline) {
     return(f2 + (end_decline - t) * (f1 - f2) / (end_decline - start_decline))
   }
-  if (t >= end_decline & floor(t) <= 42) {
+  floor_t <- floor(t)
+  if (t >= end_decline & floor_t <= last_obs) {
     return(f2)
   }
-  if (t >= end_decline & floor(t) > 42) {
-    return(f_vec[floor(t)])
+  if (t >= end_decline & floor_t > last_obs) {
+    return(f_vec[floor_t])
   }
 }
 
 sdtiming_cycle_3x3 <- sdtiming_cycle_4x4
 formals(sdtiming_cycle_3x3)$f_vec <-
-  c(rep(NA, .last_day), rep(c(rep(0.8, 7 * 4), rep(0.35, 7 * 4)), 12))
+  c(rep(NA, .last_day), rep(c(rep(0.8, 7 * 3), rep(.f2_now, 7 * 3)), 12))
 
-.times <- seq(-30, 160, 0.1)
+plan(multisession, workers = parallel::detectCores() - 3L)
+
+proj_days <- .last_day + 4 * 7 * 4
+.times <- seq(-30, proj_days, 0.1)
 pred_4x4 <- list(m$post$R0, m$post$f2, m$post$phi, seq_along(m$post$R0)) %>%
-  furrr::future_pmap_dfr(reproject_fits, obj = m, .sdfunc = sdtiming_cycle,
-    .time = .times)
+  furrr::future_pmap_dfr(reproject_fits, obj = m, .sdfunc = sdtiming_cycle_4x4,
+    .time = .times, .progress = TRUE,
+    .options = furrr::future_options(globals =
+        c(".last_day", "m", "sdtiming_cycle_4x4", "socdistmodel", "getlambd", ".f2_now")))
+saveRDS(pred_4x4, file = "data-generated/pred_4x4.rds")
+pred_4x4 <- readRDS("data-generated/pred_4x4.rds")
+
+# re-sample obs. model for smoother plots:
+pred_4x4 <- purrr::map_dfr(1:5, function(i) {
+  pred_4x4$y_rep <- MASS::rnegbin(length(pred_4x4$y_rep),
+    pred_4x4$lambda_d, theta = pred_4x4$phi)
+  pred_4x4
+})
 
 pred_3x3 <- list(m$post$R0, m$post$f2, m$post$phi, seq_along(m$post$R0)) %>%
-  furrr::future_pmap_dfr(reproject_fits, obj = m, .sdfunc = sdtiming_cycle,
-    .time = .times)
+  furrr::future_pmap_dfr(reproject_fits, obj = m, .sdfunc = sdtiming_cycle_3x3,
+    .time = .times, .progress = TRUE,
+    .options = furrr::future_options(globals =
+        c(".last_day", "m", "sdtiming_cycle_3x3", "socdistmodel", "getlambd", ".f2_now")))
+saveRDS(pred_3x3, file = "data-generated/pred_3x3.rds")
+pred_3x3 <- readRDS("data-generated/pred_3x3.rds")
 
-pred %>%
-  group_by(day) %>%
-  summarise(
-    lwr = quantile(y_rep, probs = 0.05),
-    lwr2 = quantile(y_rep, probs = 0.25),
-    upr = quantile(y_rep, probs = 0.95),
-    upr2 = quantile(y_rep, probs = 0.75),
-    med = median(y_rep)
-  ) %>%
-  ggplot(aes(day, med)) +
-  geom_vline(xintercept = 42) +
-  annotate("rect", xmin = 42, xmax = 42 + 7 * 4,
-    ymin = -20, ymax = 9000, fill = "#00000010") +
-  annotate("rect", xmin = 42 + 7 * 8, xmax = 42 + 7 * 8 + 7 * 4,
-    ymin = -20, ymax = 9000, fill = "#00000010") +
-  coord_cartesian(expand = FALSE, ylim = c(0, 150)) +
-  geom_ribbon(alpha = 0.2, mapping = aes(ymin = lwr, ymax = upr), colour = NA) +
-  geom_line()
+# re-sample obs. model for smoother plots:
+pred_3x3 <- purrr::map_dfr(1:5, function(i) {
+  pred_3x3$y_rep <- MASS::rnegbin(length(pred_3x3$y_rep),
+    pred_4x4$lambda_d, theta = pred_3x3$phi)
+  pred_3x3
+})
 
 plan(sequential)
+
+prep_dat <- function(.dat, Scenario = "") {
+  actual_dates <- seq(dat$Date[1], dat$Date[1] + proj_days, by = "1 day")
+  outer_quantile <- c(0.05, 0.95)
+  y_rep <- .dat %>%
+    mutate(value = y_rep) %>%
+    group_by(day) %>%
+    summarise(
+      lwr = quantile(value, probs = outer_quantile[1]),
+      lwr2 = quantile(value, probs = 0.25),
+      upr = quantile(value, probs = outer_quantile[2]),
+      upr2 = quantile(value, probs = 0.75),
+      med = median(value)
+    ) %>%
+    mutate(day = actual_dates[day], Scenario = Scenario)
+  lambdas <- .dat %>%
+    group_by(day) %>%
+    mutate(value = lambda_d) %>%
+    summarise(
+      med = median(value)
+    ) %>%
+    mutate(day = actual_dates[day], Scenario = Scenario)
+  list(y_rep = y_rep, mu = lambdas)
+}
+
+x1 <- prep_dat(pred_4x4)
+.max <- max(x1$y_rep$upr) * 1.04
+g1 <- make_projection_plot(models = list(m), mu_dat = x1$mu,
+  y_rep_dat = x1$y_rep, ylim = c(0, .max)) +
+  theme(plot.margin = margin(11/2,11, 11/2, 11/2))
+for (i in seq(1, 4, 2)) {
+  .inc <- 7 * 4
+  g_last_day <- dat$Date[1] + .last_day
+  g1 <- g1 + annotate("rect", xmin = g_last_day + (i - 1) * .inc - 1,
+    xmax = g_last_day + i * .inc - 1,
+    ymin = 0, ymax = Inf, fill = "#00000012")
+}
+
+x2 <- prep_dat(pred_3x3)
+g2 <- make_projection_plot(models = list(m), mu_dat = x2$mu,
+  y_rep_dat = x2$y_rep, ylim = c(0, .max)) +
+  theme(plot.margin = margin(11/2,11, 11/2, 11/2))
+for (i in seq(1, 6, 2)) {
+  .inc <- 7 * 3
+  g_last_day <- dat$Date[1] + .last_day
+  g2 <- g2 + annotate("rect", xmin = g_last_day + (i - 1) * .inc - 1,
+    xmax = g_last_day + i * .inc - 1,
+    ymin = 0, ymax = Inf, fill = "#00000012")
+}
+
+cowplot::plot_grid(g1, g2, ncol = 1)
+ggsave("figs/f2-cycling.pdf", width = 6, height = 6)

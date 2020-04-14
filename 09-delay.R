@@ -2,13 +2,8 @@
 # -----------------------------------------------------------------------------
 # What is the delay between the peak prevalence (I+Id) and the peak in case counts?
 
-x <- seq(0, 25, length.out = 200);plot(x, dweibull(x, shape = 2, scale = 11), type = "l")
-x <- seq(0, 25, length.out = 200);plot(x, dweibull(x, shape = 2, scale = 11), type = "l")
-m_peak <- fit_seeiqr(
-  daily_diffs, sampled_fraction1 = 0.1, sampled_fraction2 = 0.3,
-  seeiqr_model = seeiqr_model, chains = 8, iter = 600,
-  delayScale = 11,
-  save_state_predictions = TRUE)
+m_peak <- readRDS("data-generated/main-fit-500.rds")
+
 obj <- m_peak
 post <- obj$post
 variables_df <- dplyr::tibble(
@@ -46,3 +41,10 @@ states_timing <- states %>% mutate(start_decline = obj$stan_data$x_r[['start_dec
   end_decline = obj$stan_data$x_r[['end_decline']])
 ggplot(states_timing, aes(prevalence_peak - start_decline)) + geom_histogram()
 ggplot(states_timing, aes(prevalence_peak - end_decline)) + geom_histogram()
+
+# round(mean(both$case_peak - both$prevalence_peak), 1)
+v <- round(quantile(both$case_peak - both$prevalence_peak, probs = c(0.05, 0.5, 0.95)), 1)
+
+write_tex(v[[1]], "delayLwr")
+write_tex(v[[2]], "delayMed")
+write_tex(v[[3]], "delayUpr")

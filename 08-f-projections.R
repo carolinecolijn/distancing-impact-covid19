@@ -27,43 +27,6 @@ m_fs2 <- furrr::future_map(sd_strength2, ~ {
 future::plan(future::sequential)
 purrr::walk(m_fs2, ~ print(.x$fit, pars = c("R0", "f2", "phi")))
 
-# .N <- 20
-# select_fs <- c("0.6", "0.8", "1") %>% purrr::set_names()
-#
-# .last_day <- m_fs[[1]]$last_day_obs
-# sdtiming_fixed_0.6 <- function(
-#   t, start_decline = 15, end_decline = 22, last_obs = .last_day,
-#   f_fixed = 0.6,
-#   f1 = pars$f1,
-#   f2 = pars$f2) {
-#   if (t < start_decline) {
-#     return(f1)
-#   }
-#   if (t >= start_decline & t < end_decline) {
-#     return(f2 + (end_decline - t) * (f1 - f2) / (end_decline - start_decline))
-#   }
-#   floor_t <- floor(t)
-#   if (t >= end_decline & floor_t <= last_obs) {
-#     return(f2)
-#   }
-#   if (t >= end_decline & floor_t > last_obs) {
-#     return(f_vec[floor_t])
-#   }
-# }
-# sdtiming_fixed_0.8 <- sdtiming_fixed_0.6
-# formals(sdtiming_fixed_0.8)$f_fixed <- 0.8
-# sdtiming_fixed_1.0 <- sdtiming_fixed_0.6
-# formals(sdtiming_fixed_1.0)$f_fixed <- 1.0
-#
-# future::plan(future::multisession, workers = parallel::detectCores() /2)
-# d_ode <- furrr::future_map_dfr(select_fs, function(.x) {
-#   m <- m_fs[[.x]]
-#   list(m$post$R0[1:.N], m$post$f2[1:.N], m$post$phi[1:.N], 1:.N) %>%
-#     purrr::pmap_dfr(reproject_fits, obj = m, .sdfunc = sdtiming_fixed,
-#       return_ode_dat = TRUE)
-# }, .id = "scenario")
-# future::plan(future::sequential)
-
 get_prevalence <- function(obj, draws = 1:250,
   .start = lubridate::ymd_hms("2020-03-01 00:00:00")) {
   post <- obj$post
@@ -87,11 +50,7 @@ get_prevalence <- function(obj, draws = 1:250,
   prevalence
 }
 
-# m <- readRDS("data-generated/main-fit-500.rds")
 prevalence <- purrr::map_dfr(m_fs2, get_prevalence, .id = "scenario")
-# prevalence <- purrr::map_dfr(list(m), get_prevalence, .id = "scenario")
-
-# make_projection_plot(m_fs2, ylim = c(0, 200))
 
 # Plots -----------------------------------------------------------------------
 
@@ -125,6 +84,11 @@ g1 <- make_projection_plot(.m_fs, facet = TRUE, ncol = 3, sc_order = sc_order) +
 prevalence$scenario2 <- paste0("Physical distancing: ", sprintf("%.0f", (1 - as.numeric(prevalence$scenario)) * 100), "%")
 unique(prevalence$scenario2)
 
+prevalence$scenario2_noletters <- prevalence$scenario2
+prevalence$scenario2_noletters <- factor(prevalence$scenario2_noletters,
+  levels = c("Physical distancing: 40%", "Physical distancing: 20%", "Physical distancing: 0%"
+))
+
 prevalence$scenario2 <- gsub("Physical distancing: 40%", "(D) Physical distancing: 40%", prevalence$scenario2)
 prevalence$scenario2 <- gsub("Physical distancing: 20%", "(E) Physical distancing: 20%", prevalence$scenario2)
 prevalence$scenario2 <- gsub("Physical distancing: 0%", "(F) Physical distancing: 0%", prevalence$scenario2)
@@ -147,11 +111,17 @@ g_prev <- prevalence %>%
   geom_line(alpha = 0.05, col = .hist_blue) +
   ylab("Prevalence") +
   facet_wrap(~scenario2) +
-  # coord_cartesian(expand = FALSE,
-  #   xlim = c(.start, .start + lubridate::ddays(obj$last_day_obs + 60)),
-  #   ylim = c(0, 2500)) +
   .theme + .coord_prev
 # g_prev
 
 gg <- cowplot::plot_grid(g1, g_prev, nrow = 2, align = "hv")
 ggsave("figs-ms/f-projections.png", width = 7, height = 4)
+
+.max <- filter(prevalence, scenario2_noletters == "Physical distancing: 0%") %>%
+  pull(prevalence) %>% quantile(probs = 0.99)
+g <- g_prev + coord_cartesian(
+  expand = FALSE, ylim = c(0, .max),
+  xlim = c(lubridate::ymd_hms("2020-03-01 00:00:00"),
+    lubridate::ymd_hms("2020-06-11 23:59:00"))
+) + facet_wrap(~scenario2_noletters) +
+  ggsave("figs-ms/f-projections-taaaaaaaall.png", width = 5.5, height = 14)

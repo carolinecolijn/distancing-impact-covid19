@@ -4,13 +4,14 @@ library(future)
 
 fs <- seq(0.3, 1, 0.1)
 plan(multisession, workers = parallel::detectCores()/2)
-
-m <- furrr::future_map(fs, function(.f) {
+m_fs <- furrr::future_map(fs, function(.f) {
   fit_seeiqr(
-    daily_diffs, iter = 500, chains = 1, save_state_predictions = TRUE,
+    daily_diffs, iter = 400, chains = 1, save_state_predictions = TRUE,
       seeiqr_model = seeiqr_model, fixed_f_forecast = .f)
 })
 plan(future::sequential)
+# saveRDS(m_fs, file = "data-generated/fits-for-prevalence-slope.rds")
+# m_fs <- readRDS("data-generated/fits-for-prevalence-slope.rds")
 
 get_prevalence_slope <- function(obj, f_val) {
   post <- obj$post
@@ -39,22 +40,29 @@ get_prevalence_slope <- function(obj, f_val) {
     ungroup() %>%
     mutate(iterations = iters$iter)
 }
-slopes <- purrr::map2_df(m, fs, get_prevalence_slope)
-ggplot(slopes, aes(f, slope)) +
-  geom_jitter(height = 0, alpha = 0.1, width = 0.2)
+slopes <- purrr::map2_df(m_fs, fs, get_prevalence_slope)
+# ggplot(slopes, aes(f, slope)) +
+#   geom_jitter(height = 0, alpha = 0.1, width = 0.2)
 
-mlm <- lm(slope ~ f, data = slopes)
-nd <- data.frame(f = seq(0.3, 1, length.out = 2000))
+slopes$inverse_f <- 1-slopes$f
+mlm <- lm(slope ~ inverse_f, data = slopes)
+nd <- data.frame(inverse_f = 1- seq(0.3, 1, length.out = 5000))
 nd$predicted_slope <- predict(mlm, newdata = nd)
-thresh <- dplyr::filter(nd, predicted_slope > 0) %>% `[`(1, 'f')
-ggplot(slopes, aes(f, slope)) +
+thresh <- dplyr::filter(nd, predicted_slope > 0) %>% `[`(1, 'inverse_f')
+thresh
+ggplot(slopes, aes(inverse_f, slope)) +
   geom_point(alpha = 0.04) +
-  geom_line(data = nd, aes(f, predicted_slope), alpha = 0.3) +
+  geom_line(data = nd, aes(inverse_f, predicted_slope), alpha = 0.3) +
   geom_vline(xintercept = thresh, lty = 2, alpha = 0.6) +
   geom_hline(yintercept = 0, lty = 2, alpha = 0.6) +
   ylab("Slope of log(prevalence) vs. day") +
-  xlab("Physical distancing strength")
+  xlab("Fraction contacts removed")
 ggsave("figs-ms/f-threshold.png", width = 3.7, height = 3.5)
+
+write_tex(round(1 - thresh, 2) * 100, "thresholdFrac") %>%
+  readr::write_lines("figs-ms/values.tex", append = TRUE)
+write_tex(round(thresh, 2), "thresholdFtwo") %>%
+  readr::write_lines("figs-ms/values.tex", append = TRUE)
 
 # Joint posterior plot with prevalence colouring: -----------------------------
 

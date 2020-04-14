@@ -5,6 +5,16 @@ print(m$fit, pars = c("R0", "f2", "phi"))
 saveRDS(m, file = "data-generated/main-fit-2000.rds")
 m <- readRDS("data-generated/main-fit-2000.rds")
 
+sd_est <- sprintf("%.0f", 100 * (1 - round(quantile(m$post$f2, c(0.05, 0.5, 0.95)), 2)))
+write_tex(sd_est[1], "fracEstUpr")
+write_tex(sd_est[2], "fracEstMed")
+write_tex(sd_est[3], "fracEstLwr")
+
+sd_est <- sprintf("%.2f", round(quantile(m$post$f2, c(0.05, 0.5, 0.95)), 2))
+write_tex(sd_est[3], "fTwoEstUpr")
+write_tex(sd_est[2], "fTwoEstMed")
+write_tex(sd_est[1], "fTwoEstLwr")
+
 source("make_quick_plots.R")
 make_quick_plots(m, id = "-ms-main", ext = ".png")
 file.copy("figs/traceplot-ms-main.png", "figs-ms/traceplots.png")

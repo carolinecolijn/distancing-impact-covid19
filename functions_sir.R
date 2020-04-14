@@ -160,3 +160,8 @@ reproject_fits <- function(.R0, .f2, .phi, .i, obj, .sdfunc = sdtiming_gradual,
   else
     return(out)
 }
+
+write_tex <- function(x, macro, ...) {
+  paste0("\\newcommand{\\", macro, "}{", x, "}") %>%
+    readr::write_lines("figs-ms/values.tex", append = TRUE)
+}

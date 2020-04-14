@@ -17,8 +17,8 @@ write_tex(sd_est[1], "fTwoEstLwr")
 
 source("make_quick_plots.R")
 make_quick_plots(m, id = "-ms-main", ext = ".png")
-file.copy("figs/traceplot-ms-main.png", "figs-ms/traceplots.png")
-file.copy("figs/posterior-predictive-case-diffs-facet-ms-main.png", "figs-ms/post-pred-reps.png")
+file.copy("figs/traceplot-ms-main.png", "figs-ms/traceplots.png", overwrite = TRUE)
+file.copy("figs/posterior-predictive-case-diffs-facet-ms-main.png", "figs-ms/post-pred-reps.png", overwrite = TRUE)
 
 # fewer samples for plot:
 m500 <- fit_seeiqr(daily_diffs, seeiqr_model = seeiqr_model, iter = 500, chains = 8,
@@ -33,7 +33,7 @@ obj <- m
 post <- m$post
 R0 <- post$R0
 
-.x <- seq(2.1, 2.9, length.out = 300)
+.x <- seq(2.5, 3.5, length.out = 300)
 breaks <- seq(min(.x), max(.x), 0.016)
 R0_hist <- ggplot(tibble(R0 = R0)) +
   geom_ribbon(
@@ -47,7 +47,8 @@ R0_hist <- ggplot(tibble(R0 = R0)) +
     breaks = breaks, aes(x = R0, y = ..density..),
     fill = .hist_blue, alpha = .7, colour = "grey90", lwd = 0.15
   ) +
-  coord_cartesian(xlim = range(.x), expand = FALSE)
+  coord_cartesian(xlim = range(.x), expand = FALSE) +
+  xlab(expression(italic(R[0*plain(b)])))
 
 R0_hist
 
@@ -68,7 +69,8 @@ f2_hist <- ggplot(tibble(f2 = f2)) +
   ylab("Density") +
   coord_cartesian(xlim = range(.x), expand = FALSE) +
   xlab("Physical distancing strength") +
-  scale_x_continuous(breaks = seq(0, 1, 0.2))
+  scale_x_continuous(breaks = seq(0, 1, 0.2)) +
+  geom_vline(xintercept = .57, lty = 2, col = "grey40")
 
 f2_hist
 
@@ -104,9 +106,10 @@ g_prev <- ggplot(prevalence, aes(day, prevalence, group = iterations)) +
   xlab("")
 g_prev
 
-# label_fontface = "plain", label_size = 12, label_x = 0.20, label_y = 0.94
-g <- cowplot::plot_grid(proj, R0_hist, g_prev, f2_hist, align = "hv", labels = "AUTO") +   theme(plot.margin = margin(11/2,11, 11/2, 11/2))
-ggsave(paste0("figs-ms/fig1.png"), width = 6, height = 4.5)
+# label_x = 0.21, label_y = 0.96, label_fontface = "plain", label_size = 12
+g <- cowplot::plot_grid(proj, R0_hist, g_prev, f2_hist, align = "hv", labels = "AUTO", label_size = 12, label_x = 0.213, label_y = 0.96) +
+  theme(plot.margin = margin(11/2,11, 11/2, 11/2))
+ggsave(paste0("figs-ms/fig1.png"), width = 6, height = 4.5, dpi = 400)
 
 g <- ggplot(states, aes(time, value, group = iterations)) +
   geom_line(alpha = 0.1) +

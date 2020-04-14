@@ -21,13 +21,15 @@ m_fs2 <- furrr::future_map(sd_strength2, ~ {
   fit_seeiqr(
     daily_diffs, seed = 1,
     fixed_f_forecast = .x, save_state_predictions = TRUE,
-    seeiqr_model = seeiqr_model, chains = 1, iter = 500
+    seeiqr_model = seeiqr_model, chains = 1, iter = 1000
   )
 })
 future::plan(future::sequential)
 purrr::walk(m_fs2, ~ print(.x$fit, pars = c("R0", "f2", "phi")))
 
-get_prevalence <- function(obj, draws = 1:250,
+set.seed(129284)
+.draws <- sample(seq_len(500), 250)
+get_prevalence <- function(obj, draws = .draws,
   .start = lubridate::ymd_hms("2020-03-01 00:00:00")) {
   post <- obj$post
   ts_df <- dplyr::tibble(time = obj$time, time_num = seq_along(obj$time))

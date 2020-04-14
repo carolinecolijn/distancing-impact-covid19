@@ -1,9 +1,9 @@
 library(future)
 source("data-model-prep.R")
 
-m <- fit_seeiqr(daily_diffs, seeiqr_model = seeiqr_model, iter = 1000, chains = 8)
-print(m$fit, pars = c("R0", "f2", "phi"))
-saveRDS(m, file = "data-generated/main-fit.rds")
+# m <- fit_seeiqr(daily_diffs, seeiqr_model = seeiqr_model, iter = 1000, chains = 8)
+# print(m$fit, pars = c("R0", "f2", "phi"))
+# saveRDS(m, file = "data-generated/main-fit.rds")
 m <- readRDS("data-generated/main-fit.rds")
 
 .last_day <- m$last_day_obs
@@ -120,5 +120,5 @@ for (i in seq(1, 6, 2)) {
 }
 
 cowplot::plot_grid(g1, g2, ncol = 1, labels = "AUTO")
-ggsave("figs-ms1/f2-cycling.pdf", width = 4.5, height = 5, dpi = 300)
-# system("optipng -strip all figs-ms1/f2-cycling.png")
+ggsave("figs-ms/f2-cycling.png", width = 4.5, height = 5)
+# system("optipng -strip all figs-ms/f2-cycling.png")

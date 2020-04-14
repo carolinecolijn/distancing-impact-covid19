@@ -33,7 +33,7 @@ f2 <- purrr::map_df(m_sf, function(.x) {
   data.frame(theta = "Contact parameter", value = 1 - .x$post$f2, stringsAsFactors = FALSE)
 }, .id = "Scenario")
 theta_df <- bind_rows(R0, f2) %>% as_tibble()
-my_limits <- function(x) if (max(x) < 2) c(0, 1) else c(2.1, 3)
+my_limits <- function(x) if (max(x) < 2) c(0, 1) else c(2.6, 3.5)
 ggplot(theta_df, aes(value)) +
   facet_grid(Scenario~theta, scales = "free") +
   geom_histogram(bins = 50, fill = .hist_blue, alpha = .7, colour = "grey90", lwd = 0.15) +

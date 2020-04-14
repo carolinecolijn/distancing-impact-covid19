@@ -112,6 +112,6 @@ g <- ggplot(states, aes(time, value, group = iterations)) +
   geom_line(alpha = 0.1) +
   facet_wrap(~variable, scales = "free_y") +
   geom_vline(xintercept = obj$last_day_obs, lty = 2, alpha = 0.6) +
-  xlab("Time (days since March 1 2010)") + ylab("Individuals")
+  xlab("Time (days since March 1 2020)") + ylab("Individuals")
 ggsave(paste0("figs-ms/states.png"), width = 12, height = 7)
 

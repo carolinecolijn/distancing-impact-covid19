@@ -123,5 +123,5 @@ g <- g_prev + coord_cartesian(
   expand = FALSE, ylim = c(0, .max),
   xlim = c(lubridate::ymd_hms("2020-03-01 00:00:00"),
     lubridate::ymd_hms("2020-06-11 23:59:00"))
-) + facet_wrap(~scenario2_noletters) +
-  ggsave("figs-ms/f-projections-taaaaaaaall.png", width = 5.5, height = 14)
+) + facet_wrap(~scenario2_noletters)
+ggsave("figs-ms/f-projections-taaaaaaaall.png", width = 5.5, height = 14)

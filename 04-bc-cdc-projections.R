@@ -22,7 +22,8 @@ m_fs <- purrr::map(sd_strength, ~ {
 saveRDS(m_fs, "data-generated/f-proj-fits-cdc.rds")
 
 # If coming back:
-m_fs <- readRDS("data-generated/f-proj-fits-cdc.rds")
+# m_fs <- readRDS("data-generated/f-proj-fits-cdc.rds")
+m_fs <- readRDS("data-generated/f-proj-fits.rds") # April 12
 purrr::walk(m_fs, ~ print(.x$fit, pars = c("R0", "f2", "phi", "sampFrac2")))
 names(m_fs)
 
@@ -52,7 +53,7 @@ names(.m_fs)
 sc_order <- names(.m_fs)
 
 g <- make_projection_plot(.m_fs, facet = TRUE, ncol = 2, sc_order = sc_order) +
-  .theme + .coord + .vline
+  .theme + .coord #+ .vline
 ggsave(paste0("figs-cdc/proj-facet-", .today, ".png"),
   width = 6, height = 6, dpi = 450
 )
@@ -60,7 +61,7 @@ ggsave(paste0("figs-cdc/proj-facet-", .today, ".png"),
 g <- make_projection_plot(.m_fs,
   ylim = ylim_c, facet = TRUE, ncol = 2,
   cumulative = TRUE, sc_order = sc_order
-) + .theme + .coord_c + .vline
+) + .theme + .coord_c #+ .vline
 ggsave(paste0("figs-cdc/proj-cumulative-facet-", .today, ".png"),
   width = 6, height = 6, dpi = 450
 )
@@ -68,7 +69,7 @@ ggsave(paste0("figs-cdc/proj-cumulative-facet-", .today, ".png"),
 make_one_panel <- function(obj, title) {
   make_projection_plot(list(obj), ylim = ylim, points_size = 1.6) +
     ggtitle(title) +
-    .coord + .theme + .vline
+    .coord + .theme #+ .vline
   file_name <- gsub("%", "", gsub("[a-zA-Z :]", "", title))
   ggsave(paste0("figs-cdc/proj-", file_name, "-", .today, ".png"),
     width = 5, height = 3.25, dpi = 450
@@ -77,7 +78,7 @@ make_one_panel <- function(obj, title) {
 make_one_panel_cumulative <- function(obj, title) {
   make_projection_plot(list(obj), ylim = ylim_c, points_size = 1.6, cumulative = TRUE) +
     ggtitle(title) +
-    .coord_c + .theme + .vline
+    .coord_c + .theme# + .vline
   file_name <- gsub("%", "", gsub("[a-zA-Z :]", "", title))
   ggsave(paste0("figs-cdc/proj-cumulative-", file_name, "-", .today, ".png"),
     width = 5, height = 3.25, dpi = 450

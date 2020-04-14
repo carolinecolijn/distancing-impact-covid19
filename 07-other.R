@@ -66,20 +66,21 @@ write_tex(round(thresh, 2), "thresholdFtwo") %>%
 
 # Joint posterior plot with prevalence colouring: -----------------------------
 
-m_yhat <- fit_seeiqr(
-  daily_diffs, iter = 200, chains = 8, save_state_predictions = TRUE,
-  seeiqr_model = seeiqr_model)
+# m_yhat <- fit_seeiqr(
+#   daily_diffs, iter = 200, chains = 8, save_state_predictions = TRUE,
+#   seeiqr_model = seeiqr_model)
+m_yhat <- readRDS("data-generated/main-fit-500.rds")
 
 joint_post <- tibble(R0 = m_yhat$post$R0, f2 = m_yhat$post$f2, iterations = seq_along(f2))
 prev_slopes <- get_prevalence_slope(m_yhat, "estimated") %>%
   mutate(perc_change = 100 * (exp(slope) - 1))
 joint_post2 <- left_join(joint_post, prev_slopes)
-ggplot(joint_post2, aes(R0, f2, colour = -perc_change)) +
-  geom_point(alpha = 0.15, size = 2) +
-  geom_point(alpha = 0.5, size = 2, pch = 21) +
+g <- ggplot(joint_post2, aes(R0, 1-f2, colour = -perc_change)) +
+  geom_point(alpha = 0.1, size = 2) +
+  geom_point(alpha = 0.2, size = 2, pch = 21) +
   scale_colour_viridis_c(option = "D", direction = -1) +
-  labs(colour = "Percent decline\nper day", y = "Physical distancing strength",
+  labs(colour = "Percent decline\nper day", y = "Fraction contacts removed",
     x = expression(R[0])) +
-  theme(legend.position = c(0.81, 0.78)) +
+  # theme(legend.position = c(0.81, 0.78)) +
   theme(legend.key.size = unit(11, units = "points"))
-ggsave("figs-ms/joint-posterior-prevalence.png", width = 3.7, height = 3.5)
+ggsave("figs-ms/joint-posterior-prevalence.png", width = 4.7, height = 3.5)

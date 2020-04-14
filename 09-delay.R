@@ -1,3 +1,4 @@
+source("data-model-prep.R")
 
 # -----------------------------------------------------------------------------
 # What is the delay between the peak prevalence (I+Id) and the peak in case counts?
@@ -48,3 +49,9 @@ v <- round(quantile(both$case_peak - both$prevalence_peak, probs = c(0.05, 0.5, 
 write_tex(v[[1]], "delayLwr")
 write_tex(v[[2]], "delayMed")
 write_tex(v[[3]], "delayUpr")
+
+hist(both$prevalence_peak)
+p <- sprintf("%.1f", round(quantile(both$prevalence_peak, probs = c(0.05, 0.5, 0.95)), 1))
+write_tex(p[[1]], "prevalencePeakLwr")
+write_tex(p[[2]], "prevalencePeakMed")
+write_tex(p[[3]], "prevalencePeakUpr")

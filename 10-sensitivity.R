@@ -1,5 +1,9 @@
 source("data-model-prep.R")
 
+# D=4, k1=1/4, 83% . --- rationale: shorter duration all round, R0 is lower, still consistent w data, still consistent message re strength of distancing
+# D=6, k1=1/6, 83% --- rationale: longer duration all round, R0 is higher, still consistent w data & message about distancing
+# D=5, k=1/5 (which I think are now our "default" main text parameters, BUT with 70% (r/(u+r) = 0.7) -- rationale: what if we were too optimistic about the portion doing the distancing? how sensitive are the results to this choice?
+
 # Look at sample fraction scenarios -------------------------------------------
 
 sf1 <- tidyr::expand_grid(sampled_fraction1 = c(0.05), sampled_fraction2 = c(0.1, 0.2, 0.3))

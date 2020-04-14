@@ -44,16 +44,21 @@ ggsave(paste0("figs-ms/sampFrac-grid-theta-posteriors.png"),
   width = 5, height = 7)
 
 # Sensitivity to k1 and D -----------------------------------------------------
-
-m_slower <- fit_seeiqr(
-  daily_diffs, chains = 8, iter = 400,
-  pars = c(
-    N = 4.4e6, D = 6, k1 = 1 / 5,
-    k2 = 1, q = 0.05,
-    r = 1, ur = 0.2, f1 = 1.0,
-    start_decline = 15,
-    end_decline = 22
-  ),
-  seeiqr_model = seeiqr_model)
-saveRDS(m_sf, file = "data-generated/m-slower.rds")
-m_sf <- readRDS("data-generated/m-slower.rds")
+#
+# m_slower <- fit_seeiqr(
+#   daily_diffs, chains = 8, iter = 300,
+#   pars = c(
+#     N = 4.4e6, D = 6, k1 = 1 / 5,
+#     k2 = 1, q = 0.05,
+#     r = 1, ur = 0.2, f1 = 1.0,
+#     start_decline = 15,
+#     end_decline = 22
+#   ), save_state_predictions = TRUE,
+#   seeiqr_model = seeiqr_model)
+# saveRDS(m_slower, file = "data-generated/m-slower.rds")
+# m_slower <- readRDS("data-generated/m-slower.rds")
+#
+# make_projection_plot(list(m_slower))
+#
+# source("make_quick_plots.R")
+# make_quick_plots(m_slower, id = "slower")

@@ -1,15 +1,11 @@
 setwd(here::here("selfIsolationModel/stan"))
-my_path <- paste0(here::here(), "/selfIsolationModel/")
-source("functions_sir.R")
-library(ggplot2)
-# devtools::install_github("seananderson/ggsidekick")
-theme_set(ggsidekick::theme_sleek())
+source("data-model-prep.R")
 
 pars <- list(
   N = 4.4e6, # population of BC
-  D = 4,
+  D = 5,
   R0 = 2.6,
-  k1 = 1 / 4,
+  k1 = 1 / 5,
   k2 = 1,
   q = 0.05,
   r = 1,

@@ -34,7 +34,7 @@ sdtiming_cycle_3x3 <- sdtiming_cycle_4x4
 formals(sdtiming_cycle_3x3)$f_vec <-
   c(rep(NA, .last_day), rep(c(rep(0.8, 7 * 3), rep(.f2_now, 7 * 3)), 12))
 
-plan(multisession, workers = parallel::detectCores() - 3L)
+plan(multisession, workers = parallel::detectCores() / 2)
 
 proj_days <- .last_day + 4 * 7 * 4
 .times <- seq(-30, proj_days, 0.1)

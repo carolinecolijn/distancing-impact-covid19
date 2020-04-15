@@ -80,28 +80,3 @@ transformed data {
 }
 model {
 }
-generated quantities {
-  real meanDelay = delayScale * tgamma(1 + 1 / delayShape);
-  real dx = time[2] - time[1];
-  real ft[T];
-  real lambda_d[N];
-  real sum_ft_inner;
-
-  real y_hat[T,12];
-  y_hat = integrate_ode_rk45(sir, y0, t0, time, theta, x_r, x_i);
-
-  for (n in 1:N) {
-    for (t in 1:T) {
-      ft[t] = 0;
-      if (t <= time_day_id[n]) { // FIXME: < or <=?
-        ft[t] = sampFrac[t] * x_r[4] * (y_hat[t,2] + y_hat[t,3]) *
-                exp(weibull_lpdf(days[n] - time[t] | delayShape, delayScale));
-      }
-    }
-    sum_ft_inner = 0;
-    for (t in 2:(time_day_id[n] - 1)) {
-      sum_ft_inner += ft[t];
-    }
-    lambda_d[n] = 0.5 * dx * (ft[1] + 2 * sum_ft_inner + ft[time_day_id[n]]);
-  }
-}

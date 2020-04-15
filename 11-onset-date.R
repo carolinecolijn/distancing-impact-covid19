@@ -1,5 +1,7 @@
 source("data-model-prep.R")
 
+.last_day <- lubridate::ymd("2020-04-12")
+
 load_tidy_delay_data <- function() {
   linelist_latest_file <-
     here::here("nCoVDailyData/linelist/2019-nCoV_daily_linelist.csv")
@@ -111,32 +113,97 @@ plot_time_to_report <- function(data,
 
 delay_data <- load_tidy_delay_data()[["delay_data"]]
 # plotdelay1 <- plot_time_to_report(delay_data) + xlim(lubridate::ymd("2020-03-05"), lubridate::ymd("2020-04-06")) + guides(fill = FALSE) + theme(axis.title.y = element_blank())
-plotdelay2 <- plot_time_to_report(delay_data, x_axis = "onset") + xlim(lubridate::ymd("2020-02-29"), lubridate::ymd("2020-04-06")) +
+plotdelay2 <- plot_time_to_report(delay_data, x_axis = "onset") + xlim(lubridate::ymd("2020-02-29"), .last_day) +
   coord_cartesian(expand = FALSE, ylim = c(0, 32))
 
 start_date_report <- "2020-02-29"
 
-.x <- delay_data %>%
-  filter(reported_date > start_date_report) %>%
-  group_by(reported_date) %>%
-  summarize(confirmed_cases = n())
+# .x <- delay_data %>%
+#   filter(reported_date > start_date_report) %>%
+#   group_by(reported_date) %>%
+#   summarize(confirmed_cases = n())
+#
+# plotdelay1 <- .x %>%
+#   ggplot(aes(x = reported_date, y = confirmed_cases)) +
+#   geom_col(fill = .hist_blue, alpha = .8,
+#     colour = "grey90", lwd = 0.15) +
+#   coord_cartesian(expand = FALSE, ylim = c(0, max(.x$confirmed_cases) * 1.02)) +
+#   labs(
+#     fill = "Reported\ncases",
+#     x = "Date of reported case",
+#     y = "Reported cases"
+#   ) + xlim(lubridate::ymd("2020-02-29"), .last_day)
 
-plotdelay1 <- .x %>%
-  ggplot(aes(x = reported_date, y = confirmed_cases)) +
+dat2 <- select(dat, Date, daily_diffs)
+if (max(dat2$Date) == "2020-04-08") {
+  dat2 <- data.frame(Date = c(dat2$Date, max(dat2$Date) + 1:3),
+    daily_diffs = daily_diffs)
+}
+
+daily_diff_plot <- dat2 %>%
+  ggplot(aes(x = Date, y = daily_diffs)) +
   geom_col(fill = .hist_blue, alpha = .8,
     colour = "grey90", lwd = 0.15) +
-  coord_cartesian(expand = FALSE, ylim = c(0, max(.x$confirmed_cases) * 1.02)) +
+  coord_cartesian(expand = FALSE, ylim = c(0, max(dat2$daily_diffs) * 1.02)) +
   labs(
     fill = "Reported\ncases",
     x = "Date of reported case",
-    y = "Reported cases"
-  ) + xlim(lubridate::ymd("2020-02-29"), lubridate::ymd("2020-04-06"))
+    y = "New reported cases"
+  ) + xlim(lubridate::ymd("2020-02-29"), .last_day)
+
+# Hospital ----------------------------------------------------------
+
+h <- readr::read_csv("hospitalization-data.csv")
+h <- mutate(h, Date = lubridate::dmy(Date))
+h <- bind_rows(
+  select(h, date = Date, Count = `Hosp Census`) %>% mutate(Type = "Hospital"),
+  select(dat, date = Date, Count = `ICU Census`) %>% mutate(Type = "ICU")
+)
+hosp_plot <- ggplot(h, aes(date, Count, colour = Type)) +
+  geom_point(aes(shape = Type)) +
+  geom_line() +
+  coord_cartesian(
+    expand = FALSE, ylim = c(0, 160),
+    # xlim = range(h$date) + c(14, 1)
+    xlim = c(lubridate::ymd("2020-02-29"), .last_day)
+  ) +
+  theme(
+    axis.title.x.bottom = element_blank(),
+    legend.position = c(0.17, 0.25),
+    legend.text = element_text(size = 9),
+    legend.title = element_text(size = 11)
+  ) +
+  scale_color_manual(values = c(.hist_blue, "grey45")) +
+  scale_shape_manual(values = c(21, 19)) +
+  ylab("Census count") +
+  labs(colour = "Census type", shape = "Census type")
+
+ggplot(h, aes(date, Count, fill = Type)) +
+  # geom_point(aes(shape = Type)) +
+  geom_col(aes(fill = Type)) +
+  coord_cartesian(
+    expand = FALSE, ylim = c(0, 160),
+    # xlim = range(h$date) + c(14, 1)
+    xlim = c(lubridate::ymd("2020-02-29"), .last_day)
+  ) +
+  theme(
+    axis.title.x.bottom = element_blank(),
+    legend.position = c(0.17, 0.25),
+    legend.text = element_text(size = 9),
+    legend.title = element_text(size = 11)
+  ) +
+  scale_color_manual(values = c("grey45", .hist_blue)) +
+  scale_fill_manual(values = c("grey45", .hist_blue)) +
+  scale_shape_manual(values = c(21, 19)) +
+  ylab("Census count") +
+  labs(colour = "Census type", shape = "Census type")
 
 
-g <- cowplot::plot_grid(plotdelay1, plotdelay2, ncol = 1,
-  labels = "AUTO", align = "hv",  label_x = 0.145, label_y = 0.962) +
+g <- cowplot::plot_grid(daily_diff_plot, plotdelay2, hosp_plot, ncol = 1,
+  labels = "AUTO", align = "hv",  label_x = 0.18, label_y = 0.962) +
   theme(plot.margin = margin(2, 11, 2, 0))
-ggsave("figs-ms/onset.png", width = 4.5, height = 4.7, dpi = 400)
+# ggsave("figs-ms/onset.png", width = 4.5, height = 4.7, dpi = 400)
+ggsave("figs-ms/onset-hosp.png", width = 4.1, height = 6.8)
 
 # y.grob <- grid::textGrob("Time from symptom onset to reported case (days)",
 #   gp = grid::gpar(col = "grey30", fontsize = 11), rot = 90

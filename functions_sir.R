@@ -18,7 +18,7 @@ getlambd <- function(out,
     stop("we need an earlier start time for the model")
   })
   # relevant times to identify new cases
-  ii <- which(out$time > day - 60 & out$time <= day)
+  ii <- which(out$time > day - 45 & out$time <= day)
   dx <- out$time[ii[2]] - out$time[ii[1]] # assumes equal time intervals
   # all new cases arising at each of those times
   incoming <- with(pars, {

@@ -52,7 +52,7 @@ ggsave(paste0("figs-ms/sampFrac-grid-theta-posteriors.png"),
 # m_slower <- fit_seeiqr(
 #   daily_diffs, chains = 8, iter = 300,
 #   pars = c(
-#     N = 4.4e6, D = 6, k1 = 1 / 5,
+#     N = 5.1e6, D = 6, k1 = 1 / 5,
 #     k2 = 1, q = 0.05,
 #     r = 1, ur = 0.2, f1 = 1.0,
 #     start_decline = 15,

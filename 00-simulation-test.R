@@ -2,7 +2,7 @@ setwd(here::here("selfIsolationModel/stan"))
 source("data-model-prep.R")
 
 pars <- list(
-  N = 4.4e6, # population of BC
+  N = 5.1e6, # population of BC
   D = 5,
   R0 = 2.6,
   k1 = 1 / 5,

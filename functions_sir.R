@@ -112,7 +112,7 @@ sdtiming_gradual <- function(t,
 
 reproject_fits <- function(.R0, .f2, .phi, .i, obj, .sdfunc = sdtiming_gradual,
   .time = NULL, return_ode_dat = FALSE, pars = list(
-    N = 4.4e6,
+    N = 5.1e6,
     D = 5,
     R0 = 2.6,
     k1 = 1 / 5,

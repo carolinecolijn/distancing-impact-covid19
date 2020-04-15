@@ -4,7 +4,7 @@ setwd(here::here("selfIsolationModel/stan"))
 my_path <- paste0(here::here(), "/selfIsolationModel/")
 source("functions_sir.R")
 pars <- list(
-  N = 4.4e6, # population of BC
+  N = 5.1e6, # population of BC
   D = 4,
   R0 = 2.65,
   k1 = 1 / 4,

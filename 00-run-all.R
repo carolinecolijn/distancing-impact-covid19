@@ -2,12 +2,9 @@
 
 rm(list = ls()) # so future package doesn't export any large objects
 
-source("00-simulation-test.R")
+source("01-simulation-test.R")
 rm(list = ls())
 
-# source("01-seeiqr-sim.R")
-# source("02-seeiqr-fit.R")
-# source("03-seeiqr-plot.R")
 # source("04-bc-cdc-projections.R")
 source("05-fig1.R")
 rm(list = ls())

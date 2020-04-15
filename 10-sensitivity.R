@@ -31,10 +31,10 @@ ggsave(paste0("figs-ms/sampFrac-grid.png"), width = 7, height = 3.5)
 
 names(m_sf) <- paste0("sampFrac1 = ", sf$sampled_fraction1, "\nsampFrac2 = ", sf$sampled_fraction2)
 R0 <- purrr::map_df(m_sf, function(.x) {
-  data.frame(theta = "R0", value = .x$post$R0, stringsAsFactors = FALSE)
+  data.frame(theta = "R0b", value = .x$post$R0, stringsAsFactors = FALSE)
 }, .id = "Scenario")
 f2 <- purrr::map_df(m_sf, function(.x) {
-  data.frame(theta = "Contact parameter", value = 1 - .x$post$f2, stringsAsFactors = FALSE)
+  data.frame(theta = "Fraction contacts reduced", value = 1 - .x$post$f2, stringsAsFactors = FALSE)
 }, .id = "Scenario")
 theta_df <- bind_rows(R0, f2) %>% as_tibble()
 my_limits <- function(x) if (max(x) < 2) c(0, 1) else c(2.6, 3.5)

@@ -4,8 +4,8 @@ library(ggplot2)
 
 # d$event <- gsub("non-essential travel", "non-essential\ntravel", d$event)
 d$event <- gsub("Canada", "Canada\n", d$event)
-d$event <- gsub("Columbia in", "Columbia\nin", d$event)
-d$event <- gsub("Fraser University", "Fraser University\n", d$event)
+# d$event <- gsub("Columbia in", "Columbia\nin", d$event)
+# d$event <- gsub("Fraser University", "Fraser University\n", d$event)
 d$type <- c("A", rep("B", length(d$event) - 1))
 g <- ggplot(d, aes(date, 1, label = event)) +
   geom_point() +

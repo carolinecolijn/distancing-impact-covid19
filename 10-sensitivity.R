@@ -30,7 +30,7 @@ R0 <- purrr::map_df(m_sf, function(.x) {
   data.frame(theta = "R0b", value = .x$post$R0, stringsAsFactors = FALSE)
 }, .id = "Scenario")
 f2 <- purrr::map_df(m_sf, function(.x) {
-  data.frame(theta = "Fraction contacts reduced", value = 1 - .x$post$f2, stringsAsFactors = FALSE)
+  data.frame(theta = "Fraction of contacts removed", value = 1 - .x$post$f2, stringsAsFactors = FALSE)
 }, .id = "Scenario")
 theta_df <- bind_rows(R0, f2) %>% as_tibble()
 my_limits <- function(x) if (max(x) < 2) c(0, 1) else c(2.6, 3.5)
@@ -123,7 +123,7 @@ R0 <- purrr::map_df(m_sens, function(.x) {
   data.frame(theta = "R0b", value = .x$post$R0, stringsAsFactors = FALSE)
 }, .id = "Scenario")
 f2 <- purrr::map_df(m_sens, function(.x) {
-  data.frame(theta = "Fraction contacts reduced", value = 1 - .x$post$f2, stringsAsFactors = FALSE)
+  data.frame(theta = "Fraction of contacts removed", value = 1 - .x$post$f2, stringsAsFactors = FALSE)
 }, .id = "Scenario")
 f2 <- left_join(f2, thresh_df)
 

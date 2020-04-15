@@ -73,7 +73,7 @@ f2_hist <- ggplot(tibble(f2 = f2)) +
   ) +
   ylab("Density") +
   coord_cartesian(xlim = range(.x), expand = FALSE) +
-  xlab("Physical distancing strength") +
+  xlab("Fraction of contacts removed") +
   scale_x_continuous(breaks = seq(0, 1, 0.2)) +
   geom_vline(xintercept = 1-.57, lty = 2, col = "grey40")
 

@@ -68,7 +68,7 @@ prevalence <- purrr::map_dfr(m_fs2, get_prevalence, .id = "scenario")
 
 .m_fs <- m_fs
 
-names(.m_fs) <- paste0("Physical distancing: ", sprintf("%.0f", (1 - sd_strength) * 100), "%")
+names(.m_fs) <- paste0("Contacts removed: ", sprintf("%.0f", (1 - sd_strength) * 100), "%")
 names(.m_fs)
 
 .m_fs <- .m_fs[c(4, 5, 6)]
@@ -83,17 +83,17 @@ g1 <- make_projection_plot(.m_fs, facet = TRUE, ncol = 3, sc_order = sc_order) +
 
 # Prevalence predictions:
 
-prevalence$scenario2 <- paste0("Physical distancing: ", sprintf("%.0f", (1 - as.numeric(prevalence$scenario)) * 100), "%")
+prevalence$scenario2 <- paste0("Contacts removed: ", sprintf("%.0f", (1 - as.numeric(prevalence$scenario)) * 100), "%")
 unique(prevalence$scenario2)
 
 prevalence$scenario2_noletters <- prevalence$scenario2
 prevalence$scenario2_noletters <- factor(prevalence$scenario2_noletters,
-  levels = c("Physical distancing: 40%", "Physical distancing: 20%", "Physical distancing: 0%"
+  levels = c("Contacts removed: 40%", "Contacts removed: 20%", "Contacts removed: 0%"
 ))
 
-prevalence$scenario2 <- gsub("Physical distancing: 40%", "(D) Physical distancing: 40%", prevalence$scenario2)
-prevalence$scenario2 <- gsub("Physical distancing: 20%", "(E) Physical distancing: 20%", prevalence$scenario2)
-prevalence$scenario2 <- gsub("Physical distancing: 0%", "(F) Physical distancing: 0%", prevalence$scenario2)
+prevalence$scenario2 <- gsub("Contacts removed: 40%", "(D) Contacts removed: 40%", prevalence$scenario2)
+prevalence$scenario2 <- gsub("Contacts removed: 20%", "(E) Contacts removed: 20%", prevalence$scenario2)
+prevalence$scenario2 <- gsub("Contacts removed: 0%", "(F) Contacts removed: 0%", prevalence$scenario2)
 
 # prevalence$scenario2 <- factor(prevalence$scenario2, levels = sc_order)
 unique(prevalence$scenario2)
@@ -119,7 +119,7 @@ g_prev <- prevalence %>%
 gg <- cowplot::plot_grid(g1, g_prev, nrow = 2, align = "hv")
 ggsave("figs-ms/f-projections.png", width = 7, height = 4)
 
-.max <- filter(prevalence, scenario2_noletters == "Physical distancing: 0%") %>%
+.max <- filter(prevalence, scenario2_noletters == "Contacts removed: 0%") %>%
   pull(prevalence) %>% quantile(probs = 0.99)
 g <- g_prev + coord_cartesian(
   expand = FALSE, ylim = c(0, .max),

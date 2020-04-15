@@ -1,14 +1,16 @@
 library(future)
 source("data-model-prep.R")
 
-# m <- fit_seeiqr(daily_diffs, seeiqr_model = seeiqr_model, iter = 1000, chains = 8)
+# m <- fit_seeiqr(daily_diffs, seeiqr_model = seeiqr_model, iter = 2000, chains = 8)
 # print(m$fit, pars = c("R0", "f2", "phi"))
-# saveRDS(m, file = "data-generated/main-fit.rds")
-m <- readRDS("data-generated/main-fit.rds")
+# saveRDS(m, file = "data-generated/main-fit-2000.rds")
+m <- readRDS("data-generated/main-fit-2000.rds")
 
 .last_day <- m$last_day_obs
 .last_day
 .f2_now <- round(mean(m$post$f2), 2)
+write_tex(100*(1-.f2_now), "currentPercInCycles")
+write_tex((1-.f2_now), "currentFracInCycles")
 
 sdtiming_cycle_4x4 <- function(
   t, start_decline = 15, end_decline = 22, last_obs = .last_day,

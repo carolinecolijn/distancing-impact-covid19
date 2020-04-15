@@ -165,3 +165,31 @@ write_tex <- function(x, macro, ...) {
   paste0("\\newcommand{\\", macro, "}{", x, "}") %>%
     readr::write_lines("figs-ms/values.tex", append = TRUE)
 }
+
+get_prevalence_slope <- function(obj, f_val) {
+  post <- obj$post
+  variables_df <- dplyr::tibble(
+    variable = names(obj$state_0),
+    variable_num = seq_along(obj$state_0)
+  )
+  ts_df <- dplyr::tibble(time = obj$time, time_num = seq_along(obj$time))
+  states <- reshape2::melt(post$y_hat) %>%
+    dplyr::rename(time_num = Var2, variable_num = Var3) %>%
+    dplyr::left_join(variables_df, by = "variable_num") %>%
+    dplyr::left_join(ts_df, by = "time_num") %>%
+    as_tibble()
+  temp <- states %>%
+    dplyr::filter(time > max(states$time) - 30, variable %in% c("I", "Id")) %>%
+    group_by(iterations, time) %>%
+    summarize(I = value[variable == "I"], Id = value[variable == "Id"],
+      prevalence = I + Id)
+  iters <- temp %>% group_by(iterations) %>% summarise(iter = iterations[[1]])
+  temp %>%
+    group_by(iterations) %>%
+    group_split() %>%
+    purrr::map(~lm(log(prevalence) ~ time, data = .x)) %>%
+    purrr::map_df(~tibble(slope = coef(.x)[[2]])) %>%
+    mutate(f = f_val) %>%
+    ungroup() %>%
+    mutate(iterations = iters$iter)
+}

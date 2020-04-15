@@ -15,7 +15,7 @@ rm(list = ls())
 source("06-cycle-f2.R")
 rm(list = ls())
 
-source("07-other.R")
+source("07-threshold.R")
 rm(list = ls())
 
 source("08-f-projections.R")

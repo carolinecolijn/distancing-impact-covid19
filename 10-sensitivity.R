@@ -101,7 +101,8 @@ get_thresh <- function(.pars) {
   fs <- seq(0.25, 1, 0.25)
   m_fs <- purrr::map(fs, function(.f) {
     fit_seeiqr(
-      daily_diffs, iter = 300, chains = 1, save_state_predictions = TRUE,
+      daily_diffs, pars = .pars,
+      iter = 300, chains = 1, save_state_predictions = TRUE,
       seeiqr_model = seeiqr_model, fixed_f_forecast = .f)
   })
   slopes <- purrr::map2_df(m_fs, fs, get_prevalence_slope)

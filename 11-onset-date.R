@@ -178,26 +178,6 @@ hosp_plot <- ggplot(h, aes(date, Count, colour = Type)) +
   ylab("Census count") +
   labs(colour = "Census type", shape = "Census type")
 
-ggplot(h, aes(date, Count, fill = Type)) +
-  # geom_point(aes(shape = Type)) +
-  geom_col(aes(fill = Type)) +
-  coord_cartesian(
-    expand = FALSE, ylim = c(0, 160),
-    # xlim = range(h$date) + c(14, 1)
-    xlim = c(lubridate::ymd("2020-02-29"), .last_day)
-  ) +
-  theme(
-    axis.title.x.bottom = element_blank(),
-    legend.position = c(0.17, 0.25),
-    legend.text = element_text(size = 9),
-    legend.title = element_text(size = 11)
-  ) +
-  scale_color_manual(values = c("grey45", .hist_blue)) +
-  scale_fill_manual(values = c("grey45", .hist_blue)) +
-  scale_shape_manual(values = c(21, 19)) +
-  ylab("Census count") +
-  labs(colour = "Census type", shape = "Census type")
-
 
 g <- cowplot::plot_grid(daily_diff_plot, plotdelay2, hosp_plot, ncol = 1,
   labels = "AUTO", align = "hv",  label_x = 0.18, label_y = 0.962) +

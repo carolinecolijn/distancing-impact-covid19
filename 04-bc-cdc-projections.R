@@ -1,20 +1,33 @@
 setwd(here::here("selfIsolationModel/stan"))
 source("data-model-prep.R")
 
+dat <- readr::read_csv(here::here("nCoVDailyData/CaseCounts/BC Case Counts.csv"))
+names(dat)[names(dat) == "BC"] <- "Cases"
+dat$Date <- lubridate::dmy(dat$Date)
+dat$day <- seq_len(nrow(dat))
+dat$daily_diffs <- c(
+  dat$Cases[2] - dat$Cases[1],
+  diff(dat$Cases)
+)
+.today <- max(dat$Date)
+dat <- dplyr::filter(dat, Date >= "2020-03-01")
+daily_diffs <- c(dat$daily_diffs, 44)
+
 # id <- "2020-04-14-may1"
-id <- "2020-04-14-april12"
+id <- "2020-04-15-april16"
+.day_change <- lubridate::ymd("2020-04-16")
+.start <- lubridate::ymd("2020-03-01")
 dir.create(paste0("figs-cdc-", id), showWarnings = FALSE)
 
 # days_change_sd <- length(seq(lubridate::ymd("2020-03-01"), lubridate::ymd("2020-05-01"), by = "1 day"))
 # days_change_sd
 
-days_change_sd <- length(seq(lubridate::ymd("2020-03-01"), lubridate::ymd("2020-04-12"), by = "1 day"))
+days_change_sd <- length(seq(.start, .day_change, by = "1 day"))
 days_change_sd
-.start <- lubridate::ymd("2020-03-01")
 
-m <- fit_seeiqr(daily_diffs, seeiqr_model = seeiqr_model, iter = 1400, chains = 8)
-saveRDS(m, file = paste0("data-generated/main-fit-2000-", id, ".rds"))
-m <- readRDS(paste0("data-generated/main-fit-2000-", id, ".rds"))
+m <- fit_seeiqr(daily_diffs, seeiqr_model = seeiqr_model, iter = 1000, chains = 8)
+# saveRDS(m, file = paste0("data-generated/main-fit-2000-", id, ".rds"))
+# m <- readRDS(paste0("data-generated/main-fit-2000-", id, ".rds"))
 print(m$fit, pars = c("R0", "f2", "phi"))
 
 sd_strength <- seq(0, 1, 0.2) %>% purrr::set_names()
@@ -22,7 +35,7 @@ m_fs <- purrr::map(sd_strength, ~ {
   fit_seeiqr(
     daily_diffs,
     fixed_f_forecast = .x, day_start_fixed_f_forecast = days_change_sd,
-    seeiqr_model = seeiqr_model, chains = 8, iter = 1000
+    seeiqr_model = seeiqr_model, chains = 8, iter = 800
   )
 })
 saveRDS(m_fs, paste0("data-generated/f-proj-fits-cdc-", id, ".rds"))
@@ -34,11 +47,11 @@ ylim_c <- c(0, 4500)
 
 .coord <- coord_cartesian(
   expand = FALSE, ylim = ylim,
-  xlim = c(lubridate::ymd("2020-03-01"), lubridate::ymd("2020-06-10"))
+  xlim = c(lubridate::ymd("2020-03-01"), .today + 60)
 )
 .coord_c <- coord_cartesian(
   expand = FALSE, ylim = ylim_c,
-  xlim = c(lubridate::ymd("2020-03-01"), lubridate::ymd("2020-06-10"))
+  xlim = c(lubridate::ymd("2020-03-01"), .today + 60)
 )
 .theme <- theme(title = element_text(size = rel(0.9))) +
   theme(strip.text.x = element_text(angle = 0, hjust = 0))
@@ -134,7 +147,7 @@ get_dat_output <- function(models, cumulative = FALSE, first_date = "2020-03-01"
       ) %>%
       mutate(forecast = day > obj$last_day_obs) %>%
       mutate(day = actual_dates[day]) %>%
-      dplyr::filter(day <= lubridate::ymd("2020-06-08"))
+      dplyr::filter(day <= .today + 60)
   }, .id = "Scenario")
   out
 }

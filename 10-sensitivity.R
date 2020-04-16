@@ -2,24 +2,25 @@ source("data-model-prep.R")
 
 # Look at sample fraction scenarios -------------------------------------------
 
-sf1 <- tidyr::expand_grid(sampled_fraction1 = c(0.05), sampled_fraction2 = c(0.1, 0.2, 0.3))
-sf2 <- tidyr::expand_grid(sampled_fraction1 = c(0.1), sampled_fraction2 = c(0.2, 0.3, 0.4))
+sf1 <- tidyr::expand_grid(sampled_fraction1 = c(0.05),
+  sampled_fraction2 = c(0.1, 0.2, 0.3))
+sf2 <- tidyr::expand_grid(sampled_fraction1 = c(0.1),
+  sampled_fraction2 = c(0.2, 0.3, 0.4))
 sf <- bind_rows(sf1, sf2)
 
-library(future)
-plan(multisession, workers = parallel::detectCores())
-m_sf <- furrr::future_pmap(sf, function(sampled_fraction1, sampled_fraction2) {
+m_sf <- purrr::pmap(sf, function(sampled_fraction1, sampled_fraction2) {
   fit_seeiqr(
-    daily_diffs, chains = 1, iter = 1000,
-    sampled_fraction1 = sampled_fraction1, sampled_fraction2 = sampled_fraction2,
+    daily_diffs, chains = 6, iter = 300, save_state_predictions = TRUE,
+    sampled_fraction1 = sampled_fraction1,
+    sampled_fraction2 = sampled_fraction2,
     seeiqr_model = seeiqr_model)
 })
-plan(sequential)
 saveRDS(m_sf, file = "data-generated/sf-fit.rds")
 m_sf <- readRDS("data-generated/sf-fit.rds")
 
 purrr::walk(m_sf, ~ print(.x$fit, pars = c("R0", "f2", "phi", "sampFrac2")))
-names(m_sf) <- paste0("sampFrac1 = ", sf$sampled_fraction1, "\nsampFrac2 = ", sf$sampled_fraction2)
+names(m_sf) <- paste0("sampFrac1 = ", sf$sampled_fraction1,
+  "\nsampFrac2 = ", sf$sampled_fraction2)
 
 g_proj <- make_projection_plot(m_sf) +
   facet_grid(rows = vars(Scenario))
@@ -28,18 +29,19 @@ R0 <- purrr::map_df(m_sf, function(.x) {
   data.frame(theta = "R0b", value = .x$post$R0, stringsAsFactors = FALSE)
 }, .id = "Scenario")
 f2 <- purrr::map_df(m_sf, function(.x) {
-  data.frame(theta = "Fraction of contacts removed", value = 1 - .x$post$f2, stringsAsFactors = FALSE)
+  data.frame(theta = "Fraction of contacts removed",
+    value = 1 - .x$post$f2, stringsAsFactors = FALSE)
 }, .id = "Scenario")
 theta_df <- bind_rows(R0, f2) %>% as_tibble()
 my_limits <- function(x) if (max(x) < 2) c(0, 1) else c(2.6, 3.5)
 g_theta <- ggplot(theta_df, aes(value)) +
   facet_grid(Scenario~theta, scales = "free") +
-  geom_histogram(bins = 50, fill = .hist_blue, alpha = .7, colour = "grey90", lwd = 0.15) +
+  geom_histogram(bins = 50, fill = .hist_blue,
+    alpha = .7, colour = "grey90", lwd = 0.15) +
   coord_cartesian(expand = FALSE, ylim = c(0, NA)) +
   ylab("") +
-  scale_x_continuous(limits = my_limits) + xlab("Parameter value") + ylab("Density")
-# ggsave(paste0("figs-ms/sampFrac-grid-theta-posteriors.png"),
-#   width = 5, height = 7)
+  scale_x_continuous(limits = my_limits) +
+  xlab("Parameter value") + ylab("Density")
 
 cowplot::plot_grid(g_proj, g_theta, align = "hv", axis = "bt", rel_widths = c(1.5, 2))
 
@@ -47,9 +49,13 @@ ggsave(paste0("figs-ms/sampFrac-grid-theta-proj.png"), width = 8, height = 8)
 
 # More sensitivity tests --------------------------------------------------------------
 
-# D=4, k1=1/4, 83% . --- rationale: shorter duration all round, R0 is lower, still consistent w data, still consistent message re strength of distancing
-# D=6, k1=1/6, 83% --- rationale: longer duration all round, R0 is higher, still consistent w data & message about distancing
-# D=5, k=1/5 (which I think are now our "default" main text parameters, BUT with 70% (r/(u+r) = 0.7) -- rationale: what if we were too optimistic about the portion doing the distancing? how sensitive are the results to this choice?
+# D=4, k1=1/4, 83% . --- rationale: shorter duration all round, R0 is lower,
+# still consistent w data, still consistent message re strength of distancing
+# D=6, k1=1/6, 83% --- rationale: longer duration all round, R0 is higher, still
+# consistent w data & message about distancing D=5, k=1/5 (which I think are now
+# our "default" main text parameters, BUT with 70% (r/(u+r) = 0.7) -- rationale:
+# what if we were too optimistic about the portion doing the distancing? how
+# sensitive are the results to this choice?
 
 pars <- c(
   N = 5.1e6, D = 5, k1 = 1 / 5,
@@ -95,10 +101,6 @@ names(m_sens) <- c(
   "D = 5, k1 = 1/5, e = 0.70"
 )
 
-# proj <- make_projection_plot(m_sens, facet = FALSE, outer_quantile = c(0.25, 0.75),
-#   cols = RColorBrewer::brewer.pal(8, "Dark2"))
-# ggsave(paste0("figs-ms/sensitivity1-proj.png"), width = 7, height = 3.5)
-
 get_thresh <- function(.pars) {
   fs <- seq(0.25, 1, 0.25)
   m_fs <- purrr::map(fs, function(.f) {
@@ -126,7 +128,8 @@ R0 <- purrr::map_df(m_sens, function(.x) {
   data.frame(theta = "R0b", value = .x$post$R0, stringsAsFactors = FALSE)
 }, .id = "Scenario")
 f2 <- purrr::map_df(m_sens, function(.x) {
-  data.frame(theta = "Fraction of contacts removed", value = 1 - .x$post$f2, stringsAsFactors = FALSE)
+  data.frame(theta = "Fraction of contacts removed",
+    value = 1 - .x$post$f2, stringsAsFactors = FALSE)
 }, .id = "Scenario")
 f2 <- left_join(f2, thresh_df)
 
@@ -140,7 +143,6 @@ g_theta <- ggplot(theta_df, aes(value)) +
   ylab("") +
   scale_x_continuous(limits = my_limits) + xlab("Parameter value") + ylab("Density") +
   geom_vline(aes(xintercept = threshold), lty = 2, col = "grey50")
-# ggsave(paste0("figs-ms/sensitivity1-theta.png"), width = 5, height = 6)
 
 g_proj <- make_projection_plot(m_sens) +
   facet_grid(rows = vars(Scenario))

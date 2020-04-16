@@ -105,25 +105,25 @@ sdtiming_gradual <- function(t,
   if (t >= start_decline & t < end_decline) {
     return(f2 + (end_decline - t) * (f1 - f2) / (end_decline - start_decline))
   }
-  if (t >= end_decline)  {
+  if (t >= end_decline) {
     return(f2)
   }
 }
 
 reproject_fits <- function(.R0, .f2, .phi, .i, obj, .sdfunc = sdtiming_gradual,
-  .time = NULL, return_ode_dat = FALSE, pars = list(
-    N = 5.1e6,
-    D = 5,
-    R0 = 2.6,
-    k1 = 1 / 5,
-    k2 = 1,
-    q = 0.05,
-    r = 1,
-    ur = 0.2,
-    f1 = 1.0,
-    f2 = 0.4,
-    ratio = 0.3/0.1 # 2nd stage sampFrac
-  )) {
+                           .time = NULL, return_ode_dat = FALSE, pars = list(
+                             N = 5.1e6,
+                             D = 5,
+                             R0 = 2.6,
+                             k1 = 1 / 5,
+                             k2 = 1,
+                             q = 0.05,
+                             r = 1,
+                             ur = 0.2,
+                             f1 = 1.0,
+                             f2 = 0.4,
+                             ratio = 0.3 / 0.1 # 2nd stage sampFrac
+                           )) {
   .pars <- pars
   .pars$R0 <- .R0
   .pars$f2 <- .f2
@@ -137,7 +137,8 @@ reproject_fits <- function(.R0, .f2, .phi, .i, obj, .sdfunc = sdtiming_gradual,
     func = socdistmodel,
     parms = .pars,
     method = "rk4",
-    sdtiming = .sdfunc))
+    sdtiming = .sdfunc
+  ))
   dat <- data.frame(
     Date = seq(lubridate::ymd("2020-03-01"),
       lubridate::ymd("2020-03-01") + max_day,
@@ -155,10 +156,11 @@ reproject_fits <- function(.R0, .f2, .phi, .i, obj, .sdfunc = sdtiming_gradual,
     iterations = .i,
     R0 = .R0, f2 = .f2, phi = .phi
   )
-  if (return_ode_dat)
+  if (return_ode_dat) {
     return(dplyr::mutate(.d, iterations = .i))
-  else
+  } else {
     return(out)
+  }
 }
 
 write_tex <- function(x, macro, ...) {
@@ -181,15 +183,46 @@ get_prevalence_slope <- function(obj, f_val) {
   temp <- states %>%
     dplyr::filter(time > max(states$time) - 30, variable %in% c("I", "Id")) %>%
     group_by(iterations, time) %>%
-    summarize(I = value[variable == "I"], Id = value[variable == "Id"],
-      prevalence = I + Id)
-  iters <- temp %>% group_by(iterations) %>% summarise(iter = iterations[[1]])
+    summarize(
+      I = value[variable == "I"], Id = value[variable == "Id"],
+      prevalence = I + Id
+    )
+  iters <- temp %>%
+    group_by(iterations) %>%
+    summarise(iter = iterations[[1]])
   temp %>%
     group_by(iterations) %>%
     group_split() %>%
-    purrr::map(~lm(log(prevalence) ~ time, data = .x)) %>%
-    purrr::map_df(~tibble(slope = coef(.x)[[2]])) %>%
+    purrr::map(~ lm(log(prevalence) ~ time, data = .x)) %>%
+    purrr::map_df(~ tibble(slope = coef(.x)[[2]])) %>%
     mutate(f = f_val) %>%
     ungroup() %>%
     mutate(iterations = iters$iter)
+}
+
+get_prevalence <- function(obj, draws = 1:100, start = lubridate::ymd_hms("2020-03-01 00:00:00")) {
+  post <- obj$post
+
+  ts_df <- dplyr::tibble(time = obj$time, time_num = seq_along(obj$time))
+  variables_df <- dplyr::tibble(
+    variable = names(obj$state_0),
+    variable_num = seq_along(obj$state_0)
+  )
+  if (!"y_hat" %in% names(post)) {
+    stop("`obj` must be run with `save_state_predictions = TRUE`")
+  }
+  states <- reshape2::melt(post$y_hat) %>%
+    dplyr::rename(time_num = Var2, variable_num = Var3) %>%
+    dplyr::filter(iterations %in% draws) %>%
+    dplyr::left_join(variables_df, by = "variable_num") %>%
+    dplyr::left_join(ts_df, by = "time_num")
+  prevalence <- states %>%
+    dplyr::filter(variable %in% c("I", "Id")) %>%
+    group_by(iterations, time) %>%
+    summarize(
+      I = value[variable == "I"], Id = value[variable == "Id"],
+      prevalence = I + Id
+    ) %>%
+    mutate(day = start + lubridate::ddays(time))
+  prevalence
 }

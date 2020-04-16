@@ -35,24 +35,23 @@ g_theta <- ggplot(theta_df, aes(value)) +
   geom_histogram(bins = 50, fill = .hist_blue, alpha = .7, colour = "grey90", lwd = 0.15) +
   coord_cartesian(expand = FALSE, ylim = c(0, NA)) +
   ylab("") +
-  scale_x_continuous(limits = my_limits) + xlab("Parameter value") + ylab("Density")
+  scale_x_continuous(limits = my_limits) +
+  xlab("Parameter value") + ylab("Density")
 # ggsave(paste0("figs-ms/sampFrac-grid-theta-posteriors.png"),
 #   width = 5, height = 7)
 
-cowplot::plot_grid(g_proj, g_theta, align = "hv", axis = "bt", rel_widths = c(1.5, 2))
+.start <- lubridate::ymd_hms("2020-03-01 00:00:00")
+prevalence <- get_prevalence(m1)
+g_prev <- ggplot(prevalence, aes(day, prevalence, group = iterations)) +
+  annotate("rect", xmin = .start + lubridate::ddays(m1$last_day_obs),
+    xmax = .start + lubridate::ddays(m1$last_day_obs + 60), ymin = 0, ymax = Inf, fill = "grey95") +
+  geom_line(alpha = 0.05, col = .hist_blue) +
+  ylab("Prevalence") +
+  coord_cartesian(expand = FALSE, xlim = c(.start, .start + lubridate::ddays(m1$last_day_obs + 60)), ylim = c(0, max(prevalence$prevalence) * 1.04)) +
+  xlab("")
+g_prev
 
+cowplot::plot_grid(g_prev, g_proj, g_theta, align = "hv",
+  axis = "bt", rel_widths = c(1.2, 1.2, 2), ncol = 3)
 
-
-
-
-
-
-
-
-
-
-
-
-
-#
-# ggsave(paste0("figs-ms/sampFrac-grid-theta-proj.png"), width = 8, height = 8)
+ggsave(paste0("figs-ms/sens2-theta-proj.png"), width = 10, height = 3)

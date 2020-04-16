@@ -10,7 +10,7 @@ sf <- bind_rows(sf1, sf2)
 
 m_sf <- purrr::pmap(sf, function(sampled_fraction1, sampled_fraction2) {
   fit_seeiqr(
-    daily_diffs, chains = 6, iter = 300, save_state_predictions = TRUE,
+    daily_diffs, chains = 5, iter = 300, save_state_predictions = TRUE,
     sampled_fraction1 = sampled_fraction1,
     sampled_fraction2 = sampled_fraction2,
     seeiqr_model = seeiqr_model)
@@ -43,9 +43,24 @@ g_theta <- ggplot(theta_df, aes(value)) +
   scale_x_continuous(limits = my_limits) +
   xlab("Parameter value") + ylab("Density")
 
-cowplot::plot_grid(g_proj, g_theta, align = "hv", axis = "bt", rel_widths = c(1.5, 2))
+.start <- lubridate::ymd_hms("2020-03-01 00:00:00")
+prevalence <- purrr::map_df(m_sf, get_prevalence, .id = "Scenario")
 
-ggsave(paste0("figs-ms/sampFrac-grid-theta-proj.png"), width = 8, height = 8)
+obj <- m_sf[[1]]
+g_prev <- ggplot(prevalence, aes(day, prevalence, group = iterations)) +
+  annotate("rect", xmin = .start + lubridate::ddays(obj$last_day_obs),
+    xmax = .start + lubridate::ddays(obj$last_day_obs + 60), ymin = 0, ymax = Inf, fill = "grey95") +
+  geom_line(alpha = 0.05, col = .hist_blue) +
+  ylab("Prevalence") +
+  facet_grid(rows = vars(Scenario)) +
+  coord_cartesian(expand = FALSE, xlim = c(.start, .start + lubridate::ddays(obj$last_day_obs + 60)), ylim = c(0, max(prevalence$prevalence) * 1.04)) +
+  xlab("")
+g_prev
+
+g <- cowplot::plot_grid(g_prev, g_proj, g_theta, align = "hv",
+  axis = "bt", rel_widths = c(1.2, 1.2, 2), ncol = 3)
+
+ggsave(paste0("figs-ms/sampFrac-grid-theta-proj.png"), width = 10, height = 8)
 
 # More sensitivity tests --------------------------------------------------------------
 
@@ -147,6 +162,20 @@ g_theta <- ggplot(theta_df, aes(value)) +
 g_proj <- make_projection_plot(m_sens) +
   facet_grid(rows = vars(Scenario))
 
-cowplot::plot_grid(g_proj, g_theta, align = "hv", axis = "bt", rel_widths = c(1.5, 2))
+# prev:
+
+obj <- m_sens[[1]]
+g_prev <- ggplot(prevalence, aes(day, prevalence, group = iterations)) +
+  annotate("rect", xmin = .start + lubridate::ddays(obj$last_day_obs),
+    xmax = .start + lubridate::ddays(obj$last_day_obs + 60), ymin = 0, ymax = Inf, fill = "grey95") +
+  geom_line(alpha = 0.05, col = .hist_blue) +
+  ylab("Prevalence") +
+  facet_grid(rows = vars(Scenario)) +
+  coord_cartesian(expand = FALSE, xlim = c(.start, .start + lubridate::ddays(obj$last_day_obs + 60)), ylim = c(0, max(prevalence$prevalence) * 1.04)) +
+  xlab("")
+# g_prev
+
+g <- cowplot::plot_grid(g_prev, g_proj, g_theta, align = "hv",
+  axis = "bt", rel_widths = c(1.2, 1.2, 2), ncol = 3)
 
 ggsave(paste0("figs-ms/sensitivity1-theta-proj.png"), width = 8, height = 6)

@@ -1,37 +1,37 @@
 # Make all the figures for the paper:
 
-setwd(here::here("analysis"))
+library("here")
 
-source("01-simulation-test.R")
+source(here("analysis/01-simulation-test.R"))
+
 rm(list = ls()) # to avoid 'future' package exporting large objects
-
-source("05-main-fig.R")
-
-rm(list = ls())
-source("06-cycle-f2.R")
+source(here("analysis/05-main-fig.R"))
 
 rm(list = ls())
-source("07-threshold.R")
+source(here("analysis/06-cycle-f2.R"))
 
 rm(list = ls())
-source("08-f-projections.R")
+source(here("analysis/07-threshold.R"))
 
 rm(list = ls())
-source("09-delay.R")
+source(here("analysis/08-f-projections.R"))
 
 rm(list = ls())
-source("09-rw.R")
+source(here("analysis/09-delay.R"))
 
 rm(list = ls())
-source("10-sensitivity.R")
+source(here("analysis/09-rw.R"))
+
+rm(list = ls())
+source(here("analysis/10-sensitivity.R"))
 
 if (Sys.info()[["user"]] == "seananderson") {
   # Data cannot be publicly released:
-  source("11-onset-date.R")
+  source(here("analysis/11-onset-date.R"))
 }
-source("13-timeline.R")
+source(here("analysis/13-timeline.R"))
 
 rm(list = ls())
-source("14-sensitivity2.R")
+source(here("analysis/14-sensitivity2.R"))
 
-source("99-optimize.R")
+source(here("analysis/99-optimize.R"))

@@ -1,8 +1,8 @@
-setwd(here::here("."))
-library(rstan)
-library(dplyr)
-library(ggplot2)
-library(future)
+library("rstan")
+library("dplyr")
+library("ggplot2")
+library("future")
+library("here")
 rstan_options(auto_write = TRUE)
 dir.create("data-generated", showWarnings = FALSE)
 dir.create("figs-ms", showWarnings = FALSE)
@@ -10,7 +10,7 @@ dir.create("figs", showWarnings = FALSE)
 options(mc.cores = parallel::detectCores() / 2)
 # remotes::install_github("seananderson/ggsidekick")
 theme_set(ggsidekick::theme_sleek())
-dat <- here::here("data-raw/BC-Case-Counts_09.04.2020.csv") %>%
+dat <- here("data-raw/BC-Case-Counts_09.04.2020.csv") %>%
   readr::read_csv(col_types = readr::cols(
   Date = readr::col_character(),
   BC = readr::col_double(),
@@ -35,10 +35,11 @@ tibble(
   date = seq(dat$Date[1], lubridate::ymd(.today), by = "1 day"),
   cases = daily_diffs
 ) %>%
-  readr::write_csv("data-generated/daily-cases.csv")
-seeiqr_model <- rstan::stan_model("analysis/seeiqr.stan")
-source("analysis/fit_seeiqr.R")
-source("analysis/functions_sir.R")
-source("analysis/make_projection_plot.R")
+  readr::write_csv(here("data-generated/daily-cases.csv"))
+seeiqr_model <- rstan::stan_model(here("analysis/seeiqr.stan"))
+source(here("analysis/fit_seeiqr.R"))
+source(here("analysis/functions_sir.R"))
+source(here("analysis/make_projection_plot.R"))
+source(here("analysis/make_quick_plots.R"))
 
 .hist_blue <- RColorBrewer::brewer.pal(6, "Blues")[5]

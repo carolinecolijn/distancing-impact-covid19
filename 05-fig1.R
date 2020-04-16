@@ -6,9 +6,14 @@ saveRDS(m, file = "data-generated/main-fit-2000.rds")
 m <- readRDS("data-generated/main-fit-2000.rds")
 
 sd_est <- sprintf("%.0f", 100 * (1 - round(quantile(m$post$f2, c(0.05, 0.5, 0.95)), 2)))
-write_tex(sd_est[1], "fracEstUpr")
-write_tex(sd_est[2], "fracEstMed")
-write_tex(sd_est[3], "fracEstLwr")
+sd_est_frac <- sprintf("%.2f", (1 - round(quantile(m$post$f2, c(0.05, 0.5, 0.95)), 2)))
+write_tex(sd_est_frac[1], "fracEstUpr")
+write_tex(sd_est_frac[2], "fracEstMed")
+write_tex(sd_est_frac[3], "fracEstLwr")
+
+write_tex(sd_est[1], "percEstUpr")
+write_tex(sd_est[2], "percEstMed")
+write_tex(sd_est[3], "percEstLwr")
 
 sd_est <- sprintf("%.2f", round(quantile(m$post$f2, c(0.05, 0.5, 0.95)), 2))
 write_tex(sd_est[3], "fTwoEstUpr")
@@ -68,9 +73,9 @@ f2_hist <- ggplot(tibble(f2 = f2)) +
   ) +
   ylab("Density") +
   coord_cartesian(xlim = range(.x), expand = FALSE) +
-  xlab("Physical distancing strength") +
+  xlab("Fraction of contacts removed") +
   scale_x_continuous(breaks = seq(0, 1, 0.2)) +
-  geom_vline(xintercept = .57, lty = 2, col = "grey40")
+  geom_vline(xintercept = 1-.57, lty = 2, col = "grey40")
 
 f2_hist
 

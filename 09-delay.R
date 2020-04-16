@@ -43,6 +43,18 @@ states_timing <- states %>% mutate(start_decline = obj$stan_data$x_r[['start_dec
 ggplot(states_timing, aes(prevalence_peak - start_decline)) + geom_histogram()
 ggplot(states_timing, aes(prevalence_peak - end_decline)) + geom_histogram()
 
+v <- round(quantile(states_timing$prevalence_peak - states_timing$start_decline, probs = c(0.05, 0.5, 0.95)), 0)
+
+write_tex(v[[1]], "prevDelayFifteenthLwr")
+write_tex(v[[2]], "prevDelayFifteenthMed")
+write_tex(v[[3]], "prevDelayFifteenthUpr")
+
+v <- round(quantile(states_timing$prevalence_peak - 12, probs = c(0.05, 0.5, 0.95)), 0)
+
+write_tex(v[[1]], "prevDelayTwelfthLwr")
+write_tex(v[[2]], "prevDelayTwelfthMed")
+write_tex(v[[3]], "prevDelayTwelfthUpr")
+
 # round(mean(both$case_peak - both$prevalence_peak), 1)
 v <- round(quantile(both$case_peak - both$prevalence_peak, probs = c(0.05, 0.5, 0.95)), 1)
 

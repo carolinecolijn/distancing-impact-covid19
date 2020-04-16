@@ -46,7 +46,7 @@ ylim_c <- c(0, 4500)
 .vline <- geom_vline(xintercept = .start + days_change_sd - 1, lty = 2, alpha = 0.4)
 
 .m_fs <- m_fs
-names(.m_fs) <- paste0("Physical distancing: ", sprintf("%.0f", (1 - sd_strength) * 100), "%")
+names(.m_fs) <- paste0("Percentage of contacts removed: ", sprintf("%.0f", (1 - sd_strength) * 100), "%")
 names(.m_fs)
 sc_order <- names(.m_fs)
 
@@ -87,7 +87,7 @@ purrr::walk(seq_along(.m_fs), ~ make_one_panel_cumulative(.m_fs[[.x]], names(.m_
 
 sd_est <- sprintf("%.0f", 100 * (1 - round(quantile(m$post$f2, c(0.05, 0.5, 0.95)), 2)))
 sd_text <- paste0(
-  "Physical distancing: ",
+  "Percentage of contacts removed: ",
   sd_est[[2]], "% (90% CI: ", sd_est[3], "–", sd_est[1], "%)"
 )
 sd_text

@@ -3,7 +3,7 @@ rstan_options(auto_write = TRUE)
 library(ggplot2)
 
 x_r <- c(
-  N = 4.4e6, # population of BC in thousands
+  N = 5.1e6, # population of BC in thousands
   D = 4,
   k1 = 1 / 4,
   k2 = 1,
@@ -71,7 +71,7 @@ ggplot(states, aes(day, value)) +
 source("functions_sir.R")
 
 pars <- list(
-  N = 4.4e6, # population of BC
+  N = 5.1e6, # population of BC
   D = 4,
   R0 = 2.65,
   k1 = 1 / 4,

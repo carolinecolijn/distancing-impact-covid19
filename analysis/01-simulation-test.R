@@ -189,8 +189,8 @@ check_sim_theta <- function(.par) {
     xlab("Simulation")
 }
 
-g1 <- check_sim_theta("R0")
-g2 <- check_sim_theta("phi")
-g3 <- check_sim_theta("f2")
+g1 <- check_sim_theta("R0") + ylab(expression(italic(R[0 * plain(b)])))
+g2 <- check_sim_theta("phi") + coord_cartesian(ylim = c(0, 30)) + ylab(expression(phi))
+g3 <- check_sim_theta("f2") + ylab(expression(f[2]))
 cowplot::plot_grid(g1, g2, g3, ncol = 1)
 ggsave("figs-ms/R-sim-test-theta.png", width = 6, height = 7)

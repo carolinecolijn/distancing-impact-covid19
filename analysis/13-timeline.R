@@ -1,6 +1,6 @@
 library(ggplot2)
 
-d <- readr::read_csv("timeline.csv", comment = "#")
+d <- readr::read_csv(here::here("data-raw/timeline.csv"), comment = "#")
 
 d$event <- gsub("Canada", "Canada\n", d$event)
 d$type <- c("A", rep("B", length(d$event) - 1))

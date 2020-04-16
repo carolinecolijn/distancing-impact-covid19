@@ -94,7 +94,7 @@ generated quantities {
     for (t in 1:T) {
       ft[t] = 0;
       if (t <= time_day_id[n]) { // FIXME: < or <=?
-        ft[t] = sampFrac[t] * x_r[4] * (y_hat[t,2] + y_hat[t,3]) *
+        ft[t] = sampFrac[t] * x_r[4] * (y_hat[t,3] + y_hat[t,9]) *
                 exp(weibull_lpdf(days[n] - time[t] | delayShape, delayScale));
       }
     }

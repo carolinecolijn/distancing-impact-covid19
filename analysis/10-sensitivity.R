@@ -85,8 +85,8 @@ pars1[['D']] <- 4
 pars1[['k1']] <- 1/4
 
 m1 <- fit_seeiqr(
-  daily_diffs, chains = 8, iter = 400,
-  pars = pars1,
+  daily_diffs, chains = 8, iter = 300,
+  pars = pars1, save_state_predictions = TRUE,
   seeiqr_model = seeiqr_model)
 
 pars2 <- pars
@@ -94,8 +94,8 @@ pars2[['D']] <- 6
 pars2[['k1']] <- 1/6
 
 m2 <- fit_seeiqr(
-  daily_diffs, chains = 8, iter = 400,
-  pars = pars2,
+  daily_diffs, chains = 8, iter = 300,
+  pars = pars2, save_state_predictions = TRUE,
   seeiqr_model = seeiqr_model)
 
 pars3 <- pars
@@ -104,8 +104,8 @@ pars3[['k1']] <- 1/5
 pars3[['ur']] <- 0.3/0.7 # 70%
 
 m3 <- fit_seeiqr(
-  daily_diffs, chains = 8, iter = 400,
-  pars = pars3,
+  daily_diffs, chains = 8, iter = 300,
+  pars = pars3, save_state_predictions = TRUE,
   seeiqr_model = seeiqr_model)
 
 m_sens <- list(m1, m2, m3)
@@ -164,6 +164,9 @@ g_proj <- make_projection_plot(m_sens) +
 
 # prev:
 
+.start <- lubridate::ymd_hms("2020-03-01 00:00:00")
+prevalence <- purrr::map_df(m_sens, get_prevalence, .id = "Scenario")
+
 obj <- m_sens[[1]]
 g_prev <- ggplot(prevalence, aes(day, prevalence, group = iterations)) +
   annotate("rect", xmin = .start + lubridate::ddays(obj$last_day_obs),
@@ -178,4 +181,4 @@ g_prev <- ggplot(prevalence, aes(day, prevalence, group = iterations)) +
 g <- cowplot::plot_grid(g_prev, g_proj, g_theta, align = "hv",
   axis = "bt", rel_widths = c(1.2, 1.2, 2), ncol = 3)
 
-ggsave(paste0("figs-ms/sensitivity1-theta-proj.png"), width = 8, height = 6)
+ggsave(paste0("figs-ms/sensitivity1-theta-proj.png"), width = 10, height = 6)

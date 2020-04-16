@@ -20,6 +20,8 @@ write_tex(sd_est[3], "fTwoEstUpr")
 write_tex(sd_est[2], "fTwoEstMed")
 write_tex(sd_est[1], "fTwoEstLwr")
 
+write_tex(sum(daily_diffs) + 8, "totalCases")
+
 source("make_quick_plots.R")
 make_quick_plots(m, id = "-ms-main", ext = ".png")
 file.copy("figs/traceplot-ms-main.png", "figs-ms/traceplots.png", overwrite = TRUE)

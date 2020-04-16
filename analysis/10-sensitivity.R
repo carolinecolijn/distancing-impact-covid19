@@ -92,7 +92,7 @@ ggsave(paste0("figs-ms/sampFrac-grid-theta-proj.png"), width = 10, height = 8)
 pars <- c(
   N = 5.1e6, D = 5, k1 = 1 / 5,
   k2 = 1, q = 0.05,
-  r = 1, ur = 0.2, f1 = 1.0,
+  r = 0.1, ur = 0.02, f1 = 1.0,
   start_decline = 15,
   end_decline = 22
 )

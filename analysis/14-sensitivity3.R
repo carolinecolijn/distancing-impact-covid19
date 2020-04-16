@@ -8,8 +8,8 @@ pars <- c(
   end_decline = 22
 )
 
-pars[["r"]] <- 0.1
-pars[["ur"]] <- 0.02
+pars[["r"]] <- 1
+pars[["ur"]] <- 0.2
 pars
 
 m1 <- fit_seeiqr(

@@ -7,8 +7,8 @@ pars <- list(
   k1 = 1 / 5,
   k2 = 1,
   q = 0.05,
-  r = 1,
-  ur = 0.2,
+  r = 0.1,
+  ur = 0.02,
   f1 = 1.0,
   f2 = 0.4,
   ratio = 0.3 / 0.1 # 2nd stage sampFrac

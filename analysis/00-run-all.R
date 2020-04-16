@@ -3,7 +3,7 @@
 setwd(here::here("analysis"))
 
 source("01-simulation-test.R")
-rm(list = ls()) # to avoid future package exporting large objects
+rm(list = ls()) # to avoid 'future' package exporting large objects
 
 source("05-main-fig.R")
 

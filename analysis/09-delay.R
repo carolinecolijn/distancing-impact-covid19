@@ -1,4 +1,4 @@
-source("data-model-prep.R")
+source(here::here("analysis/data-model-prep.R"))
 
 # -----------------------------------------------------------------------------
 # What is the delay between the peak prevalence (I+Id) and the peak in case counts?

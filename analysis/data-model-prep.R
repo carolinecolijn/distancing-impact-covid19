@@ -1,11 +1,12 @@
-setwd(here::here("analysis"))
+setwd(here::here("."))
 library(rstan)
 library(dplyr)
 library(ggplot2)
 library(future)
 rstan_options(auto_write = TRUE)
-dir.create("../data-generated", showWarnings = FALSE)
+dir.create("data-generated", showWarnings = FALSE)
 dir.create("figs-ms", showWarnings = FALSE)
+dir.create("figs", showWarnings = FALSE)
 options(mc.cores = parallel::detectCores() / 2)
 # remotes::install_github("seananderson/ggsidekick")
 theme_set(ggsidekick::theme_sleek())
@@ -34,10 +35,10 @@ tibble(
   date = seq(dat$Date[1], lubridate::ymd(.today), by = "1 day"),
   cases = daily_diffs
 ) %>%
-  readr::write_csv("../data-generated/daily-cases.csv")
-seeiqr_model <- rstan::stan_model("seeiqr.stan")
-source("fit_seeiqr.R")
-source("functions_sir.R")
-source("make_projection_plot.R")
+  readr::write_csv("data-generated/daily-cases.csv")
+seeiqr_model <- rstan::stan_model("analysis/seeiqr.stan")
+source("analysis/fit_seeiqr.R")
+source("analysis/functions_sir.R")
+source("analysis/make_projection_plot.R")
 
 .hist_blue <- RColorBrewer::brewer.pal(6, "Blues")[5]

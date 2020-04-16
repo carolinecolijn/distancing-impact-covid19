@@ -1,4 +1,4 @@
-source("data-model-prep.R")
+source(here::here("analysis/data-model-prep.R"))
 
 # Identify the point at which prevalence slope goes to 0: ---------------------
 

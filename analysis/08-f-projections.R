@@ -1,4 +1,4 @@
-source("data-model-prep.R")
+source(here::here("analysis/data-model-prep.R"))
 
 sd_strength <- seq(0, 1, 0.2) %>% purrr::set_names()
 m_fs <- purrr::map(sd_strength, ~ {

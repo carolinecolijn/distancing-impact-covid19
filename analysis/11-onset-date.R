@@ -1,4 +1,4 @@
-source("data-model-prep.R")
+source(here::here("analysis/data-model-prep.R"))
 
 .last_day <- lubridate::ymd("2020-04-12")
 

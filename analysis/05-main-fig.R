@@ -1,4 +1,4 @@
-source("data-model-prep.R")
+source(here::here("analysis/data-model-prep.R"))
 
 m <- fit_seeiqr(daily_diffs, seeiqr_model = seeiqr_model, iter = 2000, chains = 8)
 print(m$fit, pars = c("R0", "f2", "phi"))
@@ -115,7 +115,8 @@ prevalence <- states %>%
 g_prev <- ggplot(prevalence, aes(day, prevalence, group = iterations)) +
   annotate("rect",
     xmin = .start + lubridate::ddays(obj$last_day_obs),
-    xmax = .start + lubridate::ddays(obj$last_day_obs + 60), ymin = 0, ymax = Inf, fill = "grey95"
+    xmax = .start + lubridate::ddays(obj$last_day_obs + 60),
+    ymin = 0, ymax = Inf, fill = "grey95"
   ) +
   geom_line(alpha = 0.05, col = .hist_blue) +
   ylab("Prevalence") +
@@ -123,8 +124,8 @@ g_prev <- ggplot(prevalence, aes(day, prevalence, group = iterations)) +
   xlab("")
 g_prev
 
-# label_x = 0.21, label_y = 0.96, label_fontface = "plain", label_size = 12
-g <- cowplot::plot_grid(proj, R0_hist, g_prev, f2_hist, align = "hv", labels = "AUTO", label_size = 12, label_x = 0.213, label_y = 0.96) +
+g <- cowplot::plot_grid(proj, R0_hist, g_prev, f2_hist, align = "hv",
+  labels = "AUTO", label_size = 12, label_x = 0.213, label_y = 0.96) +
   theme(plot.margin = margin(11 / 2, 11, 11 / 2, 11 / 2))
 ggsave(paste0("figs-ms/fig1.png"), width = 6, height = 4.5, dpi = 400)
 

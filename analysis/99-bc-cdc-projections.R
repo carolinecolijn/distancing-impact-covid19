@@ -1,4 +1,4 @@
-source("data-model-prep.R")
+source(here::here("analysis/data-model-prep.R"))
 
 dat <- readr::read_csv(here::here("nCoVDailyData/CaseCounts/BC Case Counts.csv"))
 names(dat)[names(dat) == "BC"] <- "Cases"

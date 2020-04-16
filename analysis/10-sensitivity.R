@@ -1,4 +1,4 @@
-source("data-model-prep.R")
+source(here::here("analysis/data-model-prep.R"))
 
 # Look at sample fraction scenarios -------------------------------------------
 

@@ -1,4 +1,4 @@
-source("data-model-prep.R")
+source(here::here("analysis/data-model-prep.R"))
 
 pars <- c(
   N = 5.1e6, D = 5, k1 = 1 / 5,

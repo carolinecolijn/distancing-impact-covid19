@@ -5,8 +5,10 @@ print(m$fit, pars = c("R0", "f2", "phi"))
 saveRDS(m, file = "data-generated/main-fit-2000.rds")
 m <- readRDS("data-generated/main-fit-2000.rds")
 
-sd_est <- sprintf("%.0f", 100 * (1 - round(quantile(m$post$f2, c(0.05, 0.5, 0.95)), 2)))
-sd_est_frac <- sprintf("%.2f", (1 - round(quantile(m$post$f2, c(0.05, 0.5, 0.95)), 2)))
+sd_est <- sprintf("%.0f",
+  100 * (1 - round(quantile(m$post$f2, c(0.05, 0.5, 0.95)), 2)))
+sd_est_frac <- sprintf("%.2f",
+  (1 - round(quantile(m$post$f2, c(0.05, 0.5, 0.95)), 2)))
 write_tex(sd_est_frac[1], "fracEstUpr")
 write_tex(sd_est_frac[2], "fracEstMed")
 write_tex(sd_est_frac[3], "fracEstLwr")
@@ -24,8 +26,10 @@ write_tex(sum(daily_diffs) + 8, "totalCases")
 
 source("make_quick_plots.R")
 make_quick_plots(m, id = "-ms-main", ext = ".png")
-file.copy("figs/traceplot-ms-main.png", "figs-ms/traceplots.png", overwrite = TRUE)
-file.copy("figs/posterior-predictive-case-diffs-facet-ms-main.png", "figs-ms/post-pred-reps.png", overwrite = TRUE)
+file.copy("figs/traceplot-ms-main.png", "figs-ms/traceplots.png",
+  overwrite = TRUE)
+file.copy("figs/posterior-predictive-case-diffs-facet-ms-main.png",
+  "figs-ms/post-pred-reps.png", overwrite = TRUE)
 
 # fewer samples for plot:
 m500 <- fit_seeiqr(daily_diffs,

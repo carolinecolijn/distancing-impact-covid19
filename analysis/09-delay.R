@@ -1,7 +1,8 @@
 source(here::here("analysis/data-model-prep.R"))
 
 # -----------------------------------------------------------------------------
-# What is the delay between the peak prevalence (I+Id) and the peak in case counts?
+# What is the delay between the peak prevalence (I+Id) and the peak in case
+# counts?
 
 m_peak <- readRDS("data-generated/main-fit-500.rds")
 

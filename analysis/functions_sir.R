@@ -29,7 +29,6 @@ getlambd <- function(out,
     sampFrac,
     sampFrac * pars$ratio
   )
-  # print(thisSamp)
   # each of the past times' contribution to this day's case count
   ft <- thisSamp * incoming * dweibull(
     x = max(out$time[ii]) - out$time[ii],
@@ -54,7 +53,6 @@ getlambd <- function(out,
 #'   r/(r+ur): frac of population who are distancing
 #' @param sdtiming timing of social distancing
 #' @return time derivatives for input to ODE solver
-
 socdistmodel <- function(t,
                          state,
                          parms,
@@ -202,7 +200,8 @@ get_prevalence_slope <- function(obj, f_val) {
     mutate(iterations = iters$iter)
 }
 
-get_prevalence <- function(obj, draws = 1:100, start = lubridate::ymd_hms("2020-03-01 00:00:00")) {
+get_prevalence <- function(obj, draws = 1:100,
+                           start = lubridate::ymd_hms("2020-03-01 00:00:00")) {
   post <- obj$post
 
   ts_df <- dplyr::tibble(time = obj$time, time_num = seq_along(obj$time))

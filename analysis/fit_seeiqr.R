@@ -48,8 +48,10 @@
 #' @param ode_control Control options for the Stan ODE solver. First is relative
 #'   difference, that absolute difference, and then maximum iterations. The
 #'   values here are the Stan defaults.
-#' @param daily_cases_omit An optional vector of days to omit from the data likelihood.
+#' @param daily_cases_omit An optional vector of days to omit from the data
+#'   likelihood.
 #' @param ... Other arguments to pass to [rstan::sampling()].
+#' @author Sean Anderson
 
 fit_seeiqr <- function(daily_cases,
                        daily_tests = NULL,
@@ -191,7 +193,6 @@ fit_seeiqr <- function(daily_cases,
     T = length(time),
     days = days,
     daily_cases = daily_cases,
-    # offset = if (is.null(daily_tests)) rep(log(1), length(days)) else log(daily_tests),
     tests = if (is.null(daily_tests)) rep(log(1), length(days)) else daily_tests,
     N = length(days),
     y0 = state_0,

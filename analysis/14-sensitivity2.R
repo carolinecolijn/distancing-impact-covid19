@@ -28,20 +28,20 @@ R0 <- purrr::map_df(.m1, function(.x) {
   data.frame(theta = "R0b", value = .x$post$R0, stringsAsFactors = FALSE)
 }, .id = "Scenario")
 f2 <- purrr::map_df(.m1, function(.x) {
-  data.frame(theta = "Fraction of contacts removed", value = 1 - .x$post$f2, stringsAsFactors = FALSE)
+  data.frame(theta = "Fraction of contacts removed",
+    value = 1 - .x$post$f2, stringsAsFactors = FALSE)
 }, .id = "Scenario")
 theta_df <- bind_rows(R0, f2) %>% as_tibble()
 my_limits <- function(x) if (max(x) < 2) c(0, 1) else c(2.6, 3.5)
 g_theta <- ggplot(theta_df, aes(value)) +
   facet_grid(Scenario ~ theta, scales = "free") +
-  geom_histogram(bins = 50, fill = .hist_blue, alpha = .7, colour = "grey90", lwd = 0.15) +
+  geom_histogram(bins = 50, fill = .hist_blue, alpha = .7,
+    colour = "grey90", lwd = 0.15) +
   coord_cartesian(expand = FALSE, ylim = c(0, NA)) +
   ylab("") +
   scale_x_continuous(limits = my_limits) +
   xlab("Parameter value") +
   ylab("Density")
-# ggsave(paste0("figs-ms/sampFrac-grid-theta-posteriors.png"),
-#   width = 5, height = 7)
 
 .start <- lubridate::ymd_hms("2020-03-01 00:00:00")
 prevalence <- get_prevalence(m1)

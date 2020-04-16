@@ -24,7 +24,11 @@ source("09-rw.R")
 
 rm(list = ls())
 source("10-sensitivity.R")
-source("11-onset-date.R")
+
+if (Sys.info()[["user"]] == "seananderson") {
+  # Data cannot be publicly released:
+  source("11-onset-date.R")
+}
 source("13-timeline.R")
 
 rm(list = ls())

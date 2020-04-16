@@ -15,7 +15,6 @@ slopes <- purrr::map2_df(m_fs, fs, get_prevalence_slope)
 ggplot(slopes, aes(f, slope)) +
   geom_point(alpha = 0.1)
 
-# slopes$inverse_f <- 1-slopes$f
 mlm <- lm(slope ~ f, data = slopes)
 nd <- data.frame(f = seq(0, 1, length.out = 5000))
 nd$predicted_slope <- predict(mlm, newdata = nd)
@@ -36,10 +35,9 @@ write_tex(round(thresh, 2), "thresholdFtwo")
 
 # Joint posterior plot with prevalence colouring: -----------------------------
 
-# m_yhat <- fit_seeiqr(
-#   daily_diffs, iter = 200, chains = 8, save_state_predictions = TRUE,
-#   seeiqr_model = seeiqr_model)
-m_yhat <- readRDS("data-generated/main-fit-500.rds")
+m_yhat <- fit_seeiqr(
+  daily_diffs, iter = 200, chains = 8, save_state_predictions = TRUE,
+  seeiqr_model = seeiqr_model)
 
 joint_post <- tibble(R0 = m_yhat$post$R0, f2 = m_yhat$post$f2, iterations = seq_along(f2))
 prev_slopes <- get_prevalence_slope(m_yhat, "estimated") %>%

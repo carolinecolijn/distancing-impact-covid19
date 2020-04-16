@@ -80,9 +80,7 @@ names(.m_fs) <- paste0("(", LETTERS[1:3], ") ", names(.m_fs))
 names(.m_fs)
 sc_order <- names(.m_fs)
 g1 <- make_projection_plot(.m_fs, facet = TRUE, ncol = 3, sc_order = sc_order) +
-  .theme + .coord #+ theme(axis.text.x.bottom = element_blank())
-
-# names(m_bccdc) <- paste0("Contact fraction: ", sprintf("%.1f", sd_strength))
+  .theme + .coord
 
 # Prevalence predictions:
 
@@ -94,11 +92,13 @@ prevalence$scenario2_noletters <- factor(prevalence$scenario2_noletters,
   levels = c("Contacts removed: 40%", "Contacts removed: 20%", "Contacts removed: 0%")
 )
 
-prevalence$scenario2 <- gsub("Contacts removed: 40%", "(D) Contacts removed: 40%", prevalence$scenario2)
-prevalence$scenario2 <- gsub("Contacts removed: 20%", "(E) Contacts removed: 20%", prevalence$scenario2)
-prevalence$scenario2 <- gsub("Contacts removed: 0%", "(F) Contacts removed: 0%", prevalence$scenario2)
+prevalence$scenario2 <- gsub("Contacts removed: 40%",
+  "(D) Contacts removed: 40%", prevalence$scenario2)
+prevalence$scenario2 <- gsub("Contacts removed: 20%",
+  "(E) Contacts removed: 20%", prevalence$scenario2)
+prevalence$scenario2 <- gsub("Contacts removed: 0%",
+  "(F) Contacts removed: 0%", prevalence$scenario2)
 
-# prevalence$scenario2 <- factor(prevalence$scenario2, levels = sc_order)
 unique(prevalence$scenario2)
 
 .coord_prev <- coord_cartesian(

@@ -29,7 +29,6 @@ make_quick_plots <- function(obj, id = "", ext = ".pdf", first_date = "2020-03-0
       fill = "blue", alpha = 0.5
     ) +
     coord_cartesian(xlim = range(.x), expand = FALSE)
-  # ggsave(paste0("figs/R0", id, ext), width = 6, height = 4)
 
   f2 <- post$f2
   .x <- seq(0, 1, length.out = 200)

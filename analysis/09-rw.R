@@ -14,7 +14,8 @@ m_rw <- fit_seeiqr(
 saveRDS(m_rw, file = "data-generated/rw-fit.rds")
 m_rw <- readRDS("data-generated/rw-fit.rds")
 
-.days <- seq(lubridate::ymd("2020-03-01"), lubridate::ymd("2020-03-01") + 42, by = "1 day")
+.days <- seq(lubridate::ymd("2020-03-01"),
+  lubridate::ymd("2020-03-01") + 42, by = "1 day")
 g1 <- m_rw$post$sampFrac2 %>%
   reshape2::melt() %>%
   as_tibble() %>%

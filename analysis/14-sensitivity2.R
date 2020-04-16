@@ -8,8 +8,8 @@ pars <- c(
   end_decline = 22
 )
 
-pars[["r"]] <- 0.1
-pars[["ur"]] <- 0.02
+pars[["r"]] <- 1
+pars[["ur"]] <- 0.2
 pars
 
 m1 <- fit_seeiqr(
@@ -20,7 +20,7 @@ m1 <- fit_seeiqr(
 )
 print(m1$fit, pars = c("R0", "f2", "phi"))
 
-.m1 <- list("r = 0.1; ur = 0.02" = m1)
+.m1 <- list("r = 1; ur = 0.2" = m1)
 g_proj <- make_projection_plot(.m1) +
   facet_grid(rows = vars(Scenario))
 

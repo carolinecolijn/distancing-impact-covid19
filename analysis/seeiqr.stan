@@ -144,7 +144,7 @@ transformed parameters {
     for (t in 1:T) {
       ft[t] = 0; // initialize at 0 across the full 1:T
     }
-    for (t in time_day_id0[n]:time_day_id[n]) { // t is an increment here starting at 1
+    for (t in time_day_id0[n]:time_day_id[n]) { // t is an increment here
       k2 = x_r[4];
       E2 = y_hat[t,3];
       E2d = y_hat[t,9];
@@ -182,9 +182,6 @@ model {
     // D(expression(1/sqrt(x)), "x"); log(0.5 * x^-0.5/sqrt(x)^2
     1/sqrt(phi[1]) ~ normal(0, phi_prior);
     target += log(0.5) - 1.5 * log(phi[1]); // Jacobian adjustment
-
-    // 1/phi[1] ~ normal(0, phi_prior);
-    // target += -2 * log(phi[1]); // Jacobian adjustment
   }
   if (est_phi && obs_model == 2) { // Beta-Binomial
     phi[1] ~ normal(0, phi_prior);

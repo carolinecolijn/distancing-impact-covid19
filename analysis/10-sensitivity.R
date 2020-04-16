@@ -122,7 +122,7 @@ m2 <- fit_seeiqr(
 pars3 <- pars
 pars3[["D"]] <- 5
 pars3[["k1"]] <- 1 / 5
-pars3[["ur"]] <- 0.3 / 0.7 # 70%
+pars3[["ur"]] <- getu(f = 0.7, r = 0.1) # 70%
 
 m3 <- fit_seeiqr(
   daily_diffs,

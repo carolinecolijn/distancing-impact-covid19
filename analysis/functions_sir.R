@@ -227,3 +227,5 @@ get_prevalence <- function(obj, draws = 1:100,
     mutate(day = start + lubridate::ddays(time))
   prevalence
 }
+
+getu <- function(f, r) (r - f*r) / f

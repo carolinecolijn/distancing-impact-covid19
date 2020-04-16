@@ -1,5 +1,5 @@
 source("data-model-prep.R")
-library(future)
+
 # Identify the point at which prevalence slope goes to 0: ---------------------
 
 fs <- seq(0.2, 1, 0.2)

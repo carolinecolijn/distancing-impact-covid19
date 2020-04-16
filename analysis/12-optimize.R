@@ -1,5 +1,5 @@
-if (!identical(.Platform$OS.type, "windows")) {
-  files_per_core <- 4
+if (Sys.info()[["user"]] == "seananderson") {
+  files_per_core <- 2
   setwd("figs-ms")
   system(paste0(
     "find -X . -name '*.png' -print0 | xargs -0 -n ",

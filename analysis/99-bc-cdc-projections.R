@@ -1,4 +1,3 @@
-setwd(here::here("selfIsolationModel/stan"))
 source("data-model-prep.R")
 
 dat <- readr::read_csv(here::here("nCoVDailyData/CaseCounts/BC Case Counts.csv"))

@@ -20,14 +20,17 @@ states <- reshape2::melt(post$y_hat) %>%
   mutate(day = floor(time)) %>%
   dplyr::filter(variable %in% c("I", "Id")) %>%
   group_by(iterations, time) %>%
-  summarize(I = value[variable == "I"], Id = value[variable == "Id"],
-    prevalence = I + Id) %>%
+  summarize(
+    I = value[variable == "I"], Id = value[variable == "Id"],
+    prevalence = I + Id
+  ) %>%
   group_by(iterations) %>%
   dplyr::summarise(prevalence_peak = time[prevalence == max(prevalence)])
 
 lambdas <- obj$post$lambda_d %>%
   reshape2::melt() %>%
-  dplyr::rename(day = Var2) %>% as_tibble() %>%
+  dplyr::rename(day = Var2) %>%
+  as_tibble() %>%
   rename(case_count = value) %>%
   group_by(iterations) %>%
   dplyr::summarise(case_peak = day[case_count == max(case_count)])
@@ -38,10 +41,14 @@ ggplot(tibble(delay = both$case_peak - both$prevalence_peak), aes(delay)) +
   geom_histogram(bins = 20)
 ggsave("figs/delay-peak-prevalence.png", width = 5, height = 3.5)
 
-states_timing <- states %>% mutate(start_decline = obj$stan_data$x_r[['start_decline']],
-  end_decline = obj$stan_data$x_r[['end_decline']])
-ggplot(states_timing, aes(prevalence_peak - start_decline)) + geom_histogram()
-ggplot(states_timing, aes(prevalence_peak - end_decline)) + geom_histogram()
+states_timing <- states %>% mutate(
+  start_decline = obj$stan_data$x_r[["start_decline"]],
+  end_decline = obj$stan_data$x_r[["end_decline"]]
+)
+ggplot(states_timing, aes(prevalence_peak - start_decline)) +
+  geom_histogram()
+ggplot(states_timing, aes(prevalence_peak - end_decline)) +
+  geom_histogram()
 
 v <- round(quantile(states_timing$prevalence_peak - states_timing$start_decline, probs = c(0.05, 0.5, 0.95)), 0)
 

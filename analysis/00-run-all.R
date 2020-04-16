@@ -1,6 +1,6 @@
 # Make all the figures for the paper:
 
-rm(list = ls()) # so future package doesn't export any large objects
+setwd(here::here("analysis"))
 
 source("01-simulation-test.R")
 rm(list = ls())
@@ -28,10 +28,8 @@ source("10-sensitivity.R")
 rm(list = ls())
 
 source("11-onset-date.R")
-rm(list = ls())
-
 source("13-timeline.R")
+source("14-sensitivity2.R")
 rm(list = ls())
 
 source("12-optimize.R")
-

@@ -2,25 +2,33 @@ source("data-model-prep.R")
 
 # Look at sample fraction scenarios -------------------------------------------
 
-sf1 <- tidyr::expand_grid(sampled_fraction1 = c(0.05),
-  sampled_fraction2 = c(0.1, 0.2, 0.3))
-sf2 <- tidyr::expand_grid(sampled_fraction1 = c(0.1),
-  sampled_fraction2 = c(0.2, 0.3, 0.4))
+sf1 <- tidyr::expand_grid(
+  sampled_fraction1 = c(0.05),
+  sampled_fraction2 = c(0.1, 0.2, 0.3)
+)
+sf2 <- tidyr::expand_grid(
+  sampled_fraction1 = c(0.1),
+  sampled_fraction2 = c(0.2, 0.3, 0.4)
+)
 sf <- bind_rows(sf1, sf2)
 
 m_sf <- purrr::pmap(sf, function(sampled_fraction1, sampled_fraction2) {
   fit_seeiqr(
-    daily_diffs, chains = 5, iter = 300, save_state_predictions = TRUE,
+    daily_diffs,
+    chains = 5, iter = 300, save_state_predictions = TRUE,
     sampled_fraction1 = sampled_fraction1,
     sampled_fraction2 = sampled_fraction2,
-    seeiqr_model = seeiqr_model)
+    seeiqr_model = seeiqr_model
+  )
 })
 saveRDS(m_sf, file = "data-generated/sf-fit.rds")
 m_sf <- readRDS("data-generated/sf-fit.rds")
 
 purrr::walk(m_sf, ~ print(.x$fit, pars = c("R0", "f2", "phi", "sampFrac2")))
-names(m_sf) <- paste0("sampFrac1 = ", sf$sampled_fraction1,
-  "\nsampFrac2 = ", sf$sampled_fraction2)
+names(m_sf) <- paste0(
+  "sampFrac1 = ", sf$sampled_fraction1,
+  "\nsampFrac2 = ", sf$sampled_fraction2
+)
 
 g_proj <- make_projection_plot(m_sf) +
   facet_grid(rows = vars(Scenario))
@@ -29,27 +37,34 @@ R0 <- purrr::map_df(m_sf, function(.x) {
   data.frame(theta = "R0b", value = .x$post$R0, stringsAsFactors = FALSE)
 }, .id = "Scenario")
 f2 <- purrr::map_df(m_sf, function(.x) {
-  data.frame(theta = "Fraction of contacts removed",
-    value = 1 - .x$post$f2, stringsAsFactors = FALSE)
+  data.frame(
+    theta = "Fraction of contacts removed",
+    value = 1 - .x$post$f2, stringsAsFactors = FALSE
+  )
 }, .id = "Scenario")
 theta_df <- bind_rows(R0, f2) %>% as_tibble()
 my_limits <- function(x) if (max(x) < 2) c(0, 1) else c(2.6, 3.5)
 g_theta <- ggplot(theta_df, aes(value)) +
-  facet_grid(Scenario~theta, scales = "free") +
-  geom_histogram(bins = 50, fill = .hist_blue,
-    alpha = .7, colour = "grey90", lwd = 0.15) +
+  facet_grid(Scenario ~ theta, scales = "free") +
+  geom_histogram(
+    bins = 50, fill = .hist_blue,
+    alpha = .7, colour = "grey90", lwd = 0.15
+  ) +
   coord_cartesian(expand = FALSE, ylim = c(0, NA)) +
   ylab("") +
   scale_x_continuous(limits = my_limits) +
-  xlab("Parameter value") + ylab("Density")
+  xlab("Parameter value") +
+  ylab("Density")
 
 .start <- lubridate::ymd_hms("2020-03-01 00:00:00")
 prevalence <- purrr::map_df(m_sf, get_prevalence, .id = "Scenario")
 
 obj <- m_sf[[1]]
 g_prev <- ggplot(prevalence, aes(day, prevalence, group = iterations)) +
-  annotate("rect", xmin = .start + lubridate::ddays(obj$last_day_obs),
-    xmax = .start + lubridate::ddays(obj$last_day_obs + 60), ymin = 0, ymax = Inf, fill = "grey95") +
+  annotate("rect",
+    xmin = .start + lubridate::ddays(obj$last_day_obs),
+    xmax = .start + lubridate::ddays(obj$last_day_obs + 60), ymin = 0, ymax = Inf, fill = "grey95"
+  ) +
   geom_line(alpha = 0.05, col = .hist_blue) +
   ylab("Prevalence") +
   facet_grid(rows = vars(Scenario)) +
@@ -57,8 +72,10 @@ g_prev <- ggplot(prevalence, aes(day, prevalence, group = iterations)) +
   xlab("")
 g_prev
 
-g <- cowplot::plot_grid(g_prev, g_proj, g_theta, align = "hv",
-  axis = "bt", rel_widths = c(1.2, 1.2, 2), ncol = 3)
+g <- cowplot::plot_grid(g_prev, g_proj, g_theta,
+  align = "hv",
+  axis = "bt", rel_widths = c(1.2, 1.2, 2), ncol = 3
+)
 
 ggsave(paste0("figs-ms/sampFrac-grid-theta-proj.png"), width = 10, height = 8)
 
@@ -81,32 +98,38 @@ pars <- c(
 )
 
 pars1 <- pars
-pars1[['D']] <- 4
-pars1[['k1']] <- 1/4
+pars1[["D"]] <- 4
+pars1[["k1"]] <- 1 / 4
 
 m1 <- fit_seeiqr(
-  daily_diffs, chains = 8, iter = 300,
+  daily_diffs,
+  chains = 8, iter = 300,
   pars = pars1, save_state_predictions = TRUE,
-  seeiqr_model = seeiqr_model)
+  seeiqr_model = seeiqr_model
+)
 
 pars2 <- pars
-pars2[['D']] <- 6
-pars2[['k1']] <- 1/6
+pars2[["D"]] <- 6
+pars2[["k1"]] <- 1 / 6
 
 m2 <- fit_seeiqr(
-  daily_diffs, chains = 8, iter = 300,
+  daily_diffs,
+  chains = 8, iter = 300,
   pars = pars2, save_state_predictions = TRUE,
-  seeiqr_model = seeiqr_model)
+  seeiqr_model = seeiqr_model
+)
 
 pars3 <- pars
-pars3[['D']] <- 5
-pars3[['k1']] <- 1/5
-pars3[['ur']] <- 0.3/0.7 # 70%
+pars3[["D"]] <- 5
+pars3[["k1"]] <- 1 / 5
+pars3[["ur"]] <- 0.3 / 0.7 # 70%
 
 m3 <- fit_seeiqr(
-  daily_diffs, chains = 8, iter = 300,
+  daily_diffs,
+  chains = 8, iter = 300,
   pars = pars3, save_state_predictions = TRUE,
-  seeiqr_model = seeiqr_model)
+  seeiqr_model = seeiqr_model
+)
 
 m_sens <- list(m1, m2, m3)
 purrr::walk(m_sens, ~ print(.x$fit, pars = c("R0", "f2", "phi")))
@@ -120,20 +143,22 @@ get_thresh <- function(.pars) {
   fs <- seq(0.25, 1, 0.25)
   m_fs <- purrr::map(fs, function(.f) {
     fit_seeiqr(
-      daily_diffs, pars = .pars,
+      daily_diffs,
+      pars = .pars,
       iter = 300, chains = 1, save_state_predictions = TRUE,
-      seeiqr_model = seeiqr_model, fixed_f_forecast = .f)
+      seeiqr_model = seeiqr_model, fixed_f_forecast = .f
+    )
   })
   slopes <- purrr::map2_df(m_fs, fs, get_prevalence_slope)
-  slopes$inverse_f <- 1-slopes$f
+  slopes$inverse_f <- 1 - slopes$f
   mlm <- lm(slope ~ inverse_f, data = slopes)
-  nd <- data.frame(inverse_f = 1- seq(0.3, 1, length.out = 5000))
+  nd <- data.frame(inverse_f = 1 - seq(0.3, 1, length.out = 5000))
   nd$predicted_slope <- predict(mlm, newdata = nd)
-  thresh <- dplyr::filter(nd, predicted_slope > 0) %>% `[`(1, 'inverse_f')
+  thresh <- dplyr::filter(nd, predicted_slope > 0) %>% `[`(1, "inverse_f")
   thresh
 }
-library(future)
-plan(multisession, workers = parallel::detectCores()/2)
+
+plan(multisession, workers = parallel::detectCores() / 2)
 thresholds <- furrr::future_map_dbl(list(pars1, pars2, pars3), get_thresh)
 plan(future::sequential)
 
@@ -143,8 +168,10 @@ R0 <- purrr::map_df(m_sens, function(.x) {
   data.frame(theta = "R0b", value = .x$post$R0, stringsAsFactors = FALSE)
 }, .id = "Scenario")
 f2 <- purrr::map_df(m_sens, function(.x) {
-  data.frame(theta = "Fraction of contacts removed",
-    value = 1 - .x$post$f2, stringsAsFactors = FALSE)
+  data.frame(
+    theta = "Fraction of contacts removed",
+    value = 1 - .x$post$f2, stringsAsFactors = FALSE
+  )
 }, .id = "Scenario")
 f2 <- left_join(f2, thresh_df)
 
@@ -152,11 +179,13 @@ theta_df <- bind_rows(R0, f2)
 my_limits <- function(x) if (max(x) < 2) c(0, 1) else range(R0$value) * c(0.98, 1.02)
 
 g_theta <- ggplot(theta_df, aes(value)) +
-  facet_grid(Scenario~theta, scales = "free") +
+  facet_grid(Scenario ~ theta, scales = "free") +
   geom_histogram(bins = 50, fill = .hist_blue, alpha = .7, colour = "grey90", lwd = 0.15) +
   coord_cartesian(expand = FALSE, ylim = c(0, NA)) +
   ylab("") +
-  scale_x_continuous(limits = my_limits) + xlab("Parameter value") + ylab("Density") +
+  scale_x_continuous(limits = my_limits) +
+  xlab("Parameter value") +
+  ylab("Density") +
   geom_vline(aes(xintercept = threshold), lty = 2, col = "grey50")
 
 g_proj <- make_projection_plot(m_sens) +
@@ -169,8 +198,10 @@ prevalence <- purrr::map_df(m_sens, get_prevalence, .id = "Scenario")
 
 obj <- m_sens[[1]]
 g_prev <- ggplot(prevalence, aes(day, prevalence, group = iterations)) +
-  annotate("rect", xmin = .start + lubridate::ddays(obj$last_day_obs),
-    xmax = .start + lubridate::ddays(obj$last_day_obs + 60), ymin = 0, ymax = Inf, fill = "grey95") +
+  annotate("rect",
+    xmin = .start + lubridate::ddays(obj$last_day_obs),
+    xmax = .start + lubridate::ddays(obj$last_day_obs + 60), ymin = 0, ymax = Inf, fill = "grey95"
+  ) +
   geom_line(alpha = 0.05, col = .hist_blue) +
   ylab("Prevalence") +
   facet_grid(rows = vars(Scenario)) +
@@ -178,7 +209,9 @@ g_prev <- ggplot(prevalence, aes(day, prevalence, group = iterations)) +
   xlab("")
 # g_prev
 
-g <- cowplot::plot_grid(g_prev, g_proj, g_theta, align = "hv",
-  axis = "bt", rel_widths = c(1.2, 1.2, 2), ncol = 3)
+g <- cowplot::plot_grid(g_prev, g_proj, g_theta,
+  align = "hv",
+  axis = "bt", rel_widths = c(1.2, 1.2, 2), ncol = 3
+)
 
 ggsave(paste0("figs-ms/sensitivity1-theta-proj.png"), width = 10, height = 6)

@@ -42,14 +42,16 @@ getlambd <- function(out,
 
 #' @title Social Distancing Model
 #' @author Caroline Colijn
-#' @description SEIR-type model with time-dependent social distancing. Social distancing reduces
-#'  frequency of contact. Individuals can move between distanced and not distanced compartments.
+#' @description SEIR-type model with time-dependent social distancing. Social
+#'   distancing reduces frequency of contact. Individuals can move between
+#'   distanced and not distanced compartments.
 #' @param t time
-#' @param state (S, E1, E2, I, Q, R, Sd, E1d, E2d, Id, Qd, Rd)
-#'   S: Susceptible, E1: Exposed but not infectious, E2: Exposed and Infectious, I: Infectious,
-#'   can be quarantined, R: Removed. The d compartments denote socially distanced individuals.
-#' @param pars (N, D, R0, k1, k2, q, r, ur, f)
-#'   f: strength of social distancing, r/(r+ur): frac of population who are distancing
+#' @param state (S, E1, E2, I, Q, R, Sd, E1d, E2d, Id, Qd, Rd) S: Susceptible,
+#'   E1: Exposed but not infectious, E2: Exposed and Infectious, I: Infectious,
+#'   can be quarantined, R: Removed. The d compartments denote socially
+#'   distanced individuals.
+#' @param pars (N, D, R0, k1, k2, q, r, ur, f) f: strength of social distancing,
+#'   r/(r+ur): frac of population who are distancing
 #' @param sdtiming timing of social distancing
 #' @return time derivatives for input to ODE solver
 

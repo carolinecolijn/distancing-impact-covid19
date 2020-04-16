@@ -136,20 +136,25 @@ start_date_report <- "2020-02-29"
 
 dat2 <- select(dat, Date, daily_diffs)
 if (max(dat2$Date) == "2020-04-08") {
-  dat2 <- data.frame(Date = c(dat2$Date, max(dat2$Date) + 1:3),
-    daily_diffs = daily_diffs)
+  dat2 <- data.frame(
+    Date = c(dat2$Date, max(dat2$Date) + 1:3),
+    daily_diffs = daily_diffs
+  )
 }
 
 daily_diff_plot <- dat2 %>%
   ggplot(aes(x = Date, y = daily_diffs)) +
-  geom_col(fill = .hist_blue, alpha = .8,
-    colour = "grey90", lwd = 0.15) +
+  geom_col(
+    fill = .hist_blue, alpha = .8,
+    colour = "grey90", lwd = 0.15
+  ) +
   coord_cartesian(expand = FALSE, ylim = c(0, max(dat2$daily_diffs) * 1.02)) +
   labs(
     fill = "Reported\ncases",
     x = "Date of reported case",
     y = "New reported cases"
-  ) + xlim(lubridate::ymd("2020-02-29"), .last_day)
+  ) +
+  xlim(lubridate::ymd("2020-02-29"), .last_day)
 
 # Hospital ----------------------------------------------------------
 
@@ -179,8 +184,10 @@ hosp_plot <- ggplot(h, aes(date, Count, colour = Type)) +
   labs(colour = "Census type", shape = "Census type")
 
 
-g <- cowplot::plot_grid(daily_diff_plot, plotdelay2, hosp_plot, ncol = 1,
-  labels = "AUTO", align = "hv",  label_x = 0.18, label_y = 0.962) +
+g <- cowplot::plot_grid(daily_diff_plot, plotdelay2, hosp_plot,
+  ncol = 1,
+  labels = "AUTO", align = "hv", label_x = 0.18, label_y = 0.962
+) +
   theme(plot.margin = margin(2, 11, 2, 0))
 # ggsave("figs-ms/onset.png", width = 4.5, height = 4.7, dpi = 400)
 ggsave("figs-ms/onset-hosp.png", width = 4.1, height = 6.8)

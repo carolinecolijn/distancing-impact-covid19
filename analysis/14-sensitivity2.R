@@ -8,14 +8,16 @@ pars <- c(
   end_decline = 22
 )
 
-pars[['r']] <- 0.1
-pars[['ur']] <- 0.02
+pars[["r"]] <- 0.1
+pars[["ur"]] <- 0.02
 pars
 
 m1 <- fit_seeiqr(
-  daily_diffs, chains = 6, iter = 300,
+  daily_diffs,
+  chains = 6, iter = 300,
   pars = pars, save_state_predictions = TRUE,
-  seeiqr_model = seeiqr_model)
+  seeiqr_model = seeiqr_model
+)
 print(m1$fit, pars = c("R0", "f2", "phi"))
 
 .m1 <- list("r = 0.1; ur = 0.02" = m1)
@@ -31,27 +33,32 @@ f2 <- purrr::map_df(.m1, function(.x) {
 theta_df <- bind_rows(R0, f2) %>% as_tibble()
 my_limits <- function(x) if (max(x) < 2) c(0, 1) else c(2.6, 3.5)
 g_theta <- ggplot(theta_df, aes(value)) +
-  facet_grid(Scenario~theta, scales = "free") +
+  facet_grid(Scenario ~ theta, scales = "free") +
   geom_histogram(bins = 50, fill = .hist_blue, alpha = .7, colour = "grey90", lwd = 0.15) +
   coord_cartesian(expand = FALSE, ylim = c(0, NA)) +
   ylab("") +
   scale_x_continuous(limits = my_limits) +
-  xlab("Parameter value") + ylab("Density")
+  xlab("Parameter value") +
+  ylab("Density")
 # ggsave(paste0("figs-ms/sampFrac-grid-theta-posteriors.png"),
 #   width = 5, height = 7)
 
 .start <- lubridate::ymd_hms("2020-03-01 00:00:00")
 prevalence <- get_prevalence(m1)
 g_prev <- ggplot(prevalence, aes(day, prevalence, group = iterations)) +
-  annotate("rect", xmin = .start + lubridate::ddays(m1$last_day_obs),
-    xmax = .start + lubridate::ddays(m1$last_day_obs + 60), ymin = 0, ymax = Inf, fill = "grey95") +
+  annotate("rect",
+    xmin = .start + lubridate::ddays(m1$last_day_obs),
+    xmax = .start + lubridate::ddays(m1$last_day_obs + 60), ymin = 0, ymax = Inf, fill = "grey95"
+  ) +
   geom_line(alpha = 0.05, col = .hist_blue) +
   ylab("Prevalence") +
   coord_cartesian(expand = FALSE, xlim = c(.start, .start + lubridate::ddays(m1$last_day_obs + 60)), ylim = c(0, max(prevalence$prevalence) * 1.04)) +
   xlab("")
 g_prev
 
-cowplot::plot_grid(g_prev, g_proj, g_theta, align = "hv",
-  axis = "bt", rel_widths = c(1.2, 1.2, 2), ncol = 3)
+cowplot::plot_grid(g_prev, g_proj, g_theta,
+  align = "hv",
+  axis = "bt", rel_widths = c(1.2, 1.2, 2), ncol = 3
+)
 
 ggsave(paste0("figs-ms/sens2-theta-proj.png"), width = 10, height = 3)

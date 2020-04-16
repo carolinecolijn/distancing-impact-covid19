@@ -1,7 +1,3 @@
-# Apologies, as the function is named, these are some very quick plots and
-# some messy code. This could be cleaned up into something much shorter
-# in more elegant. -SA
-
 make_quick_plots <- function(obj, id = "", ext = ".pdf", first_date = "2020-03-01") {
   post <- obj$post
   fit <- obj$fit

@@ -19,7 +19,8 @@ sd_strength2 <- seq(0.6, 1, 0.2) %>% purrr::set_names()
 future::plan(future::multisession)
 m_fs2 <- furrr::future_map(sd_strength2, ~ {
   fit_seeiqr(
-    daily_diffs, seed = 1,
+    daily_diffs,
+    seed = 1,
     fixed_f_forecast = .x, save_state_predictions = TRUE,
     seeiqr_model = seeiqr_model, chains = 1, iter = 1000
   )
@@ -30,7 +31,7 @@ purrr::walk(m_fs2, ~ print(.x$fit, pars = c("R0", "f2", "phi")))
 set.seed(129284)
 .draws <- sample(seq_len(500), 250)
 get_prevalence <- function(obj, draws = .draws,
-  .start = lubridate::ymd_hms("2020-03-01 00:00:00")) {
+                           .start = lubridate::ymd_hms("2020-03-01 00:00:00")) {
   post <- obj$post
   ts_df <- dplyr::tibble(time = obj$time, time_num = seq_along(obj$time))
   variables_df <- dplyr::tibble(
@@ -46,8 +47,10 @@ get_prevalence <- function(obj, draws = .draws,
   prevalence <- states %>%
     dplyr::filter(variable %in% c("I", "Id")) %>%
     group_by(iterations, time) %>%
-    summarize(I = value[variable == "I"], Id = value[variable == "Id"],
-      prevalence = I + Id) %>%
+    summarize(
+      I = value[variable == "I"], Id = value[variable == "Id"],
+      prevalence = I + Id
+    ) %>%
     mutate(day = .start + lubridate::ddays(time), start = .start)
   prevalence
 }
@@ -73,7 +76,7 @@ names(.m_fs)
 
 .m_fs <- .m_fs[c(4, 5, 6)]
 
-names(.m_fs) <- paste0("(", LETTERS[1:3], ") ", names(.m_fs) )
+names(.m_fs) <- paste0("(", LETTERS[1:3], ") ", names(.m_fs))
 names(.m_fs)
 sc_order <- names(.m_fs)
 g1 <- make_projection_plot(.m_fs, facet = TRUE, ncol = 3, sc_order = sc_order) +
@@ -88,8 +91,8 @@ unique(prevalence$scenario2)
 
 prevalence$scenario2_noletters <- prevalence$scenario2
 prevalence$scenario2_noletters <- factor(prevalence$scenario2_noletters,
-  levels = c("Contacts removed: 40%", "Contacts removed: 20%", "Contacts removed: 0%"
-))
+  levels = c("Contacts removed: 40%", "Contacts removed: 20%", "Contacts removed: 0%")
+)
 
 prevalence$scenario2 <- gsub("Contacts removed: 40%", "(D) Contacts removed: 40%", prevalence$scenario2)
 prevalence$scenario2 <- gsub("Contacts removed: 20%", "(E) Contacts removed: 20%", prevalence$scenario2)
@@ -107,23 +110,29 @@ obj <- m_fs2[[1]] # just for last_day_obs
 .start <- prevalence$start[1]
 g_prev <- prevalence %>%
   ggplot(aes(day, prevalence, group = iterations)) +
-  annotate("rect", xmin = .start + lubridate::ddays(obj$last_day_obs),
+  annotate("rect",
+    xmin = .start + lubridate::ddays(obj$last_day_obs),
     xmax = .start + lubridate::ddays(obj$last_day_obs + 65),
-    ymin = 0, ymax = Inf, fill = "grey95") +
+    ymin = 0, ymax = Inf, fill = "grey95"
+  ) +
   geom_line(alpha = 0.05, col = .hist_blue) +
   ylab("Prevalence") +
   facet_wrap(~scenario2) +
-  .theme + .coord_prev
+  .theme +
+  .coord_prev
 # g_prev
 
 gg <- cowplot::plot_grid(g1, g_prev, nrow = 2, align = "hv")
 ggsave("figs-ms/f-projections.png", width = 7, height = 4)
 
 .max <- filter(prevalence, scenario2_noletters == "Contacts removed: 0%") %>%
-  pull(prevalence) %>% quantile(probs = 0.99)
+  pull(prevalence) %>%
+  quantile(probs = 0.99)
 g <- g_prev + coord_cartesian(
   expand = FALSE, ylim = c(0, .max),
-  xlim = c(lubridate::ymd_hms("2020-03-01 00:00:00"),
-    lubridate::ymd_hms("2020-06-11 23:59:00"))
+  xlim = c(
+    lubridate::ymd_hms("2020-03-01 00:00:00"),
+    lubridate::ymd_hms("2020-06-11 23:59:00")
+  )
 ) + facet_wrap(~scenario2_noletters)
 ggsave("figs-ms/f-projections-taaaaaaaall.png", width = 5.5, height = 14)

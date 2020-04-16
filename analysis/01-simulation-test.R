@@ -1,4 +1,3 @@
-setwd(here::here("selfIsolationModel/stan"))
 source("data-model-prep.R")
 
 pars <- list(
@@ -12,7 +11,7 @@ pars <- list(
   ur = 0.2,
   f1 = 1.0,
   f2 = 0.4,
-  ratio = 0.3/0.1 # 2nd stage sampFrac
+  ratio = 0.3 / 0.1 # 2nd stage sampFrac
 )
 fsi <- with(
   pars,
@@ -80,12 +79,6 @@ plot(sim_dat[[1]]$obs)
 plot(sim_dat[[2]]$obs)
 plot(sim_dat[[3]]$obs)
 
-source("fit_seeiqr.R")
-library(future)
-library(rstan)
-library(dplyr)
-library(ggplot2)
-seeiqr_model <- stan_model("seeiqr.stan")
 plan(multisession, workers = parallel::detectCores() / 2)
 sim <- furrr::future_map(seq_along(sim_dat), function(x) {
   fit_seeiqr(
@@ -142,7 +135,8 @@ out_lambd <- purrr::map_df(sim, function(.x) {
 }, .id = "simulation") %>%
   mutate(simulation = sprintf("%02d", as.numeric(simulation)))
 
-sim_dat_all <- bind_rows(sim_dat, .id = "simulation") %>% as_tibble() %>%
+sim_dat_all <- bind_rows(sim_dat, .id = "simulation") %>%
+  as_tibble() %>%
   mutate(simulation = sprintf("%02d", as.numeric(simulation)))
 
 ggplot(out, aes(x = day, y = med, ymin = lwr2, ymax = upr2)) +
@@ -157,7 +151,10 @@ ggplot(out, aes(x = day, y = med, ymin = lwr2, ymax = upr2)) +
   geom_line(
     data = sim_dat_all,
     col = "black", inherit.aes = FALSE, aes(x = day, y = lambda_d), lwd = 0.5,
-    alpha = 1, lty = 2) + ylab("Simulated reported cases") + xlab("Day")
+    alpha = 1, lty = 2
+  ) +
+  ylab("Simulated reported cases") +
+  xlab("Day")
 ggsave("figs-ms/sim-ts-ppd.png", width = 8, height = 6.5)
 
 # Compare expectations to truth: ----------------------------------------------
@@ -187,7 +184,8 @@ ggplot(out, aes(x = day, y = med, ymin = lwr2, ymax = upr2)) +
   geom_line(
     data = sim_dat[[1]],
     col = "black", inherit.aes = FALSE, aes(x = day, y = lambda_d), lwd = 0.3,
-    alpha = 0.8)
+    alpha = 0.8
+  )
 ggsave("figs-ms/sim-ts-hat.png", width = 9, height = 5)
 
 check_sim_theta <- function(.par) {
@@ -206,7 +204,8 @@ check_sim_theta <- function(.par) {
     geom_violin(colour = .hist_blue, fill = NA) +
     geom_violin(fill = .hist_blue, colour = NA, alpha = 0.3) +
     geom_hline(yintercept = .hline) +
-    ylab(.par)+xlab("Simulation")
+    ylab(.par) +
+    xlab("Simulation")
 }
 
 g1 <- check_sim_theta("R0")

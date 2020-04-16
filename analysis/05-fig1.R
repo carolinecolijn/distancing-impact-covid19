@@ -28,8 +28,10 @@ file.copy("figs/traceplot-ms-main.png", "figs-ms/traceplots.png", overwrite = TR
 file.copy("figs/posterior-predictive-case-diffs-facet-ms-main.png", "figs-ms/post-pred-reps.png", overwrite = TRUE)
 
 # fewer samples for plot:
-m500 <- fit_seeiqr(daily_diffs, seeiqr_model = seeiqr_model, iter = 500, chains = 8,
-  save_state_predictions = TRUE)
+m500 <- fit_seeiqr(daily_diffs,
+  seeiqr_model = seeiqr_model, iter = 500, chains = 8,
+  save_state_predictions = TRUE
+)
 print(m500$fit, pars = c("R0", "f2", "phi"))
 saveRDS(m500, file = "data-generated/main-fit-500.rds")
 m500 <- readRDS("data-generated/main-fit-500.rds")
@@ -44,8 +46,10 @@ R0 <- post$R0
 breaks <- seq(min(.x), max(.x), 0.016)
 R0_hist <- ggplot(tibble(R0 = R0)) +
   geom_ribbon(
-    data = tibble(R0 = .x,
-      density = dlnorm(.x, obj$R0_prior[1], obj$R0_prior[2])),
+    data = tibble(
+      R0 = .x,
+      density = dlnorm(.x, obj$R0_prior[1], obj$R0_prior[2])
+    ),
     aes(x = R0, ymin = 0, ymax = density), alpha = 0.5, colour = "grey50",
     fill = "grey50"
   ) +
@@ -55,7 +59,7 @@ R0_hist <- ggplot(tibble(R0 = R0)) +
     fill = .hist_blue, alpha = .7, colour = "grey90", lwd = 0.15
   ) +
   coord_cartesian(xlim = range(.x), expand = FALSE) +
-  xlab(expression(italic(R[0*plain(b)])))
+  xlab(expression(italic(R[0 * plain(b)])))
 
 R0_hist
 
@@ -64,20 +68,22 @@ f2 <- post$f2
 breaks <- seq(min(.x), max(.x), 0.022)
 f2_hist <- ggplot(tibble(f2 = f2)) +
   geom_ribbon(
-    data = tibble(f2 = 1 - .x,
-      density = dbeta(.x, obj$f2_prior_beta_shape1, obj$f2_prior_beta_shape2)),
+    data = tibble(
+      f2 = 1 - .x,
+      density = dbeta(.x, obj$f2_prior_beta_shape1, obj$f2_prior_beta_shape2)
+    ),
     aes(x = f2, ymin = 0, ymax = density), alpha = 0.5, colour = "grey50",
     fill = "grey50"
   ) +
   geom_histogram(
-    breaks = breaks, aes(x = 1-f2, y = ..density..),
+    breaks = breaks, aes(x = 1 - f2, y = ..density..),
     fill = .hist_blue, alpha = .7, colour = "grey90", lwd = 0.15
   ) +
   ylab("Density") +
   coord_cartesian(xlim = range(.x), expand = FALSE) +
   xlab("Fraction of contacts removed") +
   scale_x_continuous(breaks = seq(0, 1, 0.2)) +
-  geom_vline(xintercept = 1-.57, lty = 2, col = "grey40")
+  geom_vline(xintercept = 1 - .57, lty = 2, col = "grey40")
 
 f2_hist
 
@@ -100,13 +106,17 @@ states <- reshape2::melt(post$y_hat) %>%
 prevalence <- states %>%
   dplyr::filter(variable %in% c("I", "Id")) %>%
   group_by(iterations, time) %>%
-  summarize(I = value[variable == "I"], Id = value[variable == "Id"],
-    prevalence = I + Id) %>%
+  summarize(
+    I = value[variable == "I"], Id = value[variable == "Id"],
+    prevalence = I + Id
+  ) %>%
   mutate(day = .start + lubridate::ddays(time))
 
 g_prev <- ggplot(prevalence, aes(day, prevalence, group = iterations)) +
-  annotate("rect", xmin = .start + lubridate::ddays(obj$last_day_obs),
-    xmax = .start + lubridate::ddays(obj$last_day_obs + 60), ymin = 0, ymax = Inf, fill = "grey95") +
+  annotate("rect",
+    xmin = .start + lubridate::ddays(obj$last_day_obs),
+    xmax = .start + lubridate::ddays(obj$last_day_obs + 60), ymin = 0, ymax = Inf, fill = "grey95"
+  ) +
   geom_line(alpha = 0.05, col = .hist_blue) +
   ylab("Prevalence") +
   coord_cartesian(expand = FALSE, xlim = c(.start, .start + lubridate::ddays(obj$last_day_obs + 60)), ylim = c(0, max(prevalence$prevalence) * 1.04)) +
@@ -115,13 +125,13 @@ g_prev
 
 # label_x = 0.21, label_y = 0.96, label_fontface = "plain", label_size = 12
 g <- cowplot::plot_grid(proj, R0_hist, g_prev, f2_hist, align = "hv", labels = "AUTO", label_size = 12, label_x = 0.213, label_y = 0.96) +
-  theme(plot.margin = margin(11/2,11, 11/2, 11/2))
+  theme(plot.margin = margin(11 / 2, 11, 11 / 2, 11 / 2))
 ggsave(paste0("figs-ms/fig1.png"), width = 6, height = 4.5, dpi = 400)
 
 g <- ggplot(states, aes(time, value, group = iterations)) +
   geom_line(alpha = 0.1) +
   facet_wrap(~variable, scales = "free_y") +
   geom_vline(xintercept = obj$last_day_obs, lty = 2, alpha = 0.6) +
-  xlab("Time (days since March 1 2020)") + ylab("Individuals")
+  xlab("Time (days since March 1 2020)") +
+  ylab("Individuals")
 ggsave(paste0("figs-ms/states.png"), width = 12, height = 7)
-

@@ -224,7 +224,7 @@ get_prevalence <- function(obj, draws = 1:100,
       I = value[variable == "I"], Id = value[variable == "Id"],
       prevalence = I + Id
     ) %>%
-    mutate(day = start + lubridate::ddays(time))
+    mutate(day = start + lubridate::ddays(time), start = start)
   prevalence
 }
 

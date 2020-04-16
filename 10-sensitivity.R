@@ -19,13 +19,11 @@ saveRDS(m_sf, file = "data-generated/sf-fit.rds")
 m_sf <- readRDS("data-generated/sf-fit.rds")
 
 purrr::walk(m_sf, ~ print(.x$fit, pars = c("R0", "f2", "phi", "sampFrac2")))
-names(m_sf) <- paste0("sampFrac1 = ", sf$sampled_fraction1, "\nsampFrac2 = ", sf$sampled_fraction2, "\n")
-
-make_projection_plot(m_sf, ylim = c(0, 100), facet = FALSE, outer_quantile = c(0.25, 0.75),
-  cols = RColorBrewer::brewer.pal(8, "Dark2"))
-ggsave(paste0("figs-ms/sampFrac-grid.png"), width = 7, height = 3.5)
-
 names(m_sf) <- paste0("sampFrac1 = ", sf$sampled_fraction1, "\nsampFrac2 = ", sf$sampled_fraction2)
+
+g_proj <- make_projection_plot(m_sf) +
+  facet_grid(rows = vars(Scenario))
+
 R0 <- purrr::map_df(m_sf, function(.x) {
   data.frame(theta = "R0b", value = .x$post$R0, stringsAsFactors = FALSE)
 }, .id = "Scenario")
@@ -34,16 +32,20 @@ f2 <- purrr::map_df(m_sf, function(.x) {
 }, .id = "Scenario")
 theta_df <- bind_rows(R0, f2) %>% as_tibble()
 my_limits <- function(x) if (max(x) < 2) c(0, 1) else c(2.6, 3.5)
-ggplot(theta_df, aes(value)) +
+g_theta <- ggplot(theta_df, aes(value)) +
   facet_grid(Scenario~theta, scales = "free") +
   geom_histogram(bins = 50, fill = .hist_blue, alpha = .7, colour = "grey90", lwd = 0.15) +
   coord_cartesian(expand = FALSE, ylim = c(0, NA)) +
   ylab("") +
   scale_x_continuous(limits = my_limits) + xlab("Parameter value") + ylab("Density")
-ggsave(paste0("figs-ms/sampFrac-grid-theta-posteriors.png"),
-  width = 5, height = 7)
+# ggsave(paste0("figs-ms/sampFrac-grid-theta-posteriors.png"),
+#   width = 5, height = 7)
 
-# Sensitivity tests --------------------------------------------------------------
+cowplot::plot_grid(g_proj, g_theta, align = "hv", axis = "bt", rel_widths = c(1.5, 2))
+
+ggsave(paste0("figs-ms/sampFrac-grid-theta-proj.png"), width = 8, height = 8)
+
+# More sensitivity tests --------------------------------------------------------------
 
 # D=4, k1=1/4, 83% . --- rationale: shorter duration all round, R0 is lower, still consistent w data, still consistent message re strength of distancing
 # D=6, k1=1/6, 83% --- rationale: longer duration all round, R0 is higher, still consistent w data & message about distancing
@@ -88,14 +90,14 @@ m3 <- fit_seeiqr(
 m_sens <- list(m1, m2, m3)
 purrr::walk(m_sens, ~ print(.x$fit, pars = c("R0", "f2", "phi")))
 names(m_sens) <- c(
-  "D = 4, k1 = 1/4, ur = 0.2",
-  "D = 6, k1 = 1/6, ur = 0.2",
-  "D = 5, k1 = 1/5, ur = 0.3/0.7"
+  "D = 4, k1 = 1/4, e = 0.83",
+  "D = 6, k1 = 1/6, e = 0.83",
+  "D = 5, k1 = 1/5, e = 0.70"
 )
 
-proj <- make_projection_plot(m_sens, facet = FALSE, outer_quantile = c(0.25, 0.75),
-  cols = RColorBrewer::brewer.pal(8, "Dark2"))
-ggsave(paste0("figs-ms/sensitivity1-proj.png"), width = 7, height = 3.5)
+# proj <- make_projection_plot(m_sens, facet = FALSE, outer_quantile = c(0.25, 0.75),
+#   cols = RColorBrewer::brewer.pal(8, "Dark2"))
+# ggsave(paste0("figs-ms/sensitivity1-proj.png"), width = 7, height = 3.5)
 
 get_thresh <- function(.pars) {
   fs <- seq(0.25, 1, 0.25)
@@ -131,11 +133,18 @@ f2 <- left_join(f2, thresh_df)
 theta_df <- bind_rows(R0, f2)
 my_limits <- function(x) if (max(x) < 2) c(0, 1) else range(R0$value) * c(0.98, 1.02)
 
-ggplot(theta_df, aes(value)) +
+g_theta <- ggplot(theta_df, aes(value)) +
   facet_grid(Scenario~theta, scales = "free") +
   geom_histogram(bins = 50, fill = .hist_blue, alpha = .7, colour = "grey90", lwd = 0.15) +
   coord_cartesian(expand = FALSE, ylim = c(0, NA)) +
   ylab("") +
   scale_x_continuous(limits = my_limits) + xlab("Parameter value") + ylab("Density") +
   geom_vline(aes(xintercept = threshold), lty = 2, col = "grey50")
-ggsave(paste0("figs-ms/sensitivity1-theta.png"), width = 5, height = 6)
+# ggsave(paste0("figs-ms/sensitivity1-theta.png"), width = 5, height = 6)
+
+g_proj <- make_projection_plot(m_sens) +
+  facet_grid(rows = vars(Scenario))
+
+cowplot::plot_grid(g_proj, g_theta, align = "hv", axis = "bt", rel_widths = c(1.5, 2))
+
+ggsave(paste0("figs-ms/sensitivity1-theta-proj.png"), width = 8, height = 6)

@@ -121,6 +121,6 @@ for (i in seq(1, 6, 2)) {
     ymin = 0, ymax = Inf, fill = "#00000012")
 }
 
-cowplot::plot_grid(g1, g2, ncol = 1, labels = "AUTO")
+cowplot::plot_grid(g1, g2, ncol = 1, labels = "AUTO", label_x = 0.125, label_y = 0.96)
 ggsave("figs-ms/f2-cycling.png", width = 4.5, height = 5)
 # system("optipng -strip all figs-ms/f2-cycling.png")

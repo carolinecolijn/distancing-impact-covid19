@@ -3,33 +3,31 @@
 setwd(here::here("analysis"))
 
 source("01-simulation-test.R")
-rm(list = ls())
+rm(list = ls()) # to avoid future package exporting large objects
 
-# source("04-bc-cdc-projections.R")
-source("05-fig1.R")
-rm(list = ls())
+source("05-main-fig.R")
 
+rm(list = ls())
 source("06-cycle-f2.R")
-rm(list = ls())
 
+rm(list = ls())
 source("07-threshold.R")
-rm(list = ls())
 
+rm(list = ls())
 source("08-f-projections.R")
-rm(list = ls())
 
+rm(list = ls())
 source("09-delay.R")
-rm(list = ls())
 
+rm(list = ls())
 source("09-rw.R")
-rm(list = ls())
 
+rm(list = ls())
 source("10-sensitivity.R")
-rm(list = ls())
-
 source("11-onset-date.R")
 source("13-timeline.R")
-source("14-sensitivity2.R")
-rm(list = ls())
 
-source("12-optimize.R")
+rm(list = ls())
+source("14-sensitivity2.R")
+
+source("99-optimize.R")

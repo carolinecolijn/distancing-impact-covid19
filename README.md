@@ -1,1 +1,1 @@
-# Model and preprint estimating impact of physical distancing measures 
+# Estimating the impact of physical distancing measures in British Columbia

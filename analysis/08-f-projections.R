@@ -27,9 +27,13 @@ m_fs2 <- purrr::map(sd_strength2, ~ {
   )
 })
 # future::plan(future::sequential)
+saveRDS(m_fs2, "data-generated/f-proj-fits2.rds")
+m_fs2 <- readRDS("data-generated/f-proj-fits2.rds")
 purrr::walk(m_fs2, ~ print(.x$fit, pars = c("R0", "f2", "phi")))
 
-prevalence <- purrr::map_dfr(m_fs2, get_prevalence, .id = "scenario", draws = 1:200)
+set.seed(13223567)
+.draws <- sample(seq_len(350), 75)
+prevalence <- purrr::map_dfr(m_fs2, get_prevalence, .id = "scenario", draws = .draws)
 
 # Plots -----------------------------------------------------------------------
 
@@ -74,7 +78,7 @@ prevalence$scenario2 <- gsub("Contacts removed: 0%",
 unique(prevalence$scenario2)
 
 .coord_prev <- coord_cartesian(
-  expand = FALSE, ylim = c(0, 60000),
+  expand = FALSE, ylim = c(0, 30000),
   xlim = c(lubridate::ymd_hms("2020-03-01 00:00:00"), lubridate::ymd_hms("2020-07-10 23:59:00"))
 )
 
@@ -87,17 +91,16 @@ g_prev <- prevalence %>%
     xmax = .start + lubridate::ddays(obj$last_day_obs + 90),
     ymin = 0, ymax = Inf, fill = "grey95"
   ) +
-  geom_line(alpha = 0.08, col = .hist_blue) +
-  ylab("Prevalence") +
+  geom_line(alpha = 0.11, col = .hist_blue) +
+  ylab("Modelled prevalence") +
   facet_wrap(~scenario2) +
+  scale_y_continuous(labels = scales::comma) +
   .theme +
   .coord_prev
-# g_prev
 
-gg <- cowplot::plot_grid(g1, g_prev, nrow = 2, align = "hv", rel_heights = c(1, 4.2))
-# print(gg)
-# ggsave("figs-ms/f-projections.png", width = 7, height = 4)
-ggsave("figs-ms/f-projections2.png", width = 7, height = 9)
+gg <- cowplot::plot_grid(g1, g_prev, nrow = 2, align = "hv", rel_heights = c(1, 3))
+ggsave("figs-ms/f-projections2.png", width = 7, height = 7.25, dpi = 400)
+ggsave("figs-ms/f-projections2.pdf", width = 7, height = 7.25, plot = gg)
 
 .max <- filter(prevalence, scenario2_noletters == "Contacts removed: 0%") %>%
   pull(prevalence) %>%
@@ -110,3 +113,5 @@ g <- g_prev + coord_cartesian(
   )
 ) + facet_wrap(~scenario2_noletters)
 ggsave("figs-ms/f-projections-taaaaaaaall.png", width = 5.5, height = 14)
+ggsave("figs-ms/f-projections-taaaaaaaall.pdf", width = 5.5, height = 14)
+

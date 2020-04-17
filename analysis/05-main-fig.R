@@ -30,6 +30,10 @@ file.copy("figs/traceplot-ms-main.png", "figs-ms/traceplots.png",
 file.copy("figs/posterior-predictive-case-diffs-facet-ms-main.png",
   "figs-ms/post-pred-reps.png", overwrite = TRUE)
 
+fit_array <- as.array(m$fit)
+dimnames(fit_array)[[3]] <- gsub("R0", "R0b", dimnames(fit_array)[[3]])
+g <- bayesplot::mcmc_trace(fit_array, pars = c("R0", "f2", "phi[1]"))
+
 # fewer samples for plot:
 m500 <- fit_seeiqr(daily_diffs,
   seeiqr_model = seeiqr_model, iter = 500, chains = 8,
@@ -86,7 +90,7 @@ f2_hist <- ggplot(tibble(f2 = f2)) +
   coord_cartesian(xlim = range(.x), expand = FALSE) +
   xlab("Fraction of contacts removed") +
   scale_x_continuous(breaks = seq(0, 1, 0.2)) +
-  geom_vline(xintercept = 1 - .57, lty = 2, col = "grey40")
+  geom_vline(xintercept = 1 - .55, lty = 2, col = "grey40")
 
 f2_hist
 
@@ -122,7 +126,7 @@ g_prev <- ggplot(prevalence, aes(day, prevalence, group = iterations)) +
     ymin = 0, ymax = Inf, fill = "grey95"
   ) +
   geom_line(alpha = 0.05, col = .hist_blue) +
-  ylab("Prevalence") +
+  ylab("Modelled prevalence") +
   coord_cartesian(expand = FALSE, xlim = c(.start, .start + lubridate::ddays(obj$last_day_obs + 60)), ylim = c(0, max(prevalence$prevalence) * 1.04)) +
   xlab("")
 g_prev
@@ -131,11 +135,12 @@ g <- cowplot::plot_grid(proj, R0_hist, g_prev, f2_hist, align = "hv",
   labels = "AUTO", label_size = 12, label_x = 0.213, label_y = 0.96) +
   theme(plot.margin = margin(11 / 2, 11, 11 / 2, 11 / 2))
 ggsave(paste0("figs-ms/fig1.png"), width = 6, height = 4.5, dpi = 400)
+ggsave(paste0("figs-ms/fig1.pdf"), width = 6, height = 4.5)
 
 g <- ggplot(states, aes(time, value, group = iterations)) +
   geom_line(alpha = 0.1) +
   facet_wrap(~variable, scales = "free_y") +
   geom_vline(xintercept = obj$last_day_obs, lty = 2, alpha = 0.6) +
-  xlab("Time (days since March 1 2020)") +
+  xlab("Time (days starting on March 1, 2020)") +
   ylab("Individuals")
-ggsave(paste0("figs-ms/states.png"), width = 12, height = 7)
+ggsave(paste0("figs-ms/states.png"), width = 12, height = 7, dpi = 200)

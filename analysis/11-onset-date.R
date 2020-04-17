@@ -138,4 +138,5 @@ g <- cowplot::plot_grid(daily_diff_plot, plotdelay2, hosp_plot,
   labels = "AUTO", align = "hv", label_x = 0.18, label_y = 0.962
 ) +
   theme(plot.margin = margin(2, 11, 2, 0))
-ggsave("figs-ms/onset-hosp.png", width = 4.1, height = 6.8)
+ggsave("figs-ms/onset-hosp.png", width = 4.1, height = 6.8, dpi = 350)
+ggsave("figs-ms/onset-hosp.pdf", width = 4.1, height = 6.8)

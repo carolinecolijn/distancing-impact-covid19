@@ -48,7 +48,8 @@ g <- ggplot(joint_post2, aes(R0, 1-f2, colour = -perc_change)) +
   geom_point(alpha = 0.2, size = 2, pch = 21) +
   scale_colour_viridis_c(option = "D", direction = -1) +
   labs(colour = "Percent decline\nper day", y = "Fraction contacts removed",
-    x = expression(R[0])) +
+    x = expression(italic(R[0 * plain(b)]))) +
   # theme(legend.position = c(0.81, 0.78)) +
   theme(legend.key.size = unit(11, units = "points"))
 ggsave("figs-ms/joint-posterior-prevalence.png", width = 4.7, height = 3.5)
+ggsave("figs-ms/joint-posterior-prevalence.pdf", width = 4.7, height = 3.5)

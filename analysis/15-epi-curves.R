@@ -96,7 +96,7 @@ g <- prev %>%
   ) +
   labs(colour = "Contacts removed") +
   geom_line(alpha = 0.35) +
-  ylab("Prevalence") +
+  ylab("Modelled prevalence") +
   guides(colour = guide_legend(override.aes = list(alpha = 1, lwd = 1))) +
   scale_color_viridis_d(direction = -1) +
   .theme +
@@ -123,6 +123,11 @@ ggsave(
   filename = "figs-ms/epi-curves-inset.png",
   plot = plot_with_inset,
   width = 5, height = 3.25, dpi = 400)
+
+ggsave(
+  filename = "figs-ms/epi-curves-inset.pdf",
+  plot = plot_with_inset,
+  width = 5, height = 3.25)
 
 # g2 <- g + scale_y_sqrt(labels = scales::comma)
 # ggsave("figs-ms/epi-curves-sqrt.png", width = 4.5, height = 3.25)

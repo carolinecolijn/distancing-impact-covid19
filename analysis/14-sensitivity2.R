@@ -51,7 +51,7 @@ g_prev <- ggplot(prevalence, aes(day, prevalence, group = iterations)) +
     xmax = .start + lubridate::ddays(m1$last_day_obs + 60), ymin = 0, ymax = Inf, fill = "grey95"
   ) +
   geom_line(alpha = 0.05, col = .hist_blue) +
-  ylab("Prevalence") +
+  ylab("Modelled prevalence") +
   coord_cartesian(expand = FALSE, xlim = c(.start, .start + lubridate::ddays(m1$last_day_obs + 60)), ylim = c(0, max(prevalence$prevalence) * 1.04)) +
   xlab("")
 g_prev

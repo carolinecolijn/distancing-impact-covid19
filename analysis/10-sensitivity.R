@@ -66,7 +66,7 @@ g_prev <- ggplot(prevalence, aes(day, prevalence, group = iterations)) +
     xmax = .start + lubridate::ddays(obj$last_day_obs + 60), ymin = 0, ymax = Inf, fill = "grey95"
   ) +
   geom_line(alpha = 0.05, col = .hist_blue) +
-  ylab("Prevalence") +
+  ylab("Modelled prevalence") +
   facet_grid(rows = vars(Scenario)) +
   coord_cartesian(expand = FALSE, xlim = c(.start, .start + lubridate::ddays(obj$last_day_obs + 60)), ylim = c(0, max(prevalence$prevalence) * 1.04)) +
   xlab("")
@@ -78,6 +78,7 @@ g <- cowplot::plot_grid(g_prev, g_proj, g_theta,
 )
 
 ggsave(paste0("figs-ms/sampFrac-grid-theta-proj.png"), width = 10, height = 8)
+ggsave(paste0("figs-ms/sampFrac-grid-theta-proj.pdf"), width = 10, height = 8)
 
 # More sensitivity tests --------------------------------------------------------------
 
@@ -102,8 +103,8 @@ pars1[["D"]] <- 4
 pars1[["k1"]] <- 1 / 4
 
 m1 <- fit_seeiqr(
-  daily_diffs,
-  chains = 8, iter = 300,
+  daily_diffs, seed = 1256,
+  chains = 6, iter = 300,
   pars = pars1, save_state_predictions = TRUE,
   seeiqr_model = seeiqr_model
 )
@@ -114,7 +115,7 @@ pars2[["k1"]] <- 1 / 6
 
 m2 <- fit_seeiqr(
   daily_diffs,
-  chains = 8, iter = 300,
+  chains = 6, iter = 300,
   pars = pars2, save_state_predictions = TRUE,
   seeiqr_model = seeiqr_model
 )
@@ -126,7 +127,7 @@ pars3[["ur"]] <- getu(f = 0.7, r = 0.1) # 70%
 
 m3 <- fit_seeiqr(
   daily_diffs,
-  chains = 8, iter = 300,
+  chains = 6, iter = 300,
   pars = pars3, save_state_predictions = TRUE,
   seeiqr_model = seeiqr_model
 )
@@ -204,7 +205,7 @@ g_prev <- ggplot(prevalence, aes(day, prevalence, group = iterations)) +
     ymin = 0, ymax = Inf, fill = "grey95"
   ) +
   geom_line(alpha = 0.05, col = .hist_blue) +
-  ylab("Prevalence") +
+  ylab("Modelled prevalence") +
   facet_grid(rows = vars(Scenario)) +
   coord_cartesian(expand = FALSE,
     xlim = c(.start, .start + lubridate::ddays(obj$last_day_obs + 60)),
@@ -218,3 +219,4 @@ g <- cowplot::plot_grid(g_prev, g_proj, g_theta,
 )
 
 ggsave(paste0("figs-ms/sensitivity1-theta-proj.png"), width = 10, height = 6)
+ggsave(paste0("figs-ms/sensitivity1-theta-proj.pdf"), width = 10, height = 6)

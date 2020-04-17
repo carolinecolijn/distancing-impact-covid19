@@ -21,4 +21,5 @@ g <- ggplot(d, aes(date, 1, label = event)) +
   theme(plot.margin = margin(t = -10, r = -10, b = -10, l = 5, unit = "pt"))
 
 g
-ggsave("figs-ms/timeline.png", width = 6.45, height = 3.6)
+ggsave("figs-ms/timeline.png", width = 6.45, height = 3.6, dpi = 400)
+ggsave("figs-ms/timeline.pdf", width = 6.45, height = 3.6)

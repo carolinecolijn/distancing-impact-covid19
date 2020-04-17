@@ -8,8 +8,8 @@ m <- readRDS("data-generated/main-fit-2000.rds")
 .last_day <- m$last_day_obs
 .last_day
 
-sdtiming0.7 <- function(
-                        t, start_decline = 15, end_decline = 22, last_obs = .last_day,
+sdtiming0.7 <- function(t, start_decline = 15, end_decline = 22,
+                        last_obs = .last_day,
                         f_val = 0.7,
                         f1 = pars$f1,
                         f2 = pars$f2) {
@@ -43,10 +43,7 @@ formals(sdtiming0.6)$f_val <- 0.6
 proj_wrapper <- function(.sdfunction, .n = 20, .proj_days = 500) {
   proj_days <- .last_day + .proj_days
   .times <- seq(-30, proj_days, 0.1)
-  pred0.7 <- list(
-    m$post$R0[1:.n], m$post$f2[1:.n], m$post$phi[1:.n],
-    seq_along(m$post$R0[1:.n])
-  ) %>%
+  list(m$post$R0[1:.n], m$post$f2[1:.n], m$post$phi[1:.n], seq_len(.n)) %>%
     purrr::pmap_dfr(reproject_fits,
       obj = m, .sdfunc = .sdfunction,
       .time = .times, return_ode_dat = TRUE
@@ -105,9 +102,27 @@ g <- prev %>%
   .theme +
   .coord_prev +
   theme(legend.position = c(0.82, 0.77)) +
-  scale_y_continuous(labels = scales::comma)
+  scale_y_continuous(labels = scales::comma) +
+  annotate("text", x = lubridate::ymd_hms("2020-03-22 00:00:00"), y = 80000, label = "See inset", angle = 90, col = "grey30", size = 3.5) +
+  scale_x_datetime(date_breaks = "4 months", date_labels = "%b %Y")
 
-ggsave("figs-ms/epi-curves.png", width = 4.5, height = 3.25)
+ggsave("figs-ms/epi-curves.png", width = 5, height = 3.25)
 
-g <- g + scale_y_sqrt(labels = scales::comma)
-ggsave("figs-ms/epi-curves-sqrt.png", width = 4.5, height = 3.25)
+g3 <- g + theme_void() +
+  theme(panel.border = element_rect(fill = NA, colour = "grey70", size = 1)) +
+  coord_cartesian(
+  expand = FALSE, ylim = c(0, 3000),
+  xlim = c(lubridate::ymd_hms("2020-02-27 00:00:00"), lubridate::ymd_hms("2020-07-01 00:00:00"))) +
+    guides(colour = FALSE)
+plot_with_inset <-
+  cowplot::ggdraw() +
+  cowplot::draw_plot(g) +
+  cowplot::draw_plot(g3, x = .7, y = .15, width = .25, height = .25)
+
+ggsave(
+  filename = "figs-ms/epi-curves-inset.png",
+  plot = plot_with_inset,
+  width = 5, height = 3.25)
+
+# g2 <- g + scale_y_sqrt(labels = scales::comma)
+# ggsave("figs-ms/epi-curves-sqrt.png", width = 4.5, height = 3.25)

@@ -37,8 +37,8 @@ knitr::opts_chunk$set(
 library("rstan")
 library("dplyr")
 library("ggplot2")
-rstan_options(auto_write = TRUE) # Cache the compiled model
-options(mc.cores = parallel::detectCores() / 2) # Parallel processing
+rstan_options(auto_write = TRUE) # cache the compiled model
+options(mc.cores = parallel::detectCores() / 2) # stan parallel processing
 d <- readr::read_csv("data-generated/daily-cases.csv")
 d
 ```
@@ -50,6 +50,10 @@ source("analysis/make_projection_plot.R")
 # Using fewer iterations for a quick example:
 fit <- fit_seeiqr(d$cases, seeiqr_model = seeiqr_model,
   iter = 300, chains = 4)
+```
+
+```{r summary}
+print(fit$fit, pars = c("R0", "f2", "phi"))
 ```
 
 ```{r proj-plot}

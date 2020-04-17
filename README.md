@@ -23,7 +23,7 @@ You will need the following packages installed:
 ``` r
 install.packages(c("tidyverse", "remotes", "rstan", "here", 
   "future", "deSolve", "furrr", "cowplot", "reshape2"))
-remotes::install_github("https://github.com/seananderson/ggsidekick")
+remotes::install_github("seananderson/ggsidekick")
 ```
 
 An example of how to run the model:
@@ -88,7 +88,24 @@ fit <- fit_seeiqr(d$cases, seeiqr_model = seeiqr_model,
 ```
 
 ``` r
+print(fit$fit, pars = c("R0", "f2", "phi"))
+#> Inference for Stan model: seeiqr.
+#> 4 chains, each with iter=300; warmup=150; thin=1; 
+#> post-warmup draws per chain=150, total post-warmup draws=600.
+#> 
+#>        mean se_mean   sd 2.5%  25%  50%  75% 97.5% n_eff Rhat
+#> R0     2.95    0.00 0.04 2.87 2.93 2.95 2.98  3.02   388 1.01
+#> f2     0.22    0.00 0.07 0.10 0.17 0.22 0.26  0.35   332 1.00
+#> phi[1] 7.22    0.15 2.56 3.40 5.51 6.81 8.39 14.06   301 1.01
+#> 
+#> Samples were drawn using NUTS(diag_e) at Thu Apr 16 20:14:33 2020.
+#> For each parameter, n_eff is a crude measure of effective sample size,
+#> and Rhat is the potential scale reduction factor on split chains (at 
+#> convergence, Rhat=1).
+```
+
+``` r
 make_projection_plot(list(fit)) + theme_light()
 ```
 
-![](README-figs/unnamed-chunk-4-1.png)
+![](README-figs/proj-plot-1.png)

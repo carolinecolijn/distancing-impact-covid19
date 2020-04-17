@@ -1,4 +1,4 @@
-## Estimating the impact of COVID-19 control measures using a Bayesian model of physical distancing
+### Estimating the impact of COVID-19 control measures using a Bayesian model of physical distancing
 
 This repository contains code associated with a manuscript investigating the impact of COVID-19 control measures in British Columbia, Canada.
 

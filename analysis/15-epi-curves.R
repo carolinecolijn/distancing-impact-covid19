@@ -106,7 +106,7 @@ g <- prev %>%
   annotate("text", x = lubridate::ymd_hms("2020-03-22 00:00:00"), y = 80000, label = "See inset", angle = 90, col = "grey30", size = 3.5) +
   scale_x_datetime(date_breaks = "4 months", date_labels = "%b %Y")
 
-ggsave("figs-ms/epi-curves.png", width = 5, height = 3.25)
+# ggsave("figs-ms/epi-curves.png", width = 5, height = 3.25)
 
 g3 <- g + theme_void() +
   theme(panel.border = element_rect(fill = NA, colour = "grey70", size = 1)) +
@@ -122,7 +122,7 @@ plot_with_inset <-
 ggsave(
   filename = "figs-ms/epi-curves-inset.png",
   plot = plot_with_inset,
-  width = 5, height = 3.25)
+  width = 5, height = 3.25, dpi = 400)
 
 # g2 <- g + scale_y_sqrt(labels = scales::comma)
 # ggsave("figs-ms/epi-curves-sqrt.png", width = 4.5, height = 3.25)

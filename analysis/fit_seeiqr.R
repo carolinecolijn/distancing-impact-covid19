@@ -38,8 +38,8 @@
 #' @param fixed_f_forecast Optional fixed `f` for forecast.
 #' @param pars A named numeric vector of fixed parameter values
 #' @param i0 A scaling factor FIXME
-#' @param fsi FIXME
-#' @param nsi FIXME
+#' @param fsi Fraction socially distancing. Derived parameter.
+#' @param nsi Fraction not socially distancing. Derived parameter.
 #' @param state_0 Initial state: a named numeric vector
 #' @param save_state_predictions Include the state predictions? `y_hat` Will
 #'   make the resulting model object much larger.
@@ -235,7 +235,7 @@ fit_seeiqr <- function(daily_cases,
   }
   pars_save <- c("R0", "f2", "phi", "lambda_d", "y_rep", "sampFrac2")
   if (save_state_predictions) pars_save <- c(pars_save, "y_hat")
-  fit <- sampling(
+  fit <- rstan::sampling(
     seeiqr_model,
     data = stan_data,
     iter = iter,

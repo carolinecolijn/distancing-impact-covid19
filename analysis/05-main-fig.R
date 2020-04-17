@@ -1,6 +1,6 @@
 source(here::here("analysis/data-model-prep.R"))
 
-m <- fit_seeiqr(daily_diffs, seeiqr_model = seeiqr_model, iter = 2000, chains = 8)
+m <- fit_seeiqr(daily_diffs, seeiqr_model = seeiqr_model, iter = 3000, chains = 8)
 print(m$fit, pars = c("R0", "f2", "phi"))
 saveRDS(m, file = "data-generated/main-fit-2000.rds")
 m <- readRDS("data-generated/main-fit-2000.rds")

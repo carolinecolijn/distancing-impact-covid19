@@ -60,3 +60,32 @@ g <- ggplot(timeline, aes(value, 1, label = event, group = variable)) +
 ggsave("../figs-ms/timeline_states.png", width = 6.45, height = 3.6, dpi = 400)
 ggsave("../figs-ms/timeline_states.pdf", width = 6.45, height = 3.6)
 
+############################################################################
+# try to do some fits
+############################################################################
+
+library("covidseir")
+options(mc.cores = parallel::detectCores() / 2) # Stan parallel processing
+
+pop_size <- list("WA" = 7.615e6, "CA" = 39.51e6, "FL" = 21.48e6, "NY" = 19.45e6)
+
+wa_dat <- filter(d, state == "WA")
+wa_dat$day <- seq_len(nrow(wa_dat))
+
+# do some tests with WA data 
+# seems to be a bit better with higher i0 but ??
+wa_fit <- fit_seir(wa_dat$positiveIncrease, chains = 4, iter = 250,
+  samp_frac_fixed = rep(0.21, nrow(wa_dat)), 
+  i0=300,
+  pars = c(
+    N = 7.615e6, D = 5, k1 = 1 / 5, k2 = 1, q = 0.05,
+    r = 0.1, ur = 0.02, f0 = 1.0, start_decline = 11, end_decline = 22
+  ))
+print(wa_fit)
+
+p <- forecast_seir(wa_fit, iter = 1:100, forecast_days = 5)
+ggplot(p, aes(day, mu, group = .iteration)) +
+    geom_line(alpha = 0.2) +
+    geom_point(aes(x = day, y = positiveIncrease), data = wa_dat, inherit.aes = FALSE)
+ggsave("../figs-ms/WA_testfit.png")
+

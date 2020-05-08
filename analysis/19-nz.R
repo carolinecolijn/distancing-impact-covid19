@@ -1,0 +1,108 @@
+library(dplyr)
+library(ggplot2)
+dmy <- lubridate::dmy
+ymd <- lubridate::ymd
+options(mc.cores = parallel::detectCores() / 2)
+
+# https://en.wikipedia.org/wiki/COVID-19_pandemic_in_New_Zealand#Requirements
+# Ardern announced that, effective 01:00 on 16 March, all travellers arriving in or returning to New Zealand from outside of the country must self-isolate for 14 days.
+# In addition, restrictions were placed on travel to the Pacific islands from New Zealand, barring travel to the region by those showing signs of coronavirus symptoms, as well as close contacts of coronavirus patients.
+
+# On 16 March, Ardern called for a halt to public gatherings of more than 500 people and warned that the outbreak could lead to a recession greater than the 2008 global financial crisis.[223][224]
+
+# On 19 March, the Government required the cancellation of indoor gatherings of more than 100 people.
+
+# On 23 March, Ardern raised the alert level to three and announced the closure of all schools, beginning that day. She also announced that the alert level would rise to four at 11:59pm on 25 March, instituting a nationwide lockdown.
+
+g <- readr::read_csv("https://www.gstatic.com/covid19/mobility/Global_Mobility_Report.csv?cachebust=722f3143b586a83f")
+g <- filter(g, country_region == "New Zealand")
+ggplot(g, aes(date, transit_stations_percent_change_from_baseline)) +
+  geom_point() +
+  geom_vline(xintercept = ymd("2020-03-16")) +
+  geom_vline(xintercept = ymd("2020-03-18")) +
+  geom_vline(xintercept = ymd("2020-03-26"))
+
+d <- readr::read_csv("~/Downloads/covid-cases-7may20-NZ.csv", skip = 3)
+d <- rename(d, date = `Date notified of potential case`, overseas = `Overseas travel`) %>%
+  select(date, overseas) %>%
+  mutate(date = dmy(date)) %>%
+  group_by(date) %>%
+  summarize(all_cases = n(),
+    not_overseas_cases = sum(overseas == "No", na.rm = TRUE))
+d
+
+tidyr::pivot_longer(d, -date) %>%
+  ggplot(aes(date, value, colour = name)) +
+  geom_line()
+
+# get_days_since <- function(until, since) {
+#   abs(as.numeric(difftime(until, since, units = "days")))
+# }
+# (start_decline <- get_days_since(ymd("2020-03-17"), min(florida$date)))
+# (end_decline <- get_days_since(ymd("2020-04-01"), min(florida$date)))
+# (f_seg <- c(rep(0, start_decline), rep(1, nrow(florida) - start_decline)))
+
+nz <- filter(d, date >= ymd("2020-03-15"))
+nz$all_cases
+diff(nz$date)
+
+nz <- left_join(tibble(date = seq(min(nz$date), max(nz$date), by = "1 day")), nz)
+nz$all_cases
+nz$not_overseas_cases
+diff(nz$date)
+nz <- nz %>%
+  mutate(all_cases = ifelse(!is.na(all_cases), all_cases, 0)) %>%
+  mutate(not_overseas_cases = ifelse(!is.na(not_overseas_cases), not_overseas_cases, 0))
+
+nz$all_cases
+nz$not_overseas_cases
+diff(nz$date)
+
+samp_frac_fixed <- rep(0.4, nrow(nz))
+i0 <- filter(d, date < ymd("2020-03-15")) %>%
+  pull(all_cases) %>% sum()
+i0
+
+.s <- as.numeric(ymd("2020-03-18") - min(nz$date))
+.e <- as.numeric(ymd("2020-03-26") - min(nz$date))
+
+(f_seg <- c(rep(0, .s), rep(1, nrow(nz) - .s)))
+
+# https://www.stats.govt.nz/topics/population # 4951500
+
+fit <- covidseir::fit_seir(
+  daily_cases = nz$all_cases,
+  samp_frac_fixed = samp_frac_fixed,
+  time_increment = 0.2,
+  f_seg = f_seg,
+  R0_prior = c(log(2.5), 0.2),
+  iter = 100,
+  chains = 4,
+  i0 = i0,
+  delay_shape = 1.48,
+  delay_scale = 7.93,
+  pars = c(N = 4951500, D = 5, k1 = 1/5, k2 = 1,
+    q = 0.05, r = 0.1, ur = 0.02, f0 = 1,
+    start_decline = .s, end_decline = .e))
+fit
+print(fit)
+
+nz$day <- seq_len(nrow(nz))
+nz$value <- nz$not_overseas_cases
+p <- covidseir::project_seir(fit, iter = 1:100, forecast_days = 2)
+covidseir::tidy_seir(p) %>%
+  covidseir::plot_projection(nz)
+
+# model <- rstan::stan_model("analysis/seeiqr.stan")
+# fit2 <- fit_seeiqr(nz$not_overseas_cases, seeiqr_model = model, forecast_days = 2, R0_prior = c(log(2.5), 0.2),
+#   chains = 4, iter = 100,   i0 = 1,
+#   delayShape = 1.48,
+#   delayScale = 7.93,
+#   sampled_fraction1 = 0.4,
+#   sampled_fraction2 = 0.4,
+#   pars = c(N = 4951500, D = 5, k1 = 1/5, k2 = 1,
+#     q = 0.05, r = 0.1, ur = 0.02, f1 = 1,
+#     start_decline = 1, end_decline = 11))
+# print(fit2$fit, pars = c("R0", "f2", "phi"))
+#
+# make_projection_plot(list(fit2))

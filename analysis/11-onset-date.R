@@ -52,9 +52,9 @@ plot_time_to_report <- function(data,
         x = symptom_onset_date,
         y = time_to_report
       )) +
-      geom_jitter(height = 0, width = 0.22, alpha = 0.35, size = 0.9, pch = 19, col = .hist_blue) +
+      geom_jitter(height = 0, width = 0.22, alpha = 0.35, size = 0.8, pch = 19, col = .hist_blue) +
       geom_boxplot(aes(group = symptom_onset_date),
-        outlier.shape = NA, fill = NA, colour = "grey30", alpha = 0.6,
+        outlier.shape = NA, fill = NA, colour = "grey40", alpha = 0.6, size = 0.5, coef = 0
       ) +
       scale_fill_distiller(palette = "Blues", direction = 1, limits = c(1, 10)) +
       geom_abline(
@@ -147,13 +147,18 @@ ymd <- lubridate::ymd
 #
 #   theme(plot.margin = margin(t = 90, r = 11/2, b = 11/2, l = 11/2), panel.border = element_blank())
 
+d <- readr::read_csv(here::here("data-raw/timeline.csv"), comment = "#")
+d <- d[-1, ]
+
 daily_diff_plot <-
   dat2 %>%
   ggplot(aes(x = Date, y = daily_diffs)) +
+  geom_rect(xmin = min(d$date), xmax = max(d$date), ymin  = 0, ymax = Inf, fill = "grey82", col = NA) +
   geom_col(
     fill = .hist_blue, alpha = .8,
     colour = "grey90", lwd = 0.15
   ) +
+  # geom_rect(data = d, mapping = aes(xintercept = date), lty = 1, col = "grey55", lwd = 0.4) +
   coord_cartesian(expand = FALSE,
     ylim = c(0, max(dat2$daily_diffs) * 1.02), clip = "on") +
   labs(
@@ -163,7 +168,7 @@ daily_diff_plot <-
   ) +
   xlim(lubridate::ymd("2020-02-29"), .last_day)
 
-daily_diff_plot
+# daily_diff_plot
 
 # Hospital ----------------------------------------------------------
 
@@ -194,26 +199,31 @@ hosp_plot <- ggplot(h, aes(date, Count, colour = Type)) +
 # Timeline --------------------------------------------------------------------
 
 d <- readr::read_csv(here::here("data-raw/timeline.csv"), comment = "#")
+d <- d[-1, ]
 
-d$event <- gsub("Canada", "Canada\n", d$event)
-d$type <- c("A", rep("B", length(d$event) - 1))
-g_timeline <- ggplot(d, aes(date, 1, label = event)) +
-  geom_point() +
+d$event <- gsub("outside Canada", "outside\nCanada", d$event)
+d$event <- gsub("\\/cafe", "", d$event)
+# d$type <- c("A", rep("B", length(d$event) - 1))
+d$type <- c(rep("B", length(d$event)))
+g_timeline <- ggplot(d, aes(date, 0, label = event)) +
   theme_void() +
-  ylim(0.9, 1.4) +
+  ylim(0, 1) +
   annotate("line",
-    x = seq(lubridate::ymd("2020-03-07"),
-      lubridate::ymd("2020-03-22"), by = "1 day"),
-    y = 1
+    x = seq(min(d$date) - 1.15,
+      max(d$date) + 0.9, by = "1 day"),
+    y = 0, col = "grey70"
   ) +
   # coord_flip(clip = "off") +
-  coord_cartesian(clip = "off") +
-  geom_text(y = 1.015, angle = 90, hjust = 0, aes(colour = type), lineheight = .82, size = 3.5) +
-  scale_color_manual(values = c(RColorBrewer::brewer.pal(6, "Blues")[5], "grey10")) +
+  coord_cartesian(clip = "off", expand = FALSE, ylim = c(0, 1)) +
+  geom_point(col = "grey30", size = 1.3) +
+  geom_text(y = 0.04, angle = 90, hjust = 0, aes(colour = type), lineheight = .75, size = 3.3) +
+  # scale_color_manual(values = c(RColorBrewer::brewer.pal(6, "Blues")[5], "grey10")) +
+  scale_color_manual(values = c("grey20")) +
   guides(colour = FALSE) +
-  geom_text(y = 0.985, aes(label = date), angle = 30, hjust = 1, size = 3.5) +
-  theme(plot.margin = margin(t = -10, r = -10, b = -10, l = 5, unit = "pt")) +
-  xlim(lubridate::ymd("2020-02-29"), .last_day)
+  # geom_text(y = -0.05, aes(label = substr(as.character(date), 6, 10)), angle = 30, hjust = 1, size = 3.3) +
+  geom_text(y = -0.03, aes(label = format(date, "%b %d")), angle = 90, hjust = 1, size = 3.0, col = "grey30") +
+  theme(plot.margin = margin(t = -10, r = -10, b = -20, l = 5, unit = "pt"))
+  # xlim(lubridate::ymd("2020-02-29"), .last_day)
 
 g_timeline
 # ggsave("figs-ms/timeline.png", width = 6.45, height = 3.6, dpi = 400)
@@ -222,15 +232,27 @@ g_timeline
 g <- cowplot::plot_grid(g_timeline, plotdelay2, daily_diff_plot, hosp_plot,
   ncol = 2,
   labels = "AUTO", align = "hv", label_x = 0.18, label_y = 0.962
-)
+) +
+  cowplot::draw_line(
+    x = c(0.203, 0.132),
+    y = c(0.483, 0.583),
+    color = "grey70", size = 0.5, alpha = 0.6
+  ) +
+  cowplot::draw_line(
+    x = c(0.284, 0.460),
+    y = c(0.483, 0.584),
+    color = "grey70", size = 0.5, alpha = 0.6
+  )
+
+# g
 # g <- cowplot::plot_grid(daily_diff_plot, plotdelay2, hosp_plot, g_timeline,
 #   ncol = 2,
 #   labels = "AUTO", align = "hv", label_x = 0.18, label_y = 0.962
 # )
-g
+# g
 # cowplot::plot_grid(g, g_timeline, ncol = 2, rel_widths = c(2, 1)) +
 #   theme(plot.margin = margin(2, 11, 2, 0))
 
 
-ggsave("figs-ms/onset-hosp.png", width = 7.7, height = 5, dpi = 250)
-ggsave("figs-ms/onset-hosp.pdf", width = 7.7, height = 5)
+ggsave("figs-ms/onset-hosp.png", width = 7.7, height = 5.1, dpi = 400)
+ggsave("figs-ms/onset-hosp.pdf", width = 7.7, height = 5.1)

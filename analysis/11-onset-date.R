@@ -91,20 +91,79 @@ if (max(dat2$Date) == "2020-04-08") {
   )
 }
 
-daily_diff_plot <- dat2 %>%
+ymd <- lubridate::ymd
+#
+#
+# make_seg <- function(.date, .end = 1, .text = "") {
+#   list(
+#   geom_segment(x = lubridate::ymd(.date),
+#     xend = lubridate::ymd(.date), y = 0, yend = 95 + .end * 3.5 , col = "grey60", lwd = 0.5),
+#     annotate("text", x = lubridate::ymd(.date) + 0.3, y = 95 + .end * 3.5, label = .text, hjust = 0, col = "grey30", size = 3.5)
+#   )
+# }
+# .xlim <- c(lubridate::ymd("2020-02-29"), .last_day)
+# # daily_diff_plot <-
+#   dat2 %>%
+#   ggplot(aes(x = Date, y = daily_diffs)) +
+#   geom_col(
+#     fill = .hist_blue, alpha = .8,
+#     colour = "grey90", lwd = 0.15
+#   ) +
+#   annotate(geom = "segment", y = Inf, yend = Inf, x = .xlim[1], xend = .xlim[2], colour = "grey70") +
+#   annotate(geom = "segment", y = 0, yend = 0, x = .xlim[1], xend = .xlim[2], colour = "grey70") +
+#   annotate(geom = "segment", y = -Inf, yend = Inf, x = .xlim[2], xend = .xlim[2], colour = "grey70") +
+#   annotate(geom = "segment", y = -Inf, yend = Inf, x = .xlim[1], xend = .xlim[1], colour = "grey70") +
+#   coord_cartesian(expand = FALSE,
+#     ylim = c(0, max(dat2$daily_diffs) * 1.02), clip = "off") +
+#   labs(
+#     fill = "Reported\ncases",
+#     x = "Date of reported case",
+#     y = "New reported cases"
+#   ) +
+#   xlim(lubridate::ymd("2020-02-29"), .last_day) +
+#   make_seg("2020-03-08", 8, "Testing") +
+#   make_seg("2020-03-12", 7, "Testing") +
+#   make_seg("2020-03-13", 6, "Testing") +
+#   make_seg("2020-03-14", 5, "Testing") +
+#   make_seg("2020-03-16", 4, "Testing") +
+#   make_seg("2020-03-17", 3, "Testing") +
+#   make_seg("2020-03-20", 2, "Testing") +
+#   make_seg("2020-03-21", 1, "Testing") +
+#
+#     # geom_segment(x = ymd("2020-03-08"),
+#     # xend = ymd("2020-03-08"), y = 0, yend = 100, col = "grey50") +
+#     #
+#     # geom_segment(x = ymd("2020-03-12"),
+#     #   xend = ymd("2020-03-12"), y = 0, yend = 100, col = "grey50") +
+#     #
+#     # geom_segment(x = ymd("2020-03-13"),
+#     #   xend = ymd("2020-03-13"), y = 0, yend = 100, col = "grey50") +
+#     #
+#     # geom_segment(x = ymd("2020-03-14"),
+#     #   xend = ymd("2020-03-14"), y = 0, yend = 100, col = "grey50") +
+#     #
+#     # geom_segment(x = ymd("2020-03-16"),
+#     #   xend = ymd("2020-03-16"), y = 0, yend = 100, col = "grey50") +
+#
+#   theme(plot.margin = margin(t = 90, r = 11/2, b = 11/2, l = 11/2), panel.border = element_blank())
+
+daily_diff_plot <-
+  dat2 %>%
   ggplot(aes(x = Date, y = daily_diffs)) +
   geom_col(
     fill = .hist_blue, alpha = .8,
     colour = "grey90", lwd = 0.15
   ) +
   coord_cartesian(expand = FALSE,
-    ylim = c(0, max(dat2$daily_diffs) * 1.02)) +
+    ylim = c(0, max(dat2$daily_diffs) * 1.02), clip = "on") +
   labs(
     fill = "Reported\ncases",
     x = "Date of reported case",
     y = "New reported cases"
   ) +
   xlim(lubridate::ymd("2020-02-29"), .last_day)
+
+daily_diff_plot
 
 # Hospital ----------------------------------------------------------
 
@@ -132,11 +191,46 @@ hosp_plot <- ggplot(h, aes(date, Count, colour = Type)) +
   ylab("Census count") +
   labs(colour = "Census type", shape = "Census type")
 
+# Timeline --------------------------------------------------------------------
 
-g <- cowplot::plot_grid(daily_diff_plot, plotdelay2, hosp_plot,
-  ncol = 1,
+d <- readr::read_csv(here::here("data-raw/timeline.csv"), comment = "#")
+
+d$event <- gsub("Canada", "Canada\n", d$event)
+d$type <- c("A", rep("B", length(d$event) - 1))
+g_timeline <- ggplot(d, aes(date, 1, label = event)) +
+  geom_point() +
+  theme_void() +
+  ylim(0.9, 1.4) +
+  annotate("line",
+    x = seq(lubridate::ymd("2020-03-07"),
+      lubridate::ymd("2020-03-22"), by = "1 day"),
+    y = 1
+  ) +
+  # coord_flip(clip = "off") +
+  coord_cartesian(clip = "off") +
+  geom_text(y = 1.015, angle = 90, hjust = 0, aes(colour = type), lineheight = .82, size = 3.5) +
+  scale_color_manual(values = c(RColorBrewer::brewer.pal(6, "Blues")[5], "grey10")) +
+  guides(colour = FALSE) +
+  geom_text(y = 0.985, aes(label = date), angle = 30, hjust = 1, size = 3.5) +
+  theme(plot.margin = margin(t = -10, r = -10, b = -10, l = 5, unit = "pt")) +
+  xlim(lubridate::ymd("2020-02-29"), .last_day)
+
+g_timeline
+# ggsave("figs-ms/timeline.png", width = 6.45, height = 3.6, dpi = 400)
+# ggsave("figs-ms/timeline.pdf", width = 6.45, height = 3.6)
+
+g <- cowplot::plot_grid(g_timeline, plotdelay2, daily_diff_plot, hosp_plot,
+  ncol = 2,
   labels = "AUTO", align = "hv", label_x = 0.18, label_y = 0.962
-) +
-  theme(plot.margin = margin(2, 11, 2, 0))
-ggsave("figs-ms/onset-hosp.png", width = 4.1, height = 6.8, dpi = 350)
-ggsave("figs-ms/onset-hosp.pdf", width = 4.1, height = 6.8)
+)
+# g <- cowplot::plot_grid(daily_diff_plot, plotdelay2, hosp_plot, g_timeline,
+#   ncol = 2,
+#   labels = "AUTO", align = "hv", label_x = 0.18, label_y = 0.962
+# )
+g
+# cowplot::plot_grid(g, g_timeline, ncol = 2, rel_widths = c(2, 1)) +
+#   theme(plot.margin = margin(2, 11, 2, 0))
+
+
+ggsave("figs-ms/onset-hosp.png", width = 7.7, height = 5, dpi = 250)
+ggsave("figs-ms/onset-hosp.pdf", width = 7.7, height = 5)

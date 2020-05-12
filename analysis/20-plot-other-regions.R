@@ -196,4 +196,4 @@ g1 <- g +
     x = .x2 + 0.156, y = .y1, width = .width, height = .height)
 
 ggsave(here("figs-ms/other-regions.pdf"), width = 7.2, height = 3.3)
-ggsave(here("figs-ms/other-regions.png"), width = 7.2, height = 3.5, dpi = 400)
+ggsave(here("figs-ms/other-regions.png"), width = 7.2, height = 3.3, dpi = 400)

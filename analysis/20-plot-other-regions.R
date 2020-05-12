@@ -67,14 +67,16 @@ source(here("analysis/plot_projection_w_inset.R"))
 ymax <- 22000
 ny_g <- plot_projection_w_inset(
   ny_prd, ny_dat, ny_fit, ylim = c(0, ymax), col = cols[["New York"]]) +
-  add_label("A", "New York", ymax)
+  add_label("A", "New York", ymax) +
+  theme(axis.text.x.bottom = element_blank())
 # ny_g
 
 ymax <- 2000
 fl_g <- plot_projection_w_inset(
   fl_prd, fl_dat, fl_fit, ylim = c(0, ymax), col = cols[["Florida"]]) +
   add_label("B", "Florida", ymax) +
-  theme(axis.title.y = element_blank())
+  theme(axis.title.y = element_blank())+
+  theme(axis.text.x.bottom = element_blank())
 # fl_g
 
 ymax <- 700
@@ -83,7 +85,8 @@ wa_g <- plot_projection_w_inset(
   # coord_cartesian(expand = FALSE,
   #   xlim = c(min(ny_dat$date), max(wa_dat$date)), ylim = c(0, ymax)) +
   add_label("C", "Washington", ymax)+
-  theme(axis.title.y = element_blank())
+  theme(axis.title.y = element_blank())+
+  theme(axis.text.x.bottom = element_blank())
 # wa_g
 
 ymax <- 60
@@ -145,7 +148,7 @@ goog_panel <-
   theme(legend.position = "none") +
   theme(axis.title.x.bottom = element_blank(),
     plot.margin =
-      margin(t = half_line, r = 1.5, b = half_line, l = -3),
+      margin(t = 5, r = 1.5, b = -8, l = -3),
     axis.title.y = element_text(angle = 90,
       margin = margin(r = 2), vjust = 1, size = 10)
   ) +
@@ -163,7 +166,10 @@ g <- cowplot::plot_grid(
   nz_g,
   goog_panel,
   ncol = 3, align = "hv", axis = "lbtr") +
-  cowplot::draw_text("Reported cases", x = 0.011, y = 0.5, angle = 90, size = 10, col = "grey30")
+  cowplot::draw_text("Reported cases", x = 0.011, y = 0.5, angle = 90, size = 10, col = "grey30") +
+  theme(axis.title.x.bottom = element_blank(),
+    plot.margin =
+      margin(t = 2, r = 4, b = 15, l = 1))
 # g
 
 .width <- 0.09
@@ -189,5 +195,5 @@ g1 <- g +
   cowplot::draw_plot(f2_plot(nz_fit, 1-nz_thr, col = cols[["New Zealand"]]),
     x = .x2 + 0.156, y = .y1, width = .width, height = .height)
 
-ggsave(here("figs-ms/other-regions.pdf"), width = 7.2, height = 3.5)
+ggsave(here("figs-ms/other-regions.pdf"), width = 7.2, height = 3.3)
 ggsave(here("figs-ms/other-regions.png"), width = 7.2, height = 3.5, dpi = 400)

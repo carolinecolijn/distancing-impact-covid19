@@ -22,7 +22,7 @@ plot_projection_w_inset <- function(proj_dat, obs_dat, obj, ylim = NULL,
     scale_x_date(date_breaks = "1 month", date_labels = "%b %d") +
     theme(axis.title.x.bottom = element_blank(),
       plot.margin =
-        margin(t = half_line, r = 1.5, b = half_line, l = -3),
+        margin(t = 5, r = 1.5, b = -8, l = -3),
       axis.title.y = element_text(angle = 90,
         margin = margin(r = 2), vjust = 1, size = 10)
     ) #+
@@ -63,7 +63,7 @@ f2_plot <- function(obj, threshold, col = "black") {
       fill = col, alpha = .7, colour = "grey90", lwd = 0.15
     ) +
     ylab("Density") +
-    coord_cartesian(xlim = c(0.5, 1), expand = FALSE) +
+    coord_cartesian(xlim = c(0.4, 1), expand = FALSE) +
     xlab("") +
     # xlab("1 - f2") +
     scale_x_continuous(breaks = seq(0, 1, 0.5)) +

@@ -6,9 +6,9 @@ library(covidseir)
 options(mc.cores = parallel::detectCores() / 2)
 ymd <- lubridate::ymd
 
-d <- readr::read_csv("https://covidtracking.com/api/v1/states/daily.csv")
-readr::write_csv(d, "data-generated/us-data.csv")
-d <- readr::read_csv("data-generated/us-data.csv")
+# d <- readr::read_csv("https://covidtracking.com/api/v1/states/daily.csv")
+# readr::write_csv(d, here::here("data-generated/us-data.csv"))
+d <- readr::read_csv(here::here("data-generated/us-data.csv"))
 d$date <- lubridate::ymd(d$date)
 
 florida <- filter(d, state %in% "FL") %>%
@@ -27,13 +27,13 @@ plot(florida$date, florida$value, type = "l")
 lines(florida$date, florida$hospitalized, col = "red")
 lines(florida$date, florida$tests/10, col = "blue")
 
-g <- readr::read_csv("https://www.gstatic.com/covid19/mobility/Global_Mobility_Report.csv?cachebust=722f3143b586a83f")
-g1 <- filter(g, country_region == "United States")
-g1 <- filter(g, sub_region_1 == "Florida")
-ggplot(g1, aes(date, transit_stations_percent_change_from_baseline)) +
-  geom_point() +
-  geom_vline(xintercept = ymd("2020-03-16")) +
-  geom_vline(xintercept = ymd("2020-03-28"))
+# g <- readr::read_csv("https://www.gstatic.com/covid19/mobility/Global_Mobility_Report.csv?cachebust=722f3143b586a83f")
+# g1 <- filter(g, country_region == "United States")
+# g1 <- filter(g, sub_region_1 == "Florida")
+# ggplot(g1, aes(date, transit_stations_percent_change_from_baseline)) +
+#   geom_point() +
+#   geom_vline(xintercept = ymd("2020-03-16")) +
+#   geom_vline(xintercept = ymd("2020-03-28"))
 
 
 get_days_since <- function(until, since) {
@@ -51,12 +51,11 @@ fit <- covidseir::fit_seir(
   daily_cases = florida$value,
   samp_frac_fixed = samp_frac_fixed,
   time_increment = 0.1,
-  # f_seg = f_seg,
-  R0_prior = c(log(2.5), 0.2),
-  iter = 300,
-  chains = 6,
-  start_decline_prior = c(log(start_decline), 0.2),
-  end_decline_prior = c(log(end_decline), 0.2),
+  R0_prior = c(log(2.6), 0.2),
+  iter = 500,
+  chains = 8,
+  start_decline_prior = c(log(start_decline), 0.1),
+  end_decline_prior = c(log(end_decline), 0.1),
   i0 = 1,
   pars = c(N = 21.48e6, D = 5, k1 = 1/5, k2 = 1,
     q = 0.05, r = 0.1, ur = 0.02, f0 = 1))

@@ -1,14 +1,14 @@
 library(ggplot2)
 library(dplyr)
-library(future)
+# library(future)
 library(covidseir)
-plan(multisession)
+# plan(multisession)
 options(mc.cores = parallel::detectCores() / 2)
 ymd <- lubridate::ymd
 
-d <- readr::read_csv("https://covidtracking.com/api/v1/states/daily.csv")
-readr::write_csv(d, "data-generated/us-data.csv")
-d <- readr::read_csv("data-generated/us-data.csv")
+# d <- readr::read_csv("https://covidtracking.com/api/v1/states/daily.csv")
+# readr::write_csv(d, here::here("data-generated/us-data.csv"))
+d <- readr::read_csv(here::here("data-generated/us-data.csv"))
 d$date <- lubridate::ymd(d$date)
 
 new_york <- filter(d, state %in% "NY") %>%
@@ -58,18 +58,18 @@ plot(new_york$date, new_york$value, type = "l")
 lines(new_york$date, new_york$hospitalized, col = "red")
 lines(new_york$date, new_york$tests/10, col = "blue")
 
-as.numeric(ymd("2020-03-13") - min(new_york$date))
-as.numeric(ymd("2020-03-28") - min(new_york$date))
+.s <- as.numeric(ymd("2020-03-13") - min(new_york$date))
+.e <- as.numeric(ymd("2020-03-28") - min(new_york$date))
 
-g <- readr::read_csv("https://www.gstatic.com/covid19/mobility/Global_Mobility_Report.csv?cachebust=722f3143b586a83f")
-g1 <- filter(g, country_region == "United States")
-g1 <- filter(g, sub_region_1 == "New York")
-ggplot(g1, aes(date, transit_stations_percent_change_from_baseline)) +
-  geom_point() +
-  # geom_vline(xintercept = ymd("2020-03-16")) +
-  geom_vline(xintercept = ymd("2020-03-13")) +
-  # geom_vline(xintercept = ymd("2020-03-24")) +
-  geom_vline(xintercept = ymd("2020-03-28"))
+# g <- readr::read_csv("https://www.gstatic.com/covid19/mobility/Global_Mobility_Report.csv?cachebust=722f3143b586a83f")
+# g1 <- filter(g, country_region == "United States")
+# g1 <- filter(g, sub_region_1 == "New York")
+# ggplot(g1, aes(date, transit_stations_percent_change_from_baseline)) +
+#   geom_point() +
+#   # geom_vline(xintercept = ymd("2020-03-16")) +
+#   geom_vline(xintercept = ymd("2020-03-13")) +
+#   # geom_vline(xintercept = ymd("2020-03-24")) +
+#   geom_vline(xintercept = ymd("2020-03-28"))
 
 # Tests Jump on day 9 from <100 to >2000
 # and to > 10,000 by the 16th
@@ -81,12 +81,11 @@ ny_fit <- covidseir::fit_seir(
   daily_cases = new_york$value,
   samp_frac_fixed = samp_frac_fixed,
   time_increment = 0.1,
-  # f_seg = f_seg,
-  R0_prior = c(log(4.5), 0.2),
-  iter = 200,
-  chains = 3,
-  start_decline_prior = c(log(8), 0.2),
-  end_decline_prior = c(log(23), 0.2),
+  R0_prior = c(log(2.6), 0.2),
+  iter = 500,
+  chains = 4,
+  start_decline_prior = c(log(.s), 0.2),
+  end_decline_prior = c(log(.e), 0.2),
   i0 = 0.5,
   pars = c(N = 19.45e6, D = 5, k1 = 1/5, k2 = 1,
     q = 0.05, r = 0.1, ur = 0.02, f0 = 1

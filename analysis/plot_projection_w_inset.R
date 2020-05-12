@@ -1,4 +1,4 @@
-plot_projection_w_inset <- function(proj_dat, obs_dat, obj, inset_x = 0.5, inset_y = 0.5, width = .35, height = .5) {
+plot_projection_w_inset <- function(proj_dat, obs_dat, obj, ylim = NULL) {
 
   date_lookup <- tibble(
     date = seq(min(obs_dat$date), max(obs_dat$date) + 0, by = "1 day"),
@@ -10,11 +10,22 @@ plot_projection_w_inset <- function(proj_dat, obs_dat, obj, inset_x = 0.5, inset
     select(-day) %>%
     rename(day = date)
 
-  g <- covidseir::tidy_seir(p2, resample_y_rep = 50) %>%
+  # if (is.null(ylim)) ylim <- c(0, max(p2$y_rep_0.95))
+  half_line <- 11/2
+  g <- covidseir::tidy_seir(p2, resample_y_rep = 15) %>%
     covidseir::plot_projection(obs2) +
+    scale_y_continuous(labels = function(x) x/1000) +
     facet_null() +
     ggsidekick::theme_sleek() + ylab("Reported cases") +
-    theme(axis.title.x.bottom = element_blank())
+    coord_cartesian(expand = FALSE, xlim = range(p2$day), ylim = ylim) +
+    theme(axis.title.x.bottom = element_blank(),
+      plot.margin =
+        margin(t = half_line, r = 2, b = half_line, l = 2),
+      axis.title.y = element_text(angle = 90,
+        margin = margin(r = -5), vjust = 1, size = 10)
+    ) +
+     ylab("Reported cases (1000s)")
+
   # g <- g + geom_vline(xintercept = ymd("2020-03-05") + obj$post$start_decline[1:200], alpha = 0.1) +geom_vline(xintercept = ymd("2020-03-05") + obj$post$end_decline[1:200], alpha = 0.1)
   # # g
   #
@@ -31,7 +42,7 @@ plot_projection_w_inset <- function(proj_dat, obs_dat, obj, inset_x = 0.5, inset
   g
 }
 
-f2_plot <- function(obj) {
+f2_plot <- function(obj, threshold) {
   .hist_blue <- RColorBrewer::brewer.pal(6, "Blues")[5]
   f2 <- obj$post$f_s[,1]
   .x <- seq(0, 1, length.out = 300)
@@ -53,6 +64,7 @@ f2_plot <- function(obj) {
     coord_cartesian(xlim = range(.x), expand = FALSE) +
     xlab("Fraction of\ncontacts removed") +
     scale_x_continuous(breaks = seq(0, 1, 0.5)) +
+    geom_vline(xintercept = threshold, lty = 2, col = "grey50") +
     ggsidekick::theme_sleek() +
     theme(axis.line.y = element_blank(), panel.border = element_blank(),
       axis.text.y = element_blank(), axis.line.x = element_line(colour = "grey75"),

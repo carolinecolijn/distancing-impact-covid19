@@ -49,48 +49,111 @@ save(ny_thr, fl_thr, wa_thr, nz_thr, ca_thr,
   file = here("data-generated/other-region-thresholds.rda"))
 load(here("data-generated/other-region-thresholds.rda"))
 
+cols <- RColorBrewer::brewer.pal(n = 6, "Dark2")[-(5)]
+# cols <- RColorBrewer::brewer.pal(n = 5, "Dark2")
+# cols <- RColorBrewer::brewer.pal(n = 5, "Set2")
+# cols <- RColorBrewer::brewer.pal(n = 5, "Set1")
+regions <- c("New Zealand",  "California" , "Florida" , "New York", "Washington")
+names(cols) <- regions
+
 add_label <- function(letter, region, ymax) {
-  list(cowplot::draw_label(letter, x = ymd("2020-03-07"),
+  list(cowplot::draw_label(letter, x = ymd("2020-03-03"),
     y = ymax * .88, hjust = 0, vjust = 0, fontface = "bold", size = 12),
-    cowplot::draw_label(region, x = ymd("2020-03-12"),
+    cowplot::draw_label(region, x = ymd("2020-03-08"),
       y = ymax * .88, hjust = 0, vjust = 0,fontface = "plain", size = 10))
 }
 
 source(here("analysis/plot_projection_w_inset.R"))
 ymax <- 22000
 ny_g <- plot_projection_w_inset(
-  ny_prd, ny_dat, ny_fit, ylim = c(0, ymax)) +
+  ny_prd, ny_dat, ny_fit, ylim = c(0, ymax), col = cols[["New York"]]) +
   add_label("A", "New York", ymax)
 # ny_g
 
 ymax <- 2000
 fl_g <- plot_projection_w_inset(
-  fl_prd, fl_dat, fl_fit, ylim = c(0, ymax)) +
+  fl_prd, fl_dat, fl_fit, ylim = c(0, ymax), col = cols[["Florida"]]) +
   add_label("B", "Florida", ymax) +
   theme(axis.title.y = element_blank())
 # fl_g
 
 ymax <- 700
 wa_g <- plot_projection_w_inset(
-  wa_prd, wa_dat, wa_fit, ylim = c(0, ymax)) +
-  coord_cartesian(expand = FALSE, xlim = c(min(ny_dat$date), max(wa_dat$date)), ylim = c(0, ymax)) +
+  wa_prd, wa_dat, wa_fit, ylim = c(0, ymax), col = cols[["Washington"]]) +
+  # coord_cartesian(expand = FALSE,
+  #   xlim = c(min(ny_dat$date), max(wa_dat$date)), ylim = c(0, ymax)) +
   add_label("C", "Washington", ymax)+
   theme(axis.title.y = element_blank())
 # wa_g
 
 ymax <- 60
 nz_g <- plot_projection_w_inset(
-  nz_prd, nz_dat, nz_fit, ylim = c(0, ymax)) +
-  coord_cartesian(expand = FALSE, xlim = c(min(ny_dat$date), max(wa_dat$date)), ylim = c(0, ymax)) +
+  nz_prd, nz_dat, nz_fit, ylim = c(0, ymax), col = cols[["New Zealand"]]) +
+  coord_cartesian(expand = FALSE,
+    xlim = c(ymd("2020-03-01"), max(wa_dat$date)), ylim = c(0, ymax)) +
   add_label("E", "New Zealand", ymax) +
   theme(axis.title.y = element_blank())
 # nz_g
 
 ymax <- 3500
 ca_g <- plot_projection_w_inset(
-  ca_prd, ca_dat, ca_fit, ylim = c(0, ymax)) +
+  ca_prd, ca_dat, ca_fit, ylim = c(0, ymax), col = cols[["California"]]) +
   add_label("D", "California", ymax)
 # ca_g
+
+# Google data:
+if (!file.exists(here("data-generated/google-mobility.rds"))) {
+goog_dat <- readr::read_csv(
+  "https://www.gstatic.com/covid19/mobility/Global_Mobility_Report.csv?cachebust=722f3143b586a83f")
+saveRDS(goog_dat, file = here("data-generated/google-mobility.rds"))
+} else {
+  goog_dat <- readRDS(here("data-generated/google-mobility.rds"))
+}
+goog_dat$date <- lubridate::ymd(goog_dat$date)
+goog_dat <- dplyr:::filter(goog_dat,
+  country_region == "New Zealand" | sub_region_1 %in%
+    c("Washington", "California", "New York", "Florida"))
+goog_dat <- dplyr::filter(goog_dat, date >= lubridate::ymd("2020-03-01"))
+goog_dat <- goog_dat %>%
+  mutate(region = ifelse(country_region == "New Zealand",
+    country_region, sub_region_1))
+
+# get daily means
+goog_dat <- goog_dat %>%
+  group_by(date, region) %>%
+  mutate(MeanTransit = mean(transit_stations_percent_change_from_baseline, na.rm = TRUE)) %>%
+  mutate(MeanWorkplace = mean(workplaces_percent_change_from_baseline, na.rm = TRUE)) %>%
+  mutate(MeanRec = mean(retail_and_recreation_percent_change_from_baseline, na.rm = TRUE))
+
+# # Just transit, using mean
+# ggplot(goog_dat, aes(date, MeanTransit, group = region, col = region)) +
+#   geom_smooth(method = "gam", se = FALSE) +
+#   geom_line(alpha = 0.5) +
+#   labs(y = "% change from baseline", x = "") +
+#   theme_minimal() +
+#   scale_color_brewer(palette = "Dark2")
+
+half_line <- 11/2
+goog_panel <-
+  ggplot(goog_dat, aes(date, transit_stations_percent_change_from_baseline,
+  group = region, col = region)) +
+  geom_smooth(method = "gam", se = FALSE) +
+  geom_line(aes(date, MeanTransit), alpha = 0.5) +
+  labs(y = "% from baseline", x = "") +
+  ggsidekick::theme_sleek() +
+  scale_colour_manual(values = cols) +
+  theme(legend.position = "none") +
+  theme(axis.title.x.bottom = element_blank(),
+    plot.margin =
+      margin(t = half_line, r = 1.5, b = half_line, l = -3),
+    axis.title.y = element_text(angle = 90,
+      margin = margin(r = 2), vjust = 1, size = 10)
+  ) +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b %d") +
+  scale_y_continuous(breaks = c(0, -20, -40, -60, -80), labels = function(x) x/1) +
+  coord_cartesian(expand = FALSE, xlim = c(ymd("2020-03-01"), max(ny_dat$date)), ylim = c(-95, 25)) +
+  add_label("F", "Google transportation", 12)
+# goog_panel
 
 g <- cowplot::plot_grid(
   ny_g,
@@ -98,31 +161,33 @@ g <- cowplot::plot_grid(
   wa_g,
   ca_g,
   nz_g,
-  ncol = 3, align = "v")
+  goog_panel,
+  ncol = 3, align = "hv", axis = "lbtr") +
+  cowplot::draw_text("Reported cases", x = 0.011, y = 0.5, angle = 90, size = 10, col = "grey30")
 # g
-#
-# .width <- 0.25
-# .height = 0.26
-# .x <- 0.19
-# .x2 <- 0.59
-# g1 <- g +
-#   cowplot::draw_plot(f2_plot(ny_fit, 1-ny_thr),
-#     x = .x, y = 0.9, width = .width, height = .height) +
-#   cowplot::draw_plot(f2_plot(fl_fit, 1-fl_thr),
-#     x = .x, y = 0.6, width = .width, height = .height) +
-#   cowplot::draw_plot(f2_plot(wa_fit, 1-wa_thr),
-#     x = .x, y = 0.4, width = .width, height = .height) +
-#   cowplot::draw_plot(f2_plot(nz_fit, 1-nz_thr),
-#     x = .x, y = 0.2, width = .width, height = .height)
 
-ggsave(here("figs-ms/other-regions.pdf"), width = 7, height = 3.4)
-# ggsave(here("figs-ms/other-regions.png"), width = 4, height = 7.5)
+.width <- 0.09
+.height = 0.24
 
+xgap <- 0.333
+.x1 <- 0.075
+.x2 <- .x1 + xgap
+.x3 <- .x2 + xgap
 
-# wa_g <- plot_projection_w_inset(
-#   wa_prd, wa_dat, wa_fit)
-#
-# cowplot::plot_grid(wa_g, f2_plot(wa_fit, 1-wa_thr), ncol = 1)
-# ggsave(here("figs-ms/wa.pdf"), width = 4, height = 4.5)
-#
-#
+.y2 <- 0.695
+.y1 <- 0.19
+
+g1 <- g +
+  cowplot::draw_plot(f2_plot(ny_fit, 1-ny_thr, col = cols[["New York"]]),
+    x = .x1, y = .y2, width = .width, height = .height) +
+  cowplot::draw_plot(f2_plot(fl_fit, 1-fl_thr, col = cols[["Florida"]]),
+    x = .x2, y = .y2, width = .width, height = .height) +
+  cowplot::draw_plot(f2_plot(wa_fit, 1-wa_thr, col = cols[["Washington"]]),
+    x = .x3 + 0.156, y = .y2 + 0.05, width = .width, height = .height) +
+  cowplot::draw_plot(f2_plot(ca_fit, 1-ca_thr, col = cols[["California"]]),
+    x = .x1, y = .y1, width = .width, height = .height) +
+  cowplot::draw_plot(f2_plot(nz_fit, 1-nz_thr, col = cols[["New Zealand"]]),
+    x = .x2 + 0.156, y = .y1, width = .width, height = .height)
+
+ggsave(here("figs-ms/other-regions.pdf"), width = 7.2, height = 3.5)
+ggsave(here("figs-ms/other-regions.png"), width = 7.2, height = 3.5, dpi = 400)

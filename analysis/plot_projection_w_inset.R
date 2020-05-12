@@ -48,7 +48,7 @@ f2_plot <- function(obj, threshold, col = "black") {
   .hist_blue <- RColorBrewer::brewer.pal(6, "Blues")[5]
   f2 <- obj$post$f_s[,1]
   .x <- seq(0, 1, length.out = 300)
-  breaks <- seq(min(.x), max(.x), 0.022)
+  breaks <- seq(min(.x), max(.x), 0.020)
   f2_hist <- ggplot(tibble(f2 = f2)) +
     # geom_ribbon(
     #   data = tibble(
@@ -60,13 +60,13 @@ f2_plot <- function(obj, threshold, col = "black") {
     # ) +
     geom_histogram(
       breaks = breaks, aes(x = 1 - f2, y = ..density..),
-      fill = col, alpha = .7, colour = "grey90", lwd = 0.15
+      fill = col, alpha = 1, colour = "grey90", lwd = 0.1
     ) +
     ylab("Density") +
-    coord_cartesian(xlim = c(0.4, 1), expand = FALSE) +
+    coord_cartesian(xlim = c(0.45, 1), expand = FALSE) +
     xlab("") +
     # xlab("1 - f2") +
-    scale_x_continuous(breaks = seq(0, 1, 0.5)) +
+    scale_x_continuous(breaks = seq(0.4, 1, 0.1), labels = c("", "0.5", "", "", "", "", "1.0")) +
     geom_vline(xintercept = threshold, lty = 1, col = "grey50") +
     ggsidekick::theme_sleek() +
     theme(axis.line.y = element_blank(), panel.border = element_blank(),

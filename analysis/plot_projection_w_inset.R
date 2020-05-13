@@ -13,7 +13,7 @@ plot_projection_w_inset <- function(proj_dat, obs_dat, obj, ylim = NULL,
 
   # if (is.null(ylim)) ylim <- c(0, max(p2$y_rep_0.95))
   half_line <- 11/2
-  g <- covidseir::tidy_seir(p2, resample_y_rep = 15) %>%
+  g <- covidseir::tidy_seir(p2, resample_y_rep = 50) %>%
     covidseir::plot_projection(obs2, col = col) +
     scale_y_continuous(labels = function(x) x/1) +
     facet_null() +
@@ -59,14 +59,14 @@ f2_plot <- function(obj, threshold, col = "black") {
     #   fill = "grey50", size = 0.4
     # ) +
     geom_histogram(
-      breaks = breaks, aes(x = 1 - f2, y = ..density..),
+      breaks = breaks, aes(x = f2, y = ..density..),
       fill = col, alpha = 1, colour = "grey90", lwd = 0.1
     ) +
     ylab("Density") +
-    coord_cartesian(xlim = c(0.45, 1), expand = FALSE) +
+    coord_cartesian(xlim = c(0, .53), expand = FALSE) +
     xlab("") +
     # xlab("1 - f2") +
-    scale_x_continuous(breaks = seq(0.4, 1, 0.1), labels = c("", "0.5", "", "", "", "", "1.0")) +
+    scale_x_continuous(breaks = seq(0, .5, 0.1), labels = c("0", "", "0.2", "", "0.4", "")) +
     geom_vline(xintercept = threshold, lty = 1, col = "grey50") +
     ggsidekick::theme_sleek() +
     theme(axis.line.y = element_blank(), panel.border = element_blank(),

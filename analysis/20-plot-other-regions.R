@@ -59,7 +59,7 @@ names(cols) <- regions
 add_label <- function(letter, region, ymax) {
   list(cowplot::draw_label(letter, x = ymd("2020-03-03"),
     y = ymax * .88, hjust = 0, vjust = 0, fontface = "bold", size = 12),
-    cowplot::draw_label(region, x = ymd("2020-03-08"),
+    cowplot::draw_label(region, x = ymd("2020-03-08") + 0.5,
       y = ymax * .88, hjust = 0, vjust = 0,fontface = "plain", size = 10))
 }
 
@@ -155,7 +155,7 @@ goog_panel <-
   scale_x_date(date_breaks = "1 month", date_labels = "%b %d") +
   scale_y_continuous(breaks = c(0, -20, -40, -60, -80), labels = function(x) x/1) +
   coord_cartesian(expand = FALSE, xlim = c(ymd("2020-03-01"), max(ny_dat$date)), ylim = c(-95, 25)) +
-  add_label("F", "Google transportation", 12)
+  add_label("F", "Google transit station", 12)
 # goog_panel
 
 g <- cowplot::plot_grid(
@@ -172,7 +172,7 @@ g <- cowplot::plot_grid(
       margin(t = 2, r = 4, b = 15, l = 1))
 # g
 
-.width <- 0.09
+.width <- 0.115
 .height = 0.24
 
 xgap <- 0.333
@@ -184,16 +184,16 @@ xgap <- 0.333
 .y1 <- 0.19
 
 g1 <- g +
-  cowplot::draw_plot(f2_plot(ny_fit, 1-ny_thr, col = cols[["New York"]]),
+  cowplot::draw_plot(f2_plot(ny_fit, ny_thr, col = cols[["New York"]]),
     x = .x1, y = .y2, width = .width, height = .height) +
-  cowplot::draw_plot(f2_plot(fl_fit, 1-fl_thr, col = cols[["Florida"]]),
+  cowplot::draw_plot(f2_plot(fl_fit, fl_thr, col = cols[["Florida"]]),
     x = .x2, y = .y2, width = .width, height = .height) +
-  cowplot::draw_plot(f2_plot(wa_fit, 1-wa_thr, col = cols[["Washington"]]),
-    x = .x3 + 0.156, y = .y2 + 0.05, width = .width, height = .height) +
-  cowplot::draw_plot(f2_plot(ca_fit, 1-ca_thr, col = cols[["California"]]),
+  cowplot::draw_plot(f2_plot(wa_fit, wa_thr, col = cols[["Washington"]]),
+    x = .x3 + 0.146, y = .y2 + 0.05, width = .width, height = .height) +
+  cowplot::draw_plot(f2_plot(ca_fit, ca_thr, col = cols[["California"]]),
     x = .x1, y = .y1, width = .width, height = .height) +
-  cowplot::draw_plot(f2_plot(nz_fit, 1-nz_thr, col = cols[["New Zealand"]]),
-    x = .x2 + 0.156, y = .y1, width = .width, height = .height)
+  cowplot::draw_plot(f2_plot(nz_fit, nz_thr, col = cols[["New Zealand"]]),
+    x = .x2 + 0.146, y = .y1 + 0.0, width = .width, height = .height)
 
 ggsave(here("figs-ms/other-regions.pdf"), width = 7.2, height = 3.3)
 ggsave(here("figs-ms/other-regions.png"), width = 7.2, height = 3.3, dpi = 400)

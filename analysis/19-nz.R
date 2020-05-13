@@ -83,16 +83,16 @@ fit <- covidseir::fit_seir(
   time_increment = 0.1,
   R0_prior = c(log(2.6), 0.2),
   f_prior = c(0.3, 0.2),
-  iter = 500,
-  f_ramp_rate = 0.5,
+  iter = 400,
+  # f_ramp_rate = 0.5,
   start_decline_prior = c(log(.s), 0.1),
   end_decline_prior = c(log(.e), 0.1),
-  chains = 8,
-  i0 = 0.02,
+  chains = 6,
+  i0 = 0.001,
   delay_shape = 1.53,
   delay_scale = 7.828,
   pars = c(N = 4951500, D = 5, k1 = 1/5, k2 = 1,
-    q = 0.05, r = 0.1, ur = 0.02, f0 = 1))
+    q = 0.05, r = 0.1, ur = covidseir:::getu(0.95, r = 0.1), f0 = 1))
 print(fit)
 
 nz$day <- seq_len(nrow(nz))
@@ -101,11 +101,10 @@ nz$value <- nz$not_overseas_cases
 p <- covidseir::project_seir(fit, iter = 1:100, forecast_days = 0)
 
 covidseir::tidy_seir(p) %>%
-  covidseir::plot_projection(nz) +
-  geom_vline(xintercept = 16)
+  covidseir::plot_projection(nz)
 
-source(here::here("analysis/plot_projection_w_inset.R"))
-plot_projection_w_inset(p, nz, obj = fit)
+# source(here::here("analysis/plot_projection_w_inset.R"))
+# plot_projection_w_inset(p, nz, obj = fit)
 
 saveRDS(fit, file = here::here("data-generated/nz-fit.rds"))
 saveRDS(nz, file = here::here("data-generated/nz-dat.rds"))

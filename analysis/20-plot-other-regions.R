@@ -49,10 +49,38 @@ save(ny_thr, fl_thr, wa_thr, nz_thr, ca_thr,
   file = here("data-generated/other-region-thresholds.rda"))
 load(here("data-generated/other-region-thresholds.rda"))
 
+mean(ny_fit$post$f_s[,1] < ny_thr)
+mean(fl_fit$post$f_s[,1] < fl_thr)
+mean(wa_fit$post$f_s[,1] < wa_thr)
+mean(ca_fit$post$f_s[,1] < ca_thr)
+mean(nz_fit$post$f_s[,1] < nz_thr)
+
+q <- list()
+q[[1]] <- quantile(ny_fit$post$f_s[,1] / ny_thr, probs = c(0.05, 0.5, 0.95))
+q[[2]] <- quantile(fl_fit$post$f_s[,1] / fl_thr, probs = c(0.05, 0.5, 0.95))
+q[[3]] <- quantile(wa_fit$post$f_s[,1] / wa_thr, probs = c(0.05, 0.5, 0.95))
+q[[4]] <- quantile(ca_fit$post$f_s[,1] / ca_thr, probs = c(0.05, 0.5, 0.95))
+q[[5]] <- quantile(nz_fit$post$f_s[,1] / nz_thr, probs = c(0.05, 0.5, 0.95))
+
+m_bc <- readRDS(here::here("data-generated/main-fit-2000.rds"))
+threshold_bc <- readRDS(here::here("data-generated/BC-threshold.rds"))
+
+q[[6]] <- quantile(m_bc$post$f2 / threshold_bc, probs = c(0.05, 0.5, 0.95))
+
+names(q) <- c("NY", "FL", "WA", "CA", "NZ", "BC")
+
+source(here::here("analysis/functions_sir.R"))
+purrr::walk(seq_along(q), function(.x) {
+  write_tex(sprintf("%.2f", round(q[[.x]][[1]], 2)),
+    paste0(names(q)[.x], "lwrRatio"))
+  write_tex(sprintf("%.2f", round(q[[.x]][[2]], 2)),
+    paste0(names(q)[.x], "medRatio"))
+  write_tex(sprintf("%.2f", round(q[[.x]][[3]], 2)),
+    paste0(names(q)[.x], "uprRatio"))
+})
+
+
 cols <- RColorBrewer::brewer.pal(n = 6, "Dark2")[-(5)]
-# cols <- RColorBrewer::brewer.pal(n = 5, "Dark2")
-# cols <- RColorBrewer::brewer.pal(n = 5, "Set2")
-# cols <- RColorBrewer::brewer.pal(n = 5, "Set1")
 regions <- c("New Zealand",  "California" , "Florida" , "New York", "Washington")
 names(cols) <- regions
 

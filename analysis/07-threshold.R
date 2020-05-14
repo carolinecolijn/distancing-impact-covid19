@@ -32,6 +32,7 @@ ggsave("figs-ms/f-threshold.png", width = 3.7, height = 3.5)
 # write_tex(round(1 - thresh, 2) * 100, "thresholdPerc")
 # write_tex(round(1 - thresh, 2), "thresholdFrac")
 write_tex(round(thresh, 2), "thresholdFtwo")
+saveRDS(thresh, file = here::here("data-generated/BC-threshold.rds"))
 
 # Joint posterior plot with prevalence colouring: -----------------------------
 

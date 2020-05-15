@@ -38,8 +38,8 @@ R0 <- purrr::map_df(m_sf, function(.x) {
 }, .id = "Scenario")
 f2 <- purrr::map_df(m_sf, function(.x) {
   data.frame(
-    theta = "Fraction of contacts removed",
-    value = 1 - .x$post$f2, stringsAsFactors = FALSE
+    theta = "Fraction of normal contacts",
+    value = .x$post$f2, stringsAsFactors = FALSE
   )
 }, .id = "Scenario")
 theta_df <- bind_rows(R0, f2) %>% as_tibble()
@@ -146,22 +146,23 @@ get_thresh <- function(.pars) {
     fit_seeiqr(
       daily_diffs,
       pars = .pars,
-      iter = 300, chains = 1, save_state_predictions = TRUE,
+      iter = 200, chains = 1, save_state_predictions = TRUE,
       seeiqr_model = seeiqr_model, fixed_f_forecast = .f
     )
   })
   slopes <- purrr::map2_df(m_fs, fs, get_prevalence_slope)
-  slopes$inverse_f <- 1 - slopes$f
-  mlm <- lm(slope ~ inverse_f, data = slopes)
-  nd <- data.frame(inverse_f = 1 - seq(0.3, 1, length.out = 5000))
+  mlm <- lm(slope ~ f, data = slopes)
+  nd <- data.frame(f = seq(0.3, 1, length.out = 5000))
   nd$predicted_slope <- predict(mlm, newdata = nd)
-  thresh <- dplyr::filter(nd, predicted_slope > 0) %>% `[`(1, "inverse_f")
+  thresh <- dplyr::filter(nd, predicted_slope > 0) %>% `[`(1, "f")
   thresh
 }
 
 plan(multisession, workers = parallel::detectCores() / 2)
 thresholds <- furrr::future_map_dbl(list(pars1, pars2, pars3), get_thresh)
 plan(future::sequential)
+saveRDS(thresholds, file = here::here("data-generated/sens1-thresholds.rds"))
+thresholds <- readRDS(here::here("data-generated/sens1-thresholds.rds"))
 
 thresh_df <- tibble(Scenario = names(m_sens), threshold = thresholds)
 
@@ -170,8 +171,8 @@ R0 <- purrr::map_df(m_sens, function(.x) {
 }, .id = "Scenario")
 f2 <- purrr::map_df(m_sens, function(.x) {
   data.frame(
-    theta = "Fraction of contacts removed",
-    value = 1 - .x$post$f2, stringsAsFactors = FALSE
+    theta = "Fraction of normal contacts",
+    value = .x$post$f2, stringsAsFactors = FALSE
   )
 }, .id = "Scenario")
 f2 <- left_join(f2, thresh_df)

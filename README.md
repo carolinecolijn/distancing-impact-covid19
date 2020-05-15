@@ -9,7 +9,7 @@ The main statistical model written in [Stan](https://mc-stan.org/) is
 available [here](analysis/seeiqr.stan) and the main R function that
 calls this model for a vector of daily case counts is available
 [here](analysis/fit_seeiqr.R). A function to make projection plots is
-available [here](analysis/make_projection_plot.R).
+available [here](analysis/make_projection_plot.R). 
 
 A more fully featured and documented version of this model, which can accommodate multiple types of case data at once (e.g., reported cases, hospitalizations, ICU admissions) and estimate segments of positive-case sampling fractions for reported cases, is also available as an R package [covidseir](https://github.com/seananderson/covidseir).
 

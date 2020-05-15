@@ -76,21 +76,21 @@ breaks <- seq(min(.x), max(.x), 0.022)
 f2_hist <- ggplot(tibble(f2 = f2)) +
   geom_ribbon(
     data = tibble(
-      f2 = 1 - .x,
+      f2 = .x,
       density = dbeta(.x, obj$f2_prior_beta_shape1, obj$f2_prior_beta_shape2)
     ),
     aes(x = f2, ymin = 0, ymax = density), alpha = 0.5, colour = "grey50",
     fill = "grey50"
   ) +
   geom_histogram(
-    breaks = breaks, aes(x = 1 - f2, y = ..density..),
+    breaks = breaks, aes(x = f2, y = ..density..),
     fill = .hist_blue, alpha = .7, colour = "grey90", lwd = 0.15
   ) +
   ylab("Density") +
   coord_cartesian(xlim = range(.x), expand = FALSE) +
-  xlab("Fraction of contacts removed") +
+  xlab("Fraction of normal contacts") +
   scale_x_continuous(breaks = seq(0, 1, 0.2)) +
-  geom_vline(xintercept = 1 - .55, lty = 2, col = "grey40")
+  geom_vline(xintercept = .55, lty = 2, col = "grey40")
 
 f2_hist
 
@@ -131,11 +131,22 @@ g_prev <- ggplot(prevalence, aes(day, prevalence, group = iterations)) +
   xlab("")
 g_prev
 
-g <- cowplot::plot_grid(proj, R0_hist, g_prev, f2_hist, align = "hv",
-  labels = "AUTO", label_size = 12, label_x = 0.213, label_y = 0.96) +
-  theme(plot.margin = margin(11 / 2, 11, 11 / 2, 11 / 2))
-ggsave(paste0("figs-ms/fig1.png"), width = 6, height = 4.5, dpi = 400)
-ggsave(paste0("figs-ms/fig1.pdf"), width = 6, height = 4.5)
+gg_additions <- list(
+  theme(
+    plot.margin = margin(t = 0, r = 5, b = 1, l = 5),
+    axis.title.y.left = element_text(margin = margin(r = 0)))
+)
+
+g <- cowplot::plot_grid(
+  proj + gg_additions,
+  R0_hist + gg_additions,
+  g_prev + gg_additions,
+  f2_hist + gg_additions,
+  align = "hv",
+  labels = "AUTO", label_size = 12, label_x = 0.225, label_y = 0.995) +
+  theme(plot.margin = margin(11 / 2, 11 / 2, 11 / 2, 11 / 2))
+# ggsave(paste0("figs-ms/fig1.png"), width = 5, height = 4, dpi = 400)
+ggsave(paste0("figs-ms/fig1.pdf"), width = 5.25, height = 3.8)
 
 g <- ggplot(states, aes(time, value, group = iterations)) +
   geom_line(alpha = 0.1) +

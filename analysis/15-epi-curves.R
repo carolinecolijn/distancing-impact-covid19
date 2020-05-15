@@ -85,7 +85,8 @@ obj <- m # just for last_day_obs
 )
 
 g <- prev %>%
-  mutate(scenario2 = paste0(100 * (1 - as.numeric(scenario)), "%")) %>%
+  mutate(scenario2 = paste0(100 * (as.numeric(scenario)), "%")) %>%
+  mutate(scenario2 = factor(scenario2, levels = c("60%", "70%", "80%", "90%", "100%"))) %>%
   ggplot(aes(day, prevalence,
     group = paste(iterations, scenario2), colour = scenario2
   )) +
@@ -94,11 +95,11 @@ g <- prev %>%
     xmax = .start + lubridate::ddays(obj$last_day_obs + 500),
     ymin = 0, ymax = Inf, fill = "grey96"
   ) +
-  labs(colour = "Contacts removed") +
+  labs(colour = "Fraction of\nnormal contacts") +
   geom_line(alpha = 0.35) +
   ylab("Modelled prevalence") +
   guides(colour = guide_legend(override.aes = list(alpha = 1, lwd = 1))) +
-  scale_color_viridis_d(direction = -1) +
+  scale_color_viridis_d(direction = 1) +
   .theme +
   .coord_prev +
   theme(legend.position = c(0.82, 0.77)) +

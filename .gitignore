@@ -13,3 +13,4 @@ data-raw/2019-nCoV_daily_linelist.csv
 *.rda
 *.rds
 *.html
+data-generated/us-data.csv

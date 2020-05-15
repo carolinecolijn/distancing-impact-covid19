@@ -52,7 +52,7 @@ saveRDS(pred_4x4, file = "data-generated/pred_4x4.rds")
 pred_4x4 <- readRDS("data-generated/pred_4x4.rds")
 
 # re-sample obs. model for smoother plots:
-pred_4x4 <- purrr::map_dfr(1:5, function(i) {
+pred_4x4 <- purrr::map_dfr(1:10, function(i) {
   pred_4x4$y_rep <- MASS::rnegbin(length(pred_4x4$y_rep),
     pred_4x4$lambda_d,
     theta = pred_4x4$phi
@@ -73,7 +73,7 @@ saveRDS(pred_3x3, file = "data-generated/pred_3x3.rds")
 pred_3x3 <- readRDS("data-generated/pred_3x3.rds")
 
 # re-sample obs. model for smoother plots:
-pred_3x3 <- purrr::map_dfr(1:5, function(i) {
+pred_3x3 <- purrr::map_dfr(1:10, function(i) {
   pred_3x3$y_rep <- MASS::rnegbin(length(pred_3x3$y_rep),
     pred_3x3$lambda_d,
     theta = pred_3x3$phi
@@ -143,3 +143,4 @@ for (i in seq(1, 6, 2)) {
 cowplot::plot_grid(g1, g2, ncol = 1, labels = "AUTO", label_x = 0.125, label_y = 0.96)
 ggsave("figs-ms/f2-cycling.png", width = 4.5, height = 5, dpi = 400)
 ggsave("figs-ms/f2-cycling.pdf", width = 4.5, height = 5)
+

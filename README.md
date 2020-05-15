@@ -1,16 +1,17 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-### Estimating the impact of COVID-19 control measures using a Bayesian model of physical distancing
+### Quantifying the impact of COVID-19 control measures using a Bayesian model of physical distancing
 
 This repository contains code associated with a manuscript investigating
-the impact of COVID-19 control measures in British Columbia, Canada.
+the impact of COVID-19 control measures in British Columbia, Canada. Here is the preprint: https://www.medrxiv.org/content/10.1101/2020.04.17.20070086v1. 
 
 The main statistical model written in [Stan](https://mc-stan.org/) is
 available [here](analysis/seeiqr.stan) and the main R function that
 calls this model for a vector of daily case counts is available
 [here](analysis/fit_seeiqr.R). A function to make projection plots is
-available [here](analysis/make_projection_plot.R). This model may be
-released at a later date in a proper R package form.
+available [here](analysis/make_projection_plot.R). 
+
+A more fully featured and documented version of this model, which can accommodate multiple types of case data at once (e.g., reported cases, hospitalizations, ICU admissions) and estimate segments of positive-case sampling fractions for reported cases, is also available as an R package [covidseir](https://github.com/seananderson/covidseir).
 
 Generally, any part of the analysis can be re-created by running one of
 the numbered R files starting with `01-...R` in the

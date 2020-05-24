@@ -24,6 +24,12 @@ install.packages(c("tidyverse", "remotes", "rstan", "here",
 remotes::install_github("seananderson/ggsidekick")
 ```
 
+See the C++ compiler [installation instructions for covidseir](https://github.com/seananderson/covidseir) first, then:
+
+```{r, eval=FALSE}
+remotes::install_github("seananderson/covidseir", ref = "preprint")
+```
+
 An example of how to run the model:
 
 ```{r options, echo = FALSE}

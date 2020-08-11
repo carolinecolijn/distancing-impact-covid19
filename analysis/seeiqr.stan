@@ -126,7 +126,7 @@ transformed parameters {
   theta[1] = R0;
   theta[2] = f2;
 
-  y_hat = integrate_ode_bdf(seeiqr, y0, t0, time, theta, x_r, x_i, ode_control[1], ode_control[2], ode_control[3]);
+  y_hat = integrate_ode_rk45(seir, y0, t0, time, theta, x_r, x_i, ode_control[1], ode_control[2], ode_control[3]);
 
   for (n in 1:N) {
     this_samp = sampFrac[n];
